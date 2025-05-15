@@ -47,7 +47,7 @@ internal class BlobService : IBlobService
   public BlobService(ObjectPool<ChannelBase> channel,
                      ILoggerFactory          loggerFactory)
   {
-    channelPool_ = channel;
+    channelPool_ = channel; 
     logger_      = loggerFactory.CreateLogger<BlobService>();
   }
 
