@@ -16,6 +16,7 @@
 
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Health;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
@@ -33,11 +34,11 @@ namespace Tests.Helpers;
 internal static class MockHelper
 {
   public static Mock<CallInvoker> SetupAsyncUnaryCallInvokerMock<TReq, TRes>(this Mock<CallInvoker> mockInvoker,
-                                                                             TRes                   returnData)
+                                                                             TRes returnData)
     where TReq : class
     where TRes : class
   {
-    var responseTask        = Task.FromResult(returnData);
+    var responseTask = Task.FromResult(returnData);
     var responseHeadersTask = Task.FromResult(new Metadata());
 
     mockInvoker.Setup(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<TReq, TRes>>(),
@@ -63,8 +64,8 @@ internal static class MockHelper
       => Status.DefaultSuccess;
   }
 
-  public static Mock<CallInvoker> SetupAsyncClientStreamingCall<TReq, TRes>(this Mock<CallInvoker>    mockInvoker,
-                                                                            TRes                      returnData,
+  public static Mock<CallInvoker> SetupAsyncClientStreamingCall<TReq, TRes>(this Mock<CallInvoker> mockInvoker,
+                                                                            TRes returnData,
                                                                             IClientStreamWriter<TReq> stream)
     where TReq : class
     where TRes : class
@@ -85,7 +86,7 @@ internal static class MockHelper
   }
 
   public static Mock<CallInvoker> SetupAsyncServerStreamingCallInvokerMock<TReq, TRes>(this Mock<CallInvoker> mockInvoker,
-                                                                                       TRes                   returnData)
+                                                                                       TRes returnData)
     where TReq : class
     where TRes : class
   {
@@ -114,14 +115,14 @@ internal static class MockHelper
   }
 
 
-  public static ITasksService GetTasksServiceMock(Mock<CallInvoker>?  mockInvoker     = null,
+  public static ITasksService GetTasksServiceMock(Mock<CallInvoker>? mockInvoker = null,
                                                   Mock<IBlobService>? mockBlobService = null)
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
+    {
+      CallBase = true,
+    };
     mockChannelBase.Setup(m => m.CreateCallInvoker())
                    .Returns(mockInvoker.Object);
     var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
@@ -137,9 +138,9 @@ internal static class MockHelper
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
+    {
+      CallBase = true,
+    };
     mockChannelBase.Setup(m => m.CreateCallInvoker())
                    .Returns(mockInvoker.Object);
     var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
@@ -147,15 +148,15 @@ internal static class MockHelper
                                                     NullLoggerFactory.Instance);
   }
 
-  public static ISessionService GetSessionServiceMock(Properties         properties,
-                                                      TaskConfiguration  taskConfiguration,
+  public static ISessionService GetSessionServiceMock(Properties properties,
+                                                      TaskConfiguration taskConfiguration,
                                                       Mock<CallInvoker>? mockInvoker = null)
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
+    {
+      CallBase = true,
+    };
     mockChannelBase.Setup(m => m.CreateCallInvoker())
                    .Returns(mockInvoker.Object);
     var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
@@ -168,9 +169,9 @@ internal static class MockHelper
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
+    {
+      CallBase = true,
+    };
     mockChannelBase.Setup(m => m.CreateCallInvoker())
                    .Returns(mockInvoker.Object);
     var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
@@ -179,7 +180,7 @@ internal static class MockHelper
   }
 
   public static Mock<IBlobService> SetupCreateBlobMock(this Mock<IBlobService> blobService,
-                                                       List<BlobInfo>          returnData)
+                                                       List<BlobInfo> returnData)
   {
     blobService.Setup(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                               It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
@@ -187,5 +188,21 @@ internal static class MockHelper
                .Returns(returnData.ToAsyncEnumerable);
 
     return blobService;
+  }
+
+  public static IHealthCheckService GetHealthCheckServiceMock(this Mock<CallInvoker> mockInvoker, Health returnedHealth)
+  {
+    mockInvoker ??= new Mock<CallInvoker>();
+    var mockChannelBase = new Mock<ChannelBase>("localhost")
+    {
+      CallBase = true,
+    };
+    mockChannelBase.Setup(m => m.CreateCallInvoker())
+                   .Returns(mockInvoker.Object);
+    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
+    return HealthCheckServiceFactory.CreateHealthCheckService(objectPool,
+                                                               NullLoggerFactory.Instance);
+
+
   }
 }
