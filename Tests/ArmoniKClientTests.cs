@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ public class ArmoniKClientTests
                              .ToString(),
                   };
     // Act
-    var taskService = await client_.GetTasksService();
+    var taskService = await client_.GetTasksServiceAsync();
     // Assert
     Assert.That(taskService,
                 Is.InstanceOf<ITasksService>(),

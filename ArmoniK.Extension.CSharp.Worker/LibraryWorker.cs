@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -68,24 +68,32 @@ public class LibraryWorker : ILibraryWorker
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the output of the executed task.</returns>
   /// <exception cref="WorkerApiException">Thrown when there is an error in the service library or execution process.</exception>
-  public async Task<Output> Execute(ITaskHandler      taskHandler,
-                                    ILibraryLoader    libraryLoader,
-                                    string            libraryContext,
-                                    CancellationToken cancellationToken)
+  public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
+                                         ILibraryLoader    libraryLoader,
+                                         string            libraryContext,
+                                         CancellationToken cancellationToken)
   {
     using var _ = Logger.BeginPropertyScope(("sessionId", taskHandler.SessionId),
                                             ("taskId", $"{taskHandler.TaskId}"));
 
     var serviceLibrary = taskHandler.TaskOptions.GetServiceLibrary();
+    if (string.IsNullOrEmpty(serviceLibrary))
+    {
+      throw new WorkerApiException("No ServiceLibrary found");
+    }
 
     var dynamicLibrary = taskHandler.TaskOptions.GetTaskLibraryDefinition(serviceLibrary);
+    if (dynamicLibrary == null)
+    {
+      throw new WorkerApiException($"Library '{serviceLibrary}' not found");
+    }
 
     Logger.LogInformation("ServiceLibrary: {serviceLibrary}",
                           serviceLibrary);
     Logger.LogInformation("DynamicLibrary.Service: {Service}",
                           dynamicLibrary.Service);
 
-    if (dynamicLibrary.Service == null || serviceLibrary == null)
+    if (string.IsNullOrEmpty(dynamicLibrary.Service))
     {
       throw new WorkerApiException("No ServiceLibrary found");
     }
@@ -100,31 +108,12 @@ public class LibraryWorker : ILibraryWorker
         context.EnterContextualReflection();
       }
 
-      var serviceClass = libraryLoader.GetClassInstance<object>(dynamicLibrary);
-      if (serviceClass == null)
-      {
-        throw new WorkerApiException("ServiceClass does not exist");
-      }
+      var serviceClass = libraryLoader.GetClassInstance<IWorker>(dynamicLibrary);
+      var result = await serviceClass.ExecuteAsync(taskHandler,
+                                                   Logger,
+                                                   cancellationToken)
+                                     .ConfigureAwait(false);
 
-      if (serviceClass.GetType()
-                      .GetInterfaces()
-                      .All(x => x != typeof(IWorker)))
-      {
-        throw new WorkerApiException($"ServiceClass must implement {typeof(IWorker)}");
-      }
-
-      var executionMethod = serviceClass.GetType()
-                                        .GetMethod("Execute");
-
-      var task = (Task<Output>)executionMethod.Invoke(serviceClass,
-                                                      new object?[]
-                                                      {
-                                                        taskHandler,
-                                                        Logger,
-                                                        cancellationToken,
-                                                      });
-
-      var result = await task.ConfigureAwait(false);
       Logger.LogInformation("Got the following result from the execution: {result}",
                             result);
 

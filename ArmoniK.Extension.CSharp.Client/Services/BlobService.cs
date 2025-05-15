@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -134,10 +134,10 @@ internal class BlobService : IBlobService
                                                 .ConfigureAwait(false);
     var blobClient = new Results.ResultsClient(channel);
 
-    await UploadBlob(blobInfo,
-                     blobContent,
-                     blobClient,
-                     cancellationToken);
+    await UploadBlobAsync(blobInfo,
+                          blobContent,
+                          blobClient,
+                          cancellationToken);
   }
 
   public async Task<BlobState> GetBlobStateAsync(BlobInfo          blobInfo,
@@ -168,7 +168,7 @@ internal class BlobService : IBlobService
   {
     if (serviceConfiguration_ is null)
     {
-      await LoadBlobServiceConfiguration(cancellationToken);
+      await LoadBlobServiceConfigurationAsync(cancellationToken);
     }
 
     await using var channel = await channelPool_.GetAsync(cancellationToken)
@@ -184,10 +184,10 @@ internal class BlobService : IBlobService
                                               },
                                               cancellationToken);
       var createdBlobs = await blobInfo.ToListAsync(cancellationToken);
-      await UploadBlob(createdBlobs.First(),
-                       content,
-                       blobClient,
-                       cancellationToken);
+      await UploadBlobAsync(createdBlobs.First(),
+                            content,
+                            blobClient,
+                            cancellationToken);
       return createdBlobs.First();
     }
 
@@ -277,7 +277,7 @@ internal class BlobService : IBlobService
     }
   }
 
-  private async Task LoadBlobServiceConfiguration(CancellationToken cancellationToken = default)
+  private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
@@ -285,10 +285,10 @@ internal class BlobService : IBlobService
     serviceConfiguration_ = await blobClient.GetServiceConfigurationAsync(new Empty());
   }
 
-  private async Task UploadBlob(BlobInfo              blob,
-                                ReadOnlyMemory<byte>  blobContent,
-                                Results.ResultsClient blobClient,
-                                CancellationToken     cancellationToken)
+  private async Task UploadBlobAsync(BlobInfo              blob,
+                                     ReadOnlyMemory<byte>  blobContent,
+                                     Results.ResultsClient blobClient,
+                                     CancellationToken     cancellationToken)
   {
     try
     {

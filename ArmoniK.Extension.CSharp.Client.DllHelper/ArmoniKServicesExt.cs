@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -57,11 +57,11 @@ public static class ArmoniKServicesExt
   /// <returns>
   ///   The created <see cref="DllBlob" /> instance with relevant identifiers.
   /// </returns>
-  public static async Task<DllBlob> SendDllBlob(this IBlobService    blobService,
-                                                SessionInfo          session,
-                                                DynamicLibrary       dynamicLibrary,
-                                                ReadOnlyMemory<byte> content,
-                                                CancellationToken    cancellationToken)
+  public static async Task<DllBlob> SendDllBlobAsync(this IBlobService    blobService,
+                                                     SessionInfo          session,
+                                                     DynamicLibrary       dynamicLibrary,
+                                                     ReadOnlyMemory<byte> content,
+                                                     CancellationToken    cancellationToken)
   {
     var blobInfo = await blobService.CreateBlobAsync(session,
                                                      dynamicLibrary.ToString(),
@@ -82,21 +82,18 @@ public static class ArmoniKServicesExt
   /// <param name="taskNodes">The collection of tasks to submit.</param>
   /// <param name="dllBlob">The dynamic library blob dependency for the tasks.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests during the task submission process.</param>
-  public static async Task<IEnumerable<TaskInfos>> SubmitTasksWithDll(this ITasksService       taskService,
-                                                                      SessionInfo              session,
-                                                                      IEnumerable<TaskNodeExt> taskNodes,
-                                                                      DllBlob                  dllBlob,
-                                                                      CancellationToken        cancellationToken)
+  public static async Task<IEnumerable<TaskInfos>> SubmitTasksWithDllAsync(this ITasksService       taskService,
+                                                                           SessionInfo              session,
+                                                                           IEnumerable<TaskNodeExt> taskNodes,
+                                                                           DllBlob                  dllBlob,
+                                                                           CancellationToken        cancellationToken)
   {
     taskNodes = taskNodes.Select(x =>
                                  {
                                    x.DataDependencies.Add(dllBlob);
 
                                    //avoid injection of dlls which were already defined in the session taskOptions
-                                   if (x.TaskOptions?.Options is not null && x.TaskOptions.Options.ContainsKey(dllBlob.BlobName))
-                                   {
-                                     x.TaskOptions.Options.Remove(dllBlob.BlobName);
-                                   }
+                                   x.TaskOptions.Options.Remove(dllBlob.BlobName);
 
                                    x.TaskOptions.AddTaskLibraryDefinition(x.DynamicLibrary);
                                    x.TaskOptions.Options.Add("ServiceLibrary",
@@ -113,5 +110,5 @@ public static class ArmoniKServicesExt
 
 public record TaskNodeExt : TaskNode
 {
-  public TaskLibraryDefinition DynamicLibrary { get; set; }
+  public required TaskLibraryDefinition DynamicLibrary { get; init; }
 }

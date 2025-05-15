@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Utils;
 
 using Grpc.Core;
 
@@ -79,7 +80,7 @@ public class TasksServiceTests
                                           },
                         Payload = new BlobInfo
                                   {
-                                    BlobName = "payload1",
+                                    BlobName  = "payload1",
                                     BlobId = submitTaskResponse.TaskInfos[0]
                                                                .PayloadId,
                                     SessionId = "sessionId1",
@@ -195,7 +196,8 @@ public class TasksServiceTests
 
     // Act
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes)
+                                  .ToListAsync();
     // Assert
     ClassicAssert.AreEqual(2,
                            result.Count());

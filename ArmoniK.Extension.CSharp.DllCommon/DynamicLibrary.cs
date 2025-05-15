@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -27,27 +27,27 @@ public record DynamicLibrary
   /// <summary>
   ///   FileName of the Dll.
   /// </summary>
-  public string Name { get; init; }
+  public string Name { get; init; } = string.Empty;
 
   /// <summary>
   ///   FileName of the Dll.
   /// </summary>
-  public string DllFileName { get; init; }
+  public string DllFileName { get; init; } = string.Empty;
 
   /// <summary>
   ///   Version of the application.
   /// </summary>
-  public string PathToFile { get; init; }
+  public string PathToFile { get; init; } = string.Empty;
 
   /// <summary>
   ///   Version of the application.
   /// </summary>
-  public string Version { get; init; }
+  public string Version { get; init; } = string.Empty;
 
   /// <summary>
   ///   Library Blob Identifier.
   /// </summary>
-  public string LibraryBlobId { get; set; }
+  public string LibraryBlobId { get; set; } = string.Empty;
 
   /// <summary>
   ///   Returns a string representation of the DynamicLibrary instance.
@@ -89,9 +89,12 @@ public static class DynamicLibraryExt
   /// </summary>
   /// <param name="taskOptions">The task options to retrieve from.</param>
   /// <returns>The value of the service library option.</returns>
-  public static string GetServiceLibrary(this TaskOptions taskOptions)
-    => taskOptions.Options.FirstOrDefault(x => x.Key.Equals("ServiceLibrary"))
-                  .Value;
+  public static string? GetServiceLibrary(this TaskOptions taskOptions)
+  {
+    taskOptions.Options.TryGetValue("ServiceLibrary",
+                                    out var value);
+    return value;
+  }
 
   /// <summary>
   ///   Retrieves a DynamicLibrary from the TaskOptions.
@@ -99,27 +102,31 @@ public static class DynamicLibraryExt
   /// <param name="taskOptions">The task options to retrieve from.</param>
   /// <param name="libraryName">The name of the library.</param>
   /// <returns>The DynamicLibrary associated with the specified library name.</returns>
-  public static DynamicLibrary GetDynamicLibrary(this TaskOptions taskOptions,
-                                                 string           libraryName)
+  public static DynamicLibrary? GetDynamicLibrary(this TaskOptions taskOptions,
+                                                  string           libraryName)
   {
-    taskOptions.Options.TryGetValue($"{libraryName}.Name",
-                                    out var name);
-    taskOptions.Options.TryGetValue($"{libraryName}.PathToFile",
-                                    out var pathToFile);
-    taskOptions.Options.TryGetValue($"{libraryName}.DllFileName",
-                                    out var dllFileName);
-    taskOptions.Options.TryGetValue($"{libraryName}.Version",
-                                    out var version);
-    taskOptions.Options.TryGetValue($"{libraryName}.LibraryBlobId",
-                                    out var libraryId);
+    if (taskOptions.Options.TryGetValue($"{libraryName}.Name",
+                                        out var name))
+    {
+      taskOptions.Options.TryGetValue($"{libraryName}.PathToFile",
+                                      out var pathToFile);
+      taskOptions.Options.TryGetValue($"{libraryName}.DllFileName",
+                                      out var dllFileName);
+      taskOptions.Options.TryGetValue($"{libraryName}.Version",
+                                      out var version);
+      taskOptions.Options.TryGetValue($"{libraryName}.LibraryBlobId",
+                                      out var libraryId);
 
-    return new DynamicLibrary
-           {
-             Name          = name,
-             DllFileName   = dllFileName,
-             PathToFile    = pathToFile,
-             Version       = version,
-             LibraryBlobId = libraryId,
-           };
+      return new DynamicLibrary
+             {
+               Name          = name,
+               DllFileName   = dllFileName ?? string.Empty,
+               PathToFile    = pathToFile  ?? string.Empty,
+               Version       = version     ?? string.Empty,
+               LibraryBlobId = libraryId   ?? string.Empty,
+             };
+    }
+
+    return null;
   }
 }

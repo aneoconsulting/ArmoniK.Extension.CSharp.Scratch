@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -57,9 +57,9 @@ public class TaskHandler
   ///   A <see cref="Task{TaskState}" /> representing the asynchronous operation, with the task's detailed state as
   ///   the result.
   /// </returns>
-  public async Task<TaskState> GetTaskDetails(CancellationToken cancellationToken)
+  public async Task<TaskState> GetTaskDetailsAsync(CancellationToken cancellationToken)
   {
-    var taskClient = await ArmoniKClient.GetTasksService();
+    var taskClient = await ArmoniKClient.GetTasksServiceAsync();
     return await taskClient.GetTasksDetailedAsync(taskInfos_.TaskId,
                                                   cancellationToken);
   }

@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public record DllTasksConfiguration : TaskConfiguration
                                int                         priority,
                                string                      partitionId,
                                TimeSpan                    maxDuration,
-                               Dictionary<string, string>  options = null)
+                               Dictionary<string, string>? options = null)
     : base(maxRetries,
            priority,
            partitionId,

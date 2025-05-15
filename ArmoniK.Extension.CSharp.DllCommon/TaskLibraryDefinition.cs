@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -86,18 +86,22 @@ public static class TaskLibraryDefinitionExt
   /// <param name="taskOptions">The task options to retrieve from.</param>
   /// <param name="libraryName">The name of the library.</param>
   /// <returns>The TaskLibraryDefinition associated with the specified library name.</returns>
-  public static TaskLibraryDefinition GetTaskLibraryDefinition(this TaskOptions taskOptions,
-                                                               string           libraryName)
+  public static TaskLibraryDefinition? GetTaskLibraryDefinition(this TaskOptions taskOptions,
+                                                                string           libraryName)
   {
     var dll = taskOptions.GetDynamicLibrary(libraryName);
+    if (dll != null)
+    {
+      taskOptions.Options.TryGetValue($"{libraryName}.Namespace",
+                                      out var serviceNamespace);
 
-    taskOptions.Options.TryGetValue($"{libraryName}.Namespace",
-                                    out var serviceNamespace);
+      taskOptions.Options.TryGetValue($"{libraryName}.Service",
+                                      out var service);
+      return new TaskLibraryDefinition(dll,
+                                       serviceNamespace ?? string.Empty,
+                                       service          ?? string.Empty);
+    }
 
-    taskOptions.Options.TryGetValue($"{libraryName}.Service",
-                                    out var service);
-    return new TaskLibraryDefinition(dll,
-                                     serviceNamespace,
-                                     service);
+    return null;
   }
 }

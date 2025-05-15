@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ namespace LibraryExample;
 
 public class Worker : IWorker
 {
-  public async Task<Output> Execute(ITaskHandler      taskHandler,
-                                    ILogger           logger,
-                                    CancellationToken cancellationToken)
+  public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
+                                         ILogger           logger,
+                                         CancellationToken cancellationToken)
   {
     var resultId = taskHandler.ExpectedResults.Single();
 

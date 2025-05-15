@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ internal class VersionsService : IVersionsService
     logger_  = loggerFactory.CreateLogger<VersionsService>();
   }
 
-  public async Task<VersionsInfo> GetVersion(CancellationToken cancellationToken)
+  public async Task<VersionsInfo> GetVersionAsync(CancellationToken cancellationToken)
   {
     await using var channel = await channel_.GetAsync(cancellationToken)
                                             .ConfigureAwait(false);

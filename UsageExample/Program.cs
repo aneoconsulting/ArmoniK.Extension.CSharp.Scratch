@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ internal class Program
   private static IConfiguration   _configuration;
   private static ILogger<Program> _logger;
 
-  internal static async Task Run(string filePath)
+  internal static async Task RunAsync(string filePath)
   {
     Log.Logger = new LoggerConfiguration().MinimumLevel.Override("Microsoft",
                                                                  LogEventLevel.Information)
@@ -85,21 +85,17 @@ internal class Program
     var sessionService = await client.GetSessionService();
 
     var session = await sessionService.CreateSessionWithDllAsync(defaultTaskOptions,
-
-                    ["dll"],
-
-
-
-    new[]
-    {
-      dynamicLib,
-    });
+                                                                 ["dll"],
+                                                                 new[]
+                                                                 {
+                                                                   dynamicLib,
+                                                                 });
 
     Console.WriteLine($"sessionId: {session.SessionId}");
 
     var blobService = await client.GetBlobService();
 
-    var tasksService = await client.GetTasksService();
+    var tasksService = await client.GetTasksServiceAsync();
 
     var eventsService = await client.GetEventsService();
 
@@ -121,10 +117,10 @@ internal class Program
 
     var content = File.ReadAllBytes(filePath);
 
-    var dllBlob = await blobService.SendDllBlob(session,
-                                                dynamicLib,
-                                                content,
-                                                default);
+    var dllBlob = await blobService.SendDllBlobAsync(session,
+                                                     dynamicLib,
+                                                     content,
+                                                     default);
 
     Console.WriteLine($"resultId: {result.BlobId}");
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
@@ -135,22 +131,22 @@ internal class Program
                                                           "LibraryExample",
                                                           "Worker");
 
-    var task = await tasksService.SubmitTasksWithDll(session,
-                                                     new List<TaskNodeExt>
-                                                     {
-                                                       new()
-                                                       {
-                                                         Payload = payload,
-                                                         ExpectedOutputs = new[]
-                                                                           {
-                                                                             result,
-                                                                           },
-                                                         TaskOptions    = defaultTaskOptions,
-                                                         DynamicLibrary = taskLibraryDefinition,
-                                                       },
-                                                     },
-                                                     dllBlob,
-                                                     default);
+    var task = await tasksService.SubmitTasksWithDllAsync(session,
+                                                          new List<TaskNodeExt>
+                                                          {
+                                                            new()
+                                                            {
+                                                              Payload = payload,
+                                                              ExpectedOutputs = new[]
+                                                                                {
+                                                                                  result,
+                                                                                },
+                                                              TaskOptions    = defaultTaskOptions,
+                                                              DynamicLibrary = taskLibraryDefinition,
+                                                            },
+                                                          },
+                                                          dllBlob,
+                                                          default);
 
     Console.WriteLine($"taskId: {task.Single().TaskId}");
 
@@ -186,7 +182,7 @@ internal class Program
     rootCommand.AddOption(filePath);
 
     // Configure the handler to call the function that will do the work
-    rootCommand.SetHandler(Run,
+    rootCommand.SetHandler(RunAsync,
                            filePath);
 
     // Parse the command line parameters and call the function that represents the application

@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -20,10 +20,22 @@ using ArmoniK.Extension.CSharp.DllCommon;
 
 namespace ArmoniK.Extension.CSharp.Worker;
 
+/// <summary>
+///   Represents a worker that handles the execution of tasks within a specific library context.
+/// </summary>
 public interface ILibraryWorker
 {
-  Task<Output> Execute(ITaskHandler      taskHandler,
-                       ILibraryLoader    libraryLoader,
-                       string            libraryName,
-                       CancellationToken cancellationToken);
+  /// <summary>
+  ///   Executes a task asynchronously within a specified library context.
+  /// </summary>
+  /// <param name="taskHandler">The task handler.</param>
+  /// <param name="libraryLoader">The library loader to load the necessary assemblies.</param>
+  /// <param name="libraryContext">The context of the library to execute the task in.</param>
+  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+  /// <returns>A task representing the asynchronous operation, containing the output of the executed task.</returns>
+  /// <exception cref="WorkerApiException">Thrown when there is an error in the service library or execution process.</exception>
+  Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
+                            ILibraryLoader    libraryLoader,
+                            string            libraryContext,
+                            CancellationToken cancellationToken);
 }

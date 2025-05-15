@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -79,8 +79,8 @@ public interface ITasksService
   /// <param name="taskIds">The identifiers of the tasks to cancel.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation.</returns>
-  Task CancelTask(IEnumerable<string> taskIds,
-                  CancellationToken   cancellationToken = default);
+  Task CancelTaskAsync(IEnumerable<string> taskIds,
+                       CancellationToken   cancellationToken = default);
 }
 
 /// <summary>
