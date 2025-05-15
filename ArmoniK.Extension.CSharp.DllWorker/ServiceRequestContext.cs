@@ -63,7 +63,7 @@ public class ServiceRequestContext
   public async Task<Output> ExecuteTaskAsync(ITaskHandler      taskHandler,
                                              CancellationToken cancellationToken)
   {
-    if (string.IsNullOrEmpty(currentSession_) || taskHandler.SessionId != currentSession_))
+    if (string.IsNullOrEmpty(currentSession_) || taskHandler.SessionId != currentSession_)
     {
       currentSession_ = taskHandler.SessionId;
       libraryLoader_.ResetService();
