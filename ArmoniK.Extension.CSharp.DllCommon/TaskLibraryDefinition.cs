@@ -86,18 +86,22 @@ public static class TaskLibraryDefinitionExt
   /// <param name="taskOptions">The task options to retrieve from.</param>
   /// <param name="libraryName">The name of the library.</param>
   /// <returns>The TaskLibraryDefinition associated with the specified library name.</returns>
-  public static TaskLibraryDefinition GetTaskLibraryDefinition(this TaskOptions taskOptions,
-                                                               string           libraryName)
+  public static TaskLibraryDefinition? GetTaskLibraryDefinition(this TaskOptions taskOptions,
+                                                                string           libraryName)
   {
     var dll = taskOptions.GetDynamicLibrary(libraryName);
+    if (dll != null)
+    {
+      taskOptions.Options.TryGetValue($"{libraryName}.Namespace",
+                                      out var serviceNamespace);
 
-    taskOptions.Options.TryGetValue($"{libraryName}.Namespace",
-                                    out var serviceNamespace);
+      taskOptions.Options.TryGetValue($"{libraryName}.Service",
+                                      out var service);
+      return new TaskLibraryDefinition(dll,
+                                       serviceNamespace ?? string.Empty,
+                                       service          ?? string.Empty);
+    }
 
-    taskOptions.Options.TryGetValue($"{libraryName}.Service",
-                                    out var service);
-    return new TaskLibraryDefinition(dll,
-                                     serviceNamespace,
-                                     service);
+    return null;
   }
 }

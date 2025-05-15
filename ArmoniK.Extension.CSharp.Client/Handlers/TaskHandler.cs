@@ -57,9 +57,9 @@ public class TaskHandler
   ///   A <see cref="Task{TaskState}" /> representing the asynchronous operation, with the task's detailed state as
   ///   the result.
   /// </returns>
-  public async Task<TaskState> GetTaskDetails(CancellationToken cancellationToken)
+  public async Task<TaskState> GetTaskDetailsAsync(CancellationToken cancellationToken)
   {
-    var taskClient = await ArmoniKClient.GetTasksService();
+    var taskClient = await ArmoniKClient.GetTasksServiceAsync();
     return await taskClient.GetTasksDetailedAsync(taskInfos_.TaskId,
                                                   cancellationToken);
   }

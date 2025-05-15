@@ -72,14 +72,72 @@ public class LibraryLoader : ILibraryLoader
     => Dispose();
 
   /// <summary>
+  ///   Gets an instance of a class from the dynamic library.
+  /// </summary>
+  /// <typeparam name="T">Type that the created instance must be convertible to.</typeparam>
+  /// <param name="dynamicLibrary">The dynamic library definition.</param>
+  /// <returns>An instance of the class specified by <paramref name="dynamicLibrary" />.</returns>
+  /// <exception cref="WorkerApiException">Thrown when there is an error loading the class instance.</exception>
+  public T GetClassInstance<T>(TaskLibraryDefinition dynamicLibrary)
+    where T : class
+  {
+    try
+    {
+      assemblyLoadContexts_.TryGetValue(dynamicLibrary.ToString(),
+                                        out var assembly);
+      using (assembly.loadContext.EnterContextualReflection())
+      {
+        // Create an instance of a class from the assembly.
+        var classType = assembly.assembly.GetType($"{dynamicLibrary.Namespace}.{dynamicLibrary.Service}");
+        logger_.LogInformation("Types found in the assembly: {assemblyTypes}",
+                               string.Join(",",
+                                           assembly.assembly.GetTypes()
+                                                   .Select(x => x.ToString())));
+        if (classType is null)
+        {
+          var message = $"Type {dynamicLibrary.Namespace}.{dynamicLibrary.Service} could not be loaded";
+          logger_.LogError(message);
+          throw new WorkerApiException(message);
+        }
+
+        logger_.LogInformation($"Type {dynamicLibrary.Namespace}.{dynamicLibrary.Service}: {classType} loaded");
+
+        var serviceContainer = Activator.CreateInstance(classType);
+        if (serviceContainer is null)
+        {
+          var message = $"Could not create an instance of type {classType.Name} (default constructor missing?)";
+          logger_.LogError(message);
+          throw new WorkerApiException(message);
+        }
+
+        var typedServiceContainer = serviceContainer as T;
+        if (typedServiceContainer is null)
+        {
+          var message = $"The type {classType.Name} is not convertible to {typeof(T)}";
+          logger_.LogError(message);
+          throw new WorkerApiException(message);
+        }
+
+        return typedServiceContainer;
+      }
+    }
+    catch (Exception e)
+    {
+      logger_.LogError("Error loading class instance: {errorMessage}",
+                       e.Message);
+      throw new WorkerApiException(e);
+    }
+  }
+
+  /// <summary>
   ///   Loads a library asynchronously based on the task handler and cancellation token provided.
   /// </summary>
   /// <param name="taskHandler">The task handler containing the task options.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the name of the dynamic library loaded.</returns>
   /// <exception cref="WorkerApiException">Thrown when there is an error loading the library.</exception>
-  public async Task<string> LoadLibrary(ITaskHandler      taskHandler,
-                                        CancellationToken cancellationToken)
+  public async Task<string> LoadLibraryAsync(ITaskHandler      taskHandler,
+                                             CancellationToken cancellationToken)
   {
     try
     {
@@ -88,10 +146,19 @@ public class LibraryLoader : ILibraryLoader
                              assemblyLoadContexts_.Count);
 
       var taskLibrary = taskHandler.TaskOptions.GetServiceLibrary();
+      if (string.IsNullOrEmpty(taskLibrary))
+      {
+        throw new KeyNotFoundException("Task option 'ServiceLibrary' not found");
+      }
 
       // Get the data about the dynamic library
       var dynamicLibrary = taskHandler.TaskOptions.GetTaskLibraryDefinition(taskLibrary);
-      var filename       = $"{dynamicLibrary}.zip";
+      if (dynamicLibrary == null)
+      {
+        throw new KeyNotFoundException($"Task library '{taskLibrary}' not found.");
+      }
+
+      var filename = $"{dynamicLibrary}.zip";
 
       var filePath = @"/tmp/zip";
 
@@ -184,58 +251,6 @@ public class LibraryLoader : ILibraryLoader
     {
       logger_.LogError(ex.Message);
       throw new WorkerApiException(ex);
-    }
-  }
-
-  /// <summary>
-  ///   Gets an instance of a class from the dynamic library.
-  /// </summary>
-  /// <typeparam name="T">The type of the class to instantiate.</typeparam>
-  /// <param name="dynamicLibrary">The dynamic library definition.</param>
-  /// <returns>An instance of the class specified by <typeparamref name="T" />.</returns>
-  /// <exception cref="WorkerApiException">Thrown when there is an error loading the class instance.</exception>
-  public T GetClassInstance<T>(TaskLibraryDefinition dynamicLibrary)
-  {
-    try
-    {
-      assemblyLoadContexts_.TryGetValue(dynamicLibrary.ToString(),
-                                        out var assembly);
-      using (assembly.loadContext.EnterContextualReflection())
-      {
-        // Create an instance of a class from the assembly.
-        var classType = assembly.assembly.GetType($"{dynamicLibrary.Namespace}.{dynamicLibrary.Service}");
-        logger_.LogInformation("Types inside the assembly: {assemblyTypes}",
-                               string.Join(",",
-                                           assembly.assembly.GetTypes()
-                                                   .Select(x => x.ToString())));
-        logger_.LogInformation("Getting type {Namespace}.{Service}: {classType}",
-                               dynamicLibrary.Namespace,
-                               dynamicLibrary.Service,
-                               classType);
-        if (classType is null)
-        {
-          logger_.LogError("Error finding class {Namespace}.{Service}",
-                           dynamicLibrary.Namespace,
-                           dynamicLibrary.Service);
-          throw new WorkerApiException($"Error finding class {dynamicLibrary.Namespace}.{dynamicLibrary.Service}");
-        }
-
-        var serviceContainer = (T)Activator.CreateInstance(classType);
-
-        if (serviceContainer is null)
-        {
-          logger_.LogError("Couldn't load class instance");
-          throw new WorkerApiException("Couldn't load class instance");
-        }
-
-        return serviceContainer;
-      }
-    }
-    catch (Exception e)
-    {
-      logger_.LogError("Error loading class instance: {errorMessage}",
-                       e.Message);
-      throw new WorkerApiException(e);
     }
   }
 
