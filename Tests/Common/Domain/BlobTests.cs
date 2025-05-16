@@ -14,7 +14,9 @@
 
 using System.Reflection.Metadata;
 
+using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Client.Common.Enum;
 
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
@@ -71,7 +73,7 @@ namespace ArmoniK.Tests.Common.Domain
                 BlobId = "blobId",
                 Status = BlobStatus.Created,
                 CompletedAt = new DateTime(2025, 05, 15),
-                CreateAt = DateTime.UtcNow
+                CreateAt = new DateTime(2025, 05, 15),
             };
             var expectedDate = new DateTime(2025, 05, 15);
             var expectedFormatted = expectedDate.ToString("yy/MM/dd");
@@ -92,7 +94,7 @@ namespace ArmoniK.Tests.Common.Domain
         [TestCase(BlobStatus.Aborted)]
         [TestCase(BlobStatus.Deleted)]
         [TestCase(BlobStatus.Notfound)]
-        [TestCase((BlobStatus)99)] 
+        [TestCase((BlobStatus)99)]
         public void TestBlobStatus(BlobStatus status)
         {
             var blobDetails = new BlobState
@@ -130,6 +132,151 @@ namespace ArmoniK.Tests.Common.Domain
             {
                 throw new ArgumentOutOfRangeException(nameof(status), status, "Undefined BlobStatus value");
             }
+        }
+
+
+        [TestCase(BlobStatus.Unspecified)]
+        [TestCase(BlobStatus.Created)]
+        [TestCase(BlobStatus.Completed)]
+        [TestCase(BlobStatus.Aborted)]
+        [TestCase(BlobStatus.Deleted)]
+        [TestCase(BlobStatus.Notfound)]
+        [TestCase((BlobStatus)99)] 
+        public void TestBlobStatusExtensions(BlobStatus status)
+        {
+            switch (status)
+            {
+                case BlobStatus.Unspecified:
+                case BlobStatus.Created:
+                case BlobStatus.Completed:
+                case BlobStatus.Aborted:
+                case BlobStatus.Deleted:
+                case BlobStatus.Notfound:
+                    var grpcStatus = BlobStatusExt.ToGrpcStatus(status);
+                    ClassicAssert.AreEqual(status.ToString(), grpcStatus.ToString());
+
+                    var internalStatus = BlobStatusExt.ToInternalStatus(grpcStatus);
+                    ClassicAssert.AreEqual(status, internalStatus);
+                    break;
+                default:
+                    ClassicAssert.Throws<ArgumentOutOfRangeException>(() =>
+                    {
+                        BlobStatusExt.ToGrpcStatus(status);
+                    });
+                    break;
+            }
+        }
+
+        [Test]
+        public void BlobPaginationTest()
+        {
+            var blobPagination = new BlobPagination
+            {
+                Page = 1,
+                PageSize = 10,
+                Total = 100,
+                SortDirection = SortDirection.Asc,
+                Filter = new Filters()
+            };
+
+            ClassicAssert.AreEqual(1, blobPagination.Page);
+            ClassicAssert.AreEqual(10, blobPagination.PageSize);
+            ClassicAssert.AreEqual(100, blobPagination.Total);
+            ClassicAssert.AreEqual(SortDirection.Asc, blobPagination.SortDirection);
+            ClassicAssert.IsNotNull(blobPagination.Filter);
+        }
+
+        [Test]
+        public void BlobPaginationWithFilterTest()
+        {
+            var filter = new Filters
+            {
+                Or =
+                {
+                    new FiltersAnd
+                    {
+                        And =
+                        {
+                            new FilterField
+                            {
+                                Field = new ResultField
+                                {
+                                    ResultRawField = new ResultRawField
+                                    {
+                                        Field = ResultRawEnumField.SessionId
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var blobPagination = new BlobPagination
+            {
+                Page = 2,
+                PageSize = 20,
+                Total = 200,
+                SortDirection = SortDirection.Desc,
+                Filter = filter
+            };
+
+            ClassicAssert.AreEqual(2, blobPagination.Page);
+            ClassicAssert.AreEqual(20, blobPagination.PageSize);
+            ClassicAssert.AreEqual(200, blobPagination.Total);
+            ClassicAssert.AreEqual(SortDirection.Desc, blobPagination.SortDirection);
+            ClassicAssert.IsNotNull(blobPagination.Filter);
+            ClassicAssert.AreEqual(1, blobPagination.Filter.Or.Count);
+            ClassicAssert.AreEqual(1, blobPagination.Filter.Or[0].And.Count);
+            ClassicAssert.AreEqual(ResultRawEnumField.SessionId,
+                blobPagination.Filter.Or[0].And[0].Field.ResultRawField.Field);
+        }
+
+        [Test]
+        public void BlobPaginationDefaultValuesTest()
+        {
+            var blobPagination = new BlobPagination();
+
+            ClassicAssert.AreEqual(0, blobPagination.Page);
+            ClassicAssert.AreEqual(0, blobPagination.PageSize);
+            ClassicAssert.AreEqual(0, blobPagination.Total);
+            ClassicAssert.AreEqual(SortDirection.Unspecified, blobPagination.SortDirection);
+            ClassicAssert.IsNull(blobPagination.Filter);
+        }
+
+        [Test]
+        public void BlobPaginationWithNullFilterCanBeConvertedToWithEmptyFilter()
+        {
+            var blobPagination = new BlobPagination
+            {
+                Page = 1,
+                PageSize = 10,
+                Total = 100,
+                SortDirection = SortDirection.Asc,
+                Filter = null
+            };
+
+            blobPagination.Filter = new Filters();
+
+            ClassicAssert.IsNotNull(blobPagination.Filter);
+            ClassicAssert.AreEqual(0, blobPagination.Filter.Or.Count);
+        }
+
+        [Test]
+        public void BlobPaginationWithNegativeValuesStillStoresValues()
+        {
+            var blobPagination = new BlobPagination
+            {
+                Page = -1,
+                PageSize = -10,
+                Total = -100,
+                SortDirection = SortDirection.Asc,
+                Filter = new Filters()
+            };
+
+            ClassicAssert.AreEqual(-1, blobPagination.Page);
+            ClassicAssert.AreEqual(-10, blobPagination.PageSize);
+            ClassicAssert.AreEqual(-100, blobPagination.Total);
         }
     }
 }
