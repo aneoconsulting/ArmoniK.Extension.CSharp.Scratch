@@ -193,8 +193,8 @@ internal class TasksService : ITasksService
                  };
   }
 
-  public async Task CancelTaskAsync(IEnumerable<string> taskIds,
-                                    CancellationToken   cancellationToken = default)
+  public async Task CancelTasksAsync(IEnumerable<string> taskIds,
+                                     CancellationToken   cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
