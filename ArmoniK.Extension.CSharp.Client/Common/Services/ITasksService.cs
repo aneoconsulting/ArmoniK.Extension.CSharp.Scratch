@@ -79,7 +79,7 @@ public interface ITasksService
   /// <param name="taskIds">The identifiers of the tasks to cancel.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation.</returns>
-  Task CancelTaskAsync(IEnumerable<string> taskIds,
+  Task CancelTasksAsync(IEnumerable<string> taskIds,
                        CancellationToken   cancellationToken = default);
 }
 
