@@ -31,5 +31,5 @@ public interface IVersionsService
   /// </summary>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the version information.</returns>
-  Task<VersionsInfo> GetVersionAsync(CancellationToken cancellationToken);
+  Task<VersionsInfo> GetVersionsAsync(CancellationToken cancellationToken);
 }
