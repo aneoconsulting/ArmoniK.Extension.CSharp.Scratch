@@ -102,8 +102,8 @@ public static class DynamicLibraryExt
   /// <param name="taskOptions">The task options to retrieve from.</param>
   /// <param name="libraryName">The name of the library.</param>
   /// <returns>The DynamicLibrary associated with the specified library name.</returns>
-  public static DynamicLibrary? GetDynamicLibrary(this TaskOptions taskOptions,
-                                                  string           libraryName)
+  public static DynamicLibrary GetDynamicLibrary(this TaskOptions taskOptions,
+                                                 string           libraryName)
   {
     if (taskOptions.Options.TryGetValue($"{libraryName}.Name",
                                         out var name))
@@ -127,6 +127,6 @@ public static class DynamicLibraryExt
              };
     }
 
-    return null;
+    throw new KeyNotFoundException($"Could not find library {libraryName}");
   }
 }

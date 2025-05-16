@@ -153,10 +153,6 @@ public class LibraryLoader : ILibraryLoader
 
       // Get the data about the dynamic library
       var dynamicLibrary = taskHandler.TaskOptions.GetTaskLibraryDefinition(taskLibrary);
-      if (dynamicLibrary == null)
-      {
-        throw new KeyNotFoundException($"Task library '{taskLibrary}' not found.");
-      }
 
       var filename = $"{dynamicLibrary}.zip";
 

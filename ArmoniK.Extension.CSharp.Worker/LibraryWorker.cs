@@ -73,36 +73,32 @@ public class LibraryWorker : ILibraryWorker
                                          string            libraryContext,
                                          CancellationToken cancellationToken)
   {
-    using var _ = Logger.BeginPropertyScope(("sessionId", taskHandler.SessionId),
-                                            ("taskId", $"{taskHandler.TaskId}"));
-
-    var serviceLibrary = taskHandler.TaskOptions.GetServiceLibrary();
-    if (string.IsNullOrEmpty(serviceLibrary))
-    {
-      throw new WorkerApiException("No ServiceLibrary found");
-    }
-
-    var dynamicLibrary = taskHandler.TaskOptions.GetTaskLibraryDefinition(serviceLibrary);
-    if (dynamicLibrary == null)
-    {
-      throw new WorkerApiException($"Library '{serviceLibrary}' not found");
-    }
-
-    Logger.LogInformation("ServiceLibrary: {serviceLibrary}",
-                          serviceLibrary);
-    Logger.LogInformation("DynamicLibrary.Service: {Service}",
-                          dynamicLibrary.Service);
-
-    if (string.IsNullOrEmpty(dynamicLibrary.Service))
-    {
-      throw new WorkerApiException("No ServiceLibrary found");
-    }
-
-    Logger.LogInformation("Entering Context");
-
-    var context = libraryLoader.GetAssemblyLoadContext(libraryContext);
     try
     {
+      using var _ = Logger.BeginPropertyScope(("sessionId", taskHandler.SessionId),
+                                              ("taskId", $"{taskHandler.TaskId}"));
+
+      var serviceLibrary = taskHandler.TaskOptions.GetServiceLibrary();
+      if (string.IsNullOrEmpty(serviceLibrary))
+      {
+        throw new WorkerApiException("No ServiceLibrary found");
+      }
+
+      var dynamicLibrary = taskHandler.TaskOptions.GetTaskLibraryDefinition(serviceLibrary);
+
+      Logger.LogInformation("ServiceLibrary: {serviceLibrary}",
+                            serviceLibrary);
+      Logger.LogInformation("DynamicLibrary.Service: {Service}",
+                            dynamicLibrary.Service);
+
+      if (string.IsNullOrEmpty(dynamicLibrary.Service))
+      {
+        throw new WorkerApiException("No ServiceLibrary found");
+      }
+
+      Logger.LogInformation("Entering Context");
+
+      var context = libraryLoader.GetAssemblyLoadContext(libraryContext);
       if (AssemblyLoadContext.CurrentContextualReflectionContext == null || AssemblyLoadContext.CurrentContextualReflectionContext?.Name != context.Name)
       {
         context.EnterContextualReflection();
