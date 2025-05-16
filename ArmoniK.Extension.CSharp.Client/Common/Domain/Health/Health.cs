@@ -71,7 +71,7 @@ public enum HealthStatusEnum
   Unhealthy,
 }
 
-internal static class HealthStatusExt
+public static class HealthStatusExt
 {
   public static Api.gRPC.V1.HealthChecks.HealthStatusEnum ToGrpcStatus(this HealthStatusEnum status)
     => status switch

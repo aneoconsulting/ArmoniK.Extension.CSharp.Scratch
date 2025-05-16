@@ -44,7 +44,7 @@ public enum SortDirection
   Desc,
 }
 
-internal static class SortDirectionExt
+public static class SortDirectionExt
 {
   public static Api.gRPC.V1.SortDirection.SortDirection ToGrpc(this SortDirection direction)
     => direction switch
