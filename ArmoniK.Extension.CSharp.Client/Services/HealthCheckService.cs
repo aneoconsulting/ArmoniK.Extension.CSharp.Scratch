@@ -41,7 +41,7 @@ internal class HealthCheckService : IHealthCheckService
     logger_      = loggerFactory.CreateLogger<HealthCheckService>();
   }
 
-  public async IAsyncEnumerable<Health> GetHealth([EnumeratorCancellation] CancellationToken cancellationToken)
+  public async IAsyncEnumerable<Health> GetHealthAsync([EnumeratorCancellation] CancellationToken cancellationToken)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);

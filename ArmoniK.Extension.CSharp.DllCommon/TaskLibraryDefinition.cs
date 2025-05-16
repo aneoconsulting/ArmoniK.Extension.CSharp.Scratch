@@ -90,14 +90,13 @@ public static class TaskLibraryDefinitionExt
                                                                string           libraryName)
   {
     var dll = taskOptions.GetDynamicLibrary(libraryName);
-
     taskOptions.Options.TryGetValue($"{libraryName}.Namespace",
                                     out var serviceNamespace);
 
     taskOptions.Options.TryGetValue($"{libraryName}.Service",
                                     out var service);
     return new TaskLibraryDefinition(dll,
-                                     serviceNamespace,
-                                     service);
+                                     serviceNamespace ?? string.Empty,
+                                     service          ?? string.Empty);
   }
 }

@@ -113,7 +113,7 @@ public class ArmoniKClient
   ///   Gets the tasks service.
   /// </summary>
   /// <returns>A task representing the asynchronous operation. The task result contains the tasks service instance.</returns>
-  public async Task<ITasksService> GetTasksService()
+  public async Task<ITasksService> GetTasksServiceAsync()
   {
     if (tasksService_ is not null)
     {

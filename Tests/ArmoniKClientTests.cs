@@ -125,7 +125,7 @@ public class ArmoniKClientTests
                              .ToString(),
                   };
     // Act
-    var taskService = await client_.GetTasksService();
+    var taskService = await client_.GetTasksServiceAsync();
     // Assert
     Assert.That(taskService,
                 Is.InstanceOf<ITasksService>(),

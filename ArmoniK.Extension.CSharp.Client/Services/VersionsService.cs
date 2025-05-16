@@ -41,7 +41,7 @@ internal class VersionsService : IVersionsService
     logger_  = loggerFactory.CreateLogger<VersionsService>();
   }
 
-  public async Task<VersionsInfo> GetVersion(CancellationToken cancellationToken)
+  public async Task<VersionsInfo> GetVersionsAsync(CancellationToken cancellationToken)
   {
     await using var channel = await channel_.GetAsync(cancellationToken)
                                             .ConfigureAwait(false);

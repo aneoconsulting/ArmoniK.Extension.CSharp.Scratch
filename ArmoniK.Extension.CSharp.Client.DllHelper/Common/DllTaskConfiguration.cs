@@ -44,7 +44,7 @@ public record DllTasksConfiguration : TaskConfiguration
                                int                         priority,
                                string                      partitionId,
                                TimeSpan                    maxDuration,
-                               Dictionary<string, string>  options = null)
+                               Dictionary<string, string>? options = null)
     : base(maxRetries,
            priority,
            partitionId,
