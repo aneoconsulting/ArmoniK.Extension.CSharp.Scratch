@@ -81,8 +81,7 @@ public class TasksServiceTests
                         Payload = new BlobInfo
                                   {
                                     BlobName  = "payload1",
-                                    BlobId = submitTaskResponse.TaskInfos[0]
-                                                               .PayloadId,
+                                    BlobId    = submitTaskResponse.TaskInfos[0].PayloadId,
                                     SessionId = "sessionId1",
                                   },
                         Session = new SessionInfo("sessionId1"),
