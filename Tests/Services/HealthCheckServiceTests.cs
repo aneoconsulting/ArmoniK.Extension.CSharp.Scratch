@@ -16,7 +16,6 @@
 
 
 using ArmoniK.Api.gRPC.V1.HealthChecks;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Health;
 
 using Grpc.Core;
 
@@ -29,51 +28,33 @@ using Tests.Helpers;
 
 namespace Tests.Services;
 
+
 public class HealthChecksServiceTests
 {
-    [Test]
-    public async Task CreateHealthCheck_ReturnsNewHealth()
+   [Test]
+    public async Task GetHealthReturnsHealthObject()
     {
-        var mockCallInvoker = new Mock<CallInvoker>();
-        var responseAsync = new Health
+        var mockInvoker = new Mock<CallInvoker>();
+
+        // We have to use this specific type for the mocking
+        var serviceHealth = new CheckHealthResponse.Types.ServiceHealth
         {
-            Name = "TestService",
-            Message = "Service is healthy",
-            Status = ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy
+            Name = "Hello",
+            Message = "It is healthy",
+            Healthy = HealthStatusEnum.Healthy
         };
-        var healthResponse = new CheckHealthResponse
-            {
-                Services =
-                {
-                    new Health
-                    {
-                        Name = "TestService",
-                        Message = "Service is healthy",
-                        Status = ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy
-                    }
-                }
-            };
 
-        mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CheckHealthRequest, CheckHealthResponse>(healthResponse);
+        var healthResponse = new CheckHealthResponse();
+        healthResponse.Services.Add(serviceHealth);
 
+        mockInvoker.SetupAsyncUnaryCallInvokerMock<CheckHealthRequest, CheckHealthResponse>(healthResponse);
 
-        var healthService = MockHelper.GetHealthCheckServiceMock(mockCallInvoker, responseAsync);
-        var results = healthService.GetHealth(CancellationToken.None);
-        var healthObjects = new List<Health>();
-        await foreach (var health in results)
-        {
-            healthObjects.Add(health);
-        }
-        // Assert.IsNotNull(healthObjects);
+        var healthServiceMock = MockHelper.GetHealthCheckServiceMock(mockInvoker);
 
-    
-        
-        // // ClassicAssert.AreEqual("TestService", healthInfos[0].Name);
-        // // ClassicAssert.AreEqual("Service is healthy", healthInfos[0].Message);
-        // // ClassicAssert.AreEqual(ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
-        // //                        healthInfos[0].Status);
+        var result = await healthServiceMock.GetHealth(CancellationToken.None).SingleAsync();
 
-
-
+        ClassicAssert.AreEqual("Hello", result.Name);
+        ClassicAssert.AreEqual("It is healthy", result.Message);
+        ClassicAssert.AreEqual(ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy, result.Status);
     }
 }
