@@ -190,7 +190,7 @@ internal static class MockHelper
     return blobService;
   }
 
-  public static IHealthCheckService GetHealthCheckServiceMock(this Mock<CallInvoker> mockInvoker, Health returnedHealth)
+  public static IHealthCheckService GetHealthCheckServiceMock(this Mock<CallInvoker> mockInvoker)
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")
@@ -200,6 +200,7 @@ internal static class MockHelper
     mockChannelBase.Setup(m => m.CreateCallInvoker())
                    .Returns(mockInvoker.Object);
     var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
+    
     return HealthCheckServiceFactory.CreateHealthCheckService(objectPool,
                                                                NullLoggerFactory.Instance);
 
