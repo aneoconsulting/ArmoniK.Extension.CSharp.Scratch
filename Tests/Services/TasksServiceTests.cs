@@ -21,6 +21,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Utils;
 
 using Grpc.Core;
 
@@ -79,9 +80,8 @@ public class TasksServiceTests
                                           },
                         Payload = new BlobInfo
                                   {
-                                    BlobName = "payload1",
-                                    BlobId = submitTaskResponse.TaskInfos[0]
-                                                               .PayloadId,
+                                    BlobName  = "payload1",
+                                    BlobId    = submitTaskResponse.TaskInfos[0].PayloadId,
                                     SessionId = "sessionId1",
                                   },
                         Session = new SessionInfo("sessionId1"),
@@ -195,7 +195,8 @@ public class TasksServiceTests
 
     // Act
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes)
+                                  .ToListAsync();
     // Assert
     ClassicAssert.AreEqual(2,
                            result.Count());

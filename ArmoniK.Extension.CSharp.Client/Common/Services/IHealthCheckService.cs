@@ -31,5 +31,5 @@ public interface IHealthCheckService
   /// </summary>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of health statuses.</returns>
-  IAsyncEnumerable<Health> GetHealth(CancellationToken cancellationToken);
+  IAsyncEnumerable<Health> GetHealthAsync(CancellationToken cancellationToken);
 }
