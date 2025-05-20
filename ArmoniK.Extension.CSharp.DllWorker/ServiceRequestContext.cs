@@ -30,7 +30,7 @@ public class ServiceRequestContext
   private readonly ILibraryWorker                 libraryWorker_;
   private readonly ILogger<ServiceRequestContext> logger_;
 
-  private string currentSession_;
+  private string? currentSession_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="ServiceRequestContext" /> class.
@@ -60,20 +60,20 @@ public class ServiceRequestContext
   /// <param name="taskHandler">The task handler containing the task details.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the output of the executed task.</returns>
-  public async Task<Output> ExecuteTask(ITaskHandler      taskHandler,
-                                        CancellationToken cancellationToken)
+  public async Task<Output> ExecuteTaskAsync(ITaskHandler      taskHandler,
+                                             CancellationToken cancellationToken)
   {
-    if (currentSession_ == default || taskHandler.SessionId != currentSession_)
+    if (string.IsNullOrEmpty(currentSession_) || taskHandler.SessionId != currentSession_)
     {
       currentSession_ = taskHandler.SessionId;
       libraryLoader_.ResetService();
     }
 
-    var contextName = await libraryLoader_.LoadLibrary(taskHandler,
+    var contextName = await libraryLoader_.LoadLibraryAsync(taskHandler,
                                                        cancellationToken)
                                           .ConfigureAwait(false);
 
-    var result = await libraryWorker_.Execute(taskHandler,
+    var result = await libraryWorker_.ExecuteAsync(taskHandler,
                                               libraryLoader_,
                                               contextName,
                                               cancellationToken)

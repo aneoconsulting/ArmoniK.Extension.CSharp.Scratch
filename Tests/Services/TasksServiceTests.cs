@@ -21,6 +21,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Utils;
 
 using Grpc.Core;
 
@@ -195,7 +196,7 @@ public class TasksServiceTests
 
     // Act
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes)
+                                                    taskNodes).ToListAsync()
                                   .ConfigureAwait(false);
     // Assert
     ClassicAssert.AreEqual(2,

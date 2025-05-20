@@ -138,7 +138,7 @@ internal class BlobService : IBlobService
                                                 .ConfigureAwait(false);
     var blobClient = new Results.ResultsClient(channel);
 
-    await UploadBlob(blobInfo,
+    await UploadBlobAsync(blobInfo,
                      blobContent,
                      blobClient,
                      cancellationToken)
@@ -174,7 +174,7 @@ internal class BlobService : IBlobService
   {
     if (serviceConfiguration_ is null)
     {
-      await LoadBlobServiceConfiguration(cancellationToken)
+      await LoadBlobServiceConfigurationAsync(cancellationToken)
         .ConfigureAwait(false);
     }
 
@@ -192,7 +192,7 @@ internal class BlobService : IBlobService
                                               cancellationToken);
       var createdBlobs = await blobInfo.ToListAsync(cancellationToken)
                                        .ConfigureAwait(false);
-      await UploadBlob(createdBlobs.First(),
+      await UploadBlobAsync(createdBlobs.First(),
                        content,
                        blobClient,
                        cancellationToken)
@@ -290,7 +290,7 @@ internal class BlobService : IBlobService
     }
   }
 
-  private async Task LoadBlobServiceConfiguration(CancellationToken cancellationToken = default)
+  private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
@@ -299,10 +299,10 @@ internal class BlobService : IBlobService
                                             .ConfigureAwait(false);
   }
 
-  private async Task UploadBlob(BlobInfo              blob,
-                                ReadOnlyMemory<byte>  blobContent,
-                                Results.ResultsClient blobClient,
-                                CancellationToken     cancellationToken)
+  private async Task UploadBlobAsync(BlobInfo              blob,
+                                     ReadOnlyMemory<byte>  blobContent,
+                                     Results.ResultsClient blobClient,
+                                     CancellationToken     cancellationToken)
   {
     try
     {

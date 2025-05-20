@@ -26,9 +26,9 @@ namespace LibraryExample;
 
 public class Worker : IWorker
 {
-  public async Task<Output> Execute(ITaskHandler      taskHandler,
-                                    ILogger           logger,
-                                    CancellationToken cancellationToken)
+  public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
+                                         ILogger           logger,
+                                         CancellationToken cancellationToken)
   {
     var resultId = taskHandler.ExpectedResults.Single();
 

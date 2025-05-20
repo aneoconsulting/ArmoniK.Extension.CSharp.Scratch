@@ -64,7 +64,7 @@ internal class TasksService : ITasksService
       throw new InvalidOperationException("Expected outputs cannot be empty.");
     }
 
-    await CreateNewBlobs(session,
+    await CreateNewBlobsAsync(session,
                          enumerableTaskNodes,
                          cancellationToken)
       .ConfigureAwait(false);
@@ -198,8 +198,8 @@ internal class TasksService : ITasksService
                  };
   }
 
-  public async Task CancelTask(IEnumerable<string> taskIds,
-                               CancellationToken   cancellationToken = default)
+  public async Task CancelTasksAsync(IEnumerable<string> taskIds,
+                                     CancellationToken   cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
@@ -216,9 +216,9 @@ internal class TasksService : ITasksService
                      .ConfigureAwait(false);
   }
 
-  private async Task CreateNewBlobs(SessionInfo           session,
-                                    IEnumerable<TaskNode> taskNodes,
-                                    CancellationToken     cancellationToken)
+  private async Task CreateNewBlobsAsync(SessionInfo           session,
+                                         IEnumerable<TaskNode> taskNodes,
+                                         CancellationToken     cancellationToken)
   {
     var enumerableNodes = taskNodes.ToList();
     var nodesWithNewBlobs = enumerableNodes.Where(x => !Equals(x.DataDependenciesContent,

@@ -38,7 +38,7 @@ internal class Program
   private static IConfiguration   _configuration;
   private static ILogger<Program> _logger;
 
-  internal static async Task Run(string filePath)
+  internal static async Task RunAsync(string filePath)
   {
     Log.Logger = new LoggerConfiguration().MinimumLevel.Override("Microsoft",
                                                                  LogEventLevel.Information)
@@ -96,7 +96,7 @@ internal class Program
 
     var blobService = await client.GetBlobService();
 
-    var tasksService = await client.GetTasksService();
+    var tasksService = await client.GetTasksServiceAsync();
 
     var eventsService = await client.GetEventsService();
 
@@ -121,7 +121,7 @@ internal class Program
     var content = await File.ReadAllBytesAsync(filePath)
                             .ConfigureAwait(false);
 
-    var dllBlob = await blobService.SendDllBlob(session,
+    var dllBlob = await blobService.SendDllBlobAsync(session,
                                                 dynamicLib,
                                                 content,
                                                 default)
@@ -136,7 +136,7 @@ internal class Program
                                                           "LibraryExample",
                                                           "Worker");
 
-    var task = await tasksService.SubmitTasksWithDll(session,
+    var task = await tasksService.SubmitTasksWithDllAsync(session,
                                                      new List<TaskNodeExt>
                                                      {
                                                        new()
@@ -190,7 +190,7 @@ internal class Program
     rootCommand.AddOption(filePath);
 
     // Configure the handler to call the function that will do the work
-    rootCommand.SetHandler(Run,
+    rootCommand.SetHandler(RunAsync,
                            filePath);
 
     // Parse the command line parameters and call the function that represents the application
