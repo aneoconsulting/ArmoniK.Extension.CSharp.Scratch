@@ -73,7 +73,8 @@ public class SessionServiceTests
                                                           mockCallInvoker);
     // Act
     var result = await sessionService.CreateSessionAsync(defaultTaskConfiguration_,
-                                                         defaultPartitionsIds);
+                                                         defaultPartitionsIds)
+                                     .ConfigureAwait(false);
     // Assert
     ClassicAssert.AreEqual("12345",
                            result.SessionId);

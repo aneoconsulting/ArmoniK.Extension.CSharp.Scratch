@@ -136,7 +136,8 @@ public class LibraryLoader : ILibraryLoader
 
         await File.WriteAllBytesAsync(zipFilePath,
                                       libraryBytes,
-                                      cancellationToken);
+                                      cancellationToken)
+                  .ConfigureAwait(false);
       }
       catch (Exception ex)
       {

@@ -65,10 +65,10 @@ public class BlobServiceTests
                                                          "blobName",
                                                        });
 
-    var blobInfos = await results.ToListAsync();
+    var blobInfos = await results.ToListAsync()
+                                 .ConfigureAwait(false);
     ClassicAssert.AreEqual("blobName",
-                           blobInfos[0]
-                             .BlobName);
+                           blobInfos[0].BlobName);
   }
 
 
@@ -105,14 +105,13 @@ public class BlobServiceTests
                                                         name,
                                                       });
 
-    var blobInfos = await result.ToListAsync();
+    var blobInfos = await result.ToListAsync()
+                                .ConfigureAwait(false);
 
     ClassicAssert.AreEqual("sessionId",
-                           blobInfos[0]
-                             .SessionId);
+                           blobInfos[0].SessionId);
     ClassicAssert.AreEqual(name,
-                           blobInfos[0]
-                             .BlobName);
+                           blobInfos[0].BlobName);
   }
 
   [Test]
@@ -187,7 +186,8 @@ public class BlobServiceTests
 
     var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
                                                    name,
-                                                   contents);
+                                                   contents)
+                                  .ConfigureAwait(false);
 
     ClassicAssert.AreEqual("sessionId",
                            result.SessionId);
@@ -267,7 +267,8 @@ public class BlobServiceTests
 
     var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
                                                    name,
-                                                   contents);
+                                                   contents)
+                                  .ConfigureAwait(false);
 
     ClassicAssert.AreEqual("sessionId",
                            result.SessionId);
