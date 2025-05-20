@@ -82,26 +82,20 @@ internal class Program
                        PathToFile  = "publish",
                      };
 
-    var sessionService = await client.GetSessionService();
-
-    var session = await sessionService.CreateSessionWithDllAsync(defaultTaskOptions,
-
-                    ["dll"],
-
-
-
-    new[]
-    {
-      dynamicLib,
-    });
+    var session = await client.SessionService.CreateSessionWithDllAsync(defaultTaskOptions,
+                                                                        ["dll"],
+                                                                        new[]
+                                                                        {
+                                                                          dynamicLib,
+                                                                        });
 
     Console.WriteLine($"sessionId: {session.SessionId}");
 
-    var blobService = await client.GetBlobService();
+    var blobService = client.BlobService;
 
-    var tasksService = await client.GetTasksService();
+    var tasksService = client.TasksService;
 
-    var eventsService = await client.GetEventsService();
+    var eventsService = client.EventsService;
 
     var payload = await blobService.CreateBlobAsync(session,
                                                     "Payload",

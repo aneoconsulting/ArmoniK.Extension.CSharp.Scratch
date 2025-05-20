@@ -47,75 +47,54 @@ public class SessionHandler
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task CancelSessionAsync(CancellationToken cancellationToken)
-  {
-    var sessionService = await armoniKClient_.GetSessionService();
-    await sessionService.CancelSessionAsync(sessionInfo_,
-                                            cancellationToken);
-  }
+    => await armoniKClient_.SessionService.CancelSessionAsync(sessionInfo_,
+                                                              cancellationToken);
 
   /// <summary>
   ///   Closes the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task CloseSessionAsync(CancellationToken cancellationToken)
-  {
-    var sessionService = await armoniKClient_.GetSessionService();
-    await sessionService.CloseSessionAsync(sessionInfo_,
-                                           cancellationToken);
-  }
+    => await armoniKClient_.SessionService.CloseSessionAsync(sessionInfo_,
+                                                             cancellationToken);
 
   /// <summary>
   ///   Pauses the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task PauseSessionAsync(CancellationToken cancellationToken)
-  {
-    var sessionService = await armoniKClient_.GetSessionService();
-    await sessionService.PauseSessionAsync(sessionInfo_,
-                                           cancellationToken);
-  }
+    => await armoniKClient_.SessionService.PauseSessionAsync(sessionInfo_,
+                                                             cancellationToken);
 
   /// <summary>
   ///   Stops submissions to the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task StopSubmissionAsync(CancellationToken cancellationToken)
-  {
-    var sessionService = await armoniKClient_.GetSessionService();
-    await sessionService.StopSubmissionAsync(sessionInfo_,
-                                             cancellationToken);
-  }
+    => await armoniKClient_.SessionService.StopSubmissionAsync(sessionInfo_,
+                                                               cancellationToken);
 
   /// <summary>
   ///   Resumes the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task ResumeSessionAsync(CancellationToken cancellationToken)
-  {
-    var sessionService = await armoniKClient_.GetSessionService();
-    await sessionService.ResumeSessionAsync(sessionInfo_,
-                                            cancellationToken);
-  }
+    => await armoniKClient_.SessionService.ResumeSessionAsync(sessionInfo_,
+                                                              cancellationToken);
 
   /// <summary>
   ///   Purges the session asynchronously, removing all data associated with it.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task PurgeSessionAsync(CancellationToken cancellationToken)
-  {
-    var sessionService = await armoniKClient_.GetSessionService();
-    await sessionService.PurgeSessionAsync(sessionInfo_,
-                                           cancellationToken);
-  }
+    => await armoniKClient_.SessionService.PurgeSessionAsync(sessionInfo_,
+                                                             cancellationToken);
 
   /// <summary>
   ///   Deletes the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task DeleteSessionAsync(CancellationToken cancellationToken)
-  {
-    var sessionService = await armoniKClient_.GetSessionService();
-    await sessionService.DeleteSessionAsync(sessionInfo_,
-                                            cancellationToken);
-  }
+    => await armoniKClient_.SessionService.DeleteSessionAsync(sessionInfo_,
+                                                              cancellationToken);
 }
