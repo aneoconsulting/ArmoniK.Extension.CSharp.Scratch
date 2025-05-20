@@ -89,13 +89,6 @@ internal class Program
                                                                           dynamicLib,
                                                                         });
 
-    var session = await sessionService.CreateSessionWithDllAsync(defaultTaskOptions,
-                                                                 ["dll"],
-                                                                 new[]
-                                                                 {
-                                                                   dynamicLib,
-                                                                 });
-
     Console.WriteLine($"sessionId: {session.SessionId}");
 
     var blobService = client.BlobService;
