@@ -67,8 +67,7 @@ public class BlobServiceTests
 
     var blobInfos = await results.ToListAsync();
     ClassicAssert.AreEqual("blobName",
-                           blobInfos[0]
-                             .BlobName);
+                           blobInfos[0].BlobName);
   }
 
 
@@ -108,11 +107,9 @@ public class BlobServiceTests
     var blobInfos = await result.ToListAsync();
 
     ClassicAssert.AreEqual("sessionId",
-                           blobInfos[0]
-                             .SessionId);
+                           blobInfos[0].SessionId);
     ClassicAssert.AreEqual(name,
-                           blobInfos[0]
-                             .BlobName);
+                           blobInfos[0].BlobName);
   }
 
   [Test]
