@@ -38,8 +38,8 @@ namespace ArmoniK.Extension.CSharp.Client;
 /// </summary>
 public class ArmoniKClient
 {
-  private readonly ILogger        logger_;
   private readonly ILoggerFactory loggerFactory_;
+  private readonly ILogger        logger_;
   private readonly Properties     properties_;
 
 
