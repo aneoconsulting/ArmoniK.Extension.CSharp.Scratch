@@ -65,8 +65,8 @@ internal class TasksService : ITasksService
     }
 
     await CreateNewBlobsAsync(session,
-                         enumerableTaskNodes,
-                         cancellationToken)
+                              enumerableTaskNodes,
+                              cancellationToken)
       .ConfigureAwait(false);
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);

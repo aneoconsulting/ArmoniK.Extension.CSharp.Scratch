@@ -122,9 +122,9 @@ internal class Program
                             .ConfigureAwait(false);
 
     var dllBlob = await blobService.SendDllBlobAsync(session,
-                                                dynamicLib,
-                                                content,
-                                                default)
+                                                     dynamicLib,
+                                                     content,
+                                                     default)
                                    .ConfigureAwait(false);
 
     Console.WriteLine($"resultId: {result.BlobId}");
@@ -137,21 +137,21 @@ internal class Program
                                                           "Worker");
 
     var task = await tasksService.SubmitTasksWithDllAsync(session,
-                                                     new List<TaskNodeExt>
-                                                     {
-                                                       new()
-                                                       {
-                                                         Payload = payload,
-                                                         ExpectedOutputs = new[]
-                                                                           {
-                                                                             result,
-                                                                           },
-                                                         TaskOptions    = defaultTaskOptions,
-                                                         DynamicLibrary = taskLibraryDefinition,
-                                                       },
-                                                     },
-                                                     dllBlob,
-                                                     default)
+                                                          new List<TaskNodeExt>
+                                                          {
+                                                            new()
+                                                            {
+                                                              Payload = payload,
+                                                              ExpectedOutputs = new[]
+                                                                                {
+                                                                                  result,
+                                                                                },
+                                                              TaskOptions    = defaultTaskOptions,
+                                                              DynamicLibrary = taskLibraryDefinition,
+                                                            },
+                                                          },
+                                                          dllBlob,
+                                                          default)
                                  .ConfigureAwait(false);
 
     Console.WriteLine($"taskId: {task.Single().TaskId}");

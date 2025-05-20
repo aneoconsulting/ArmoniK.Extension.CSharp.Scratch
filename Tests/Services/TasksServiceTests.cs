@@ -196,7 +196,8 @@ public class TasksServiceTests
 
     // Act
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes).ToListAsync()
+                                                    taskNodes)
+                                  .ToListAsync()
                                   .ConfigureAwait(false);
     // Assert
     ClassicAssert.AreEqual(2,

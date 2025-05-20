@@ -139,9 +139,9 @@ internal class BlobService : IBlobService
     var blobClient = new Results.ResultsClient(channel);
 
     await UploadBlobAsync(blobInfo,
-                     blobContent,
-                     blobClient,
-                     cancellationToken)
+                          blobContent,
+                          blobClient,
+                          cancellationToken)
       .ConfigureAwait(false);
   }
 
@@ -193,9 +193,9 @@ internal class BlobService : IBlobService
       var createdBlobs = await blobInfo.ToListAsync(cancellationToken)
                                        .ConfigureAwait(false);
       await UploadBlobAsync(createdBlobs.First(),
-                       content,
-                       blobClient,
-                       cancellationToken)
+                            content,
+                            blobClient,
+                            cancellationToken)
         .ConfigureAwait(false);
       return createdBlobs.First();
     }
