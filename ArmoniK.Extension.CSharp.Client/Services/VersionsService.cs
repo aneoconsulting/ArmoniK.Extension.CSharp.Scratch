@@ -48,7 +48,8 @@ internal class VersionsService : IVersionsService
     var versionClient = new Versions.VersionsClient(channel);
 
     var listVersionsResponse = await versionClient.ListVersionsAsync(new ListVersionsRequest(),
-                                                                     cancellationToken: cancellationToken);
+                                                                     cancellationToken: cancellationToken)
+                                                  .ConfigureAwait(false);
 
     return new VersionsInfo
            {

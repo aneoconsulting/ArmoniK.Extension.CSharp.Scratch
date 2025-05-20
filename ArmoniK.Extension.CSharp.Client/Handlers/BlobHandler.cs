@@ -72,8 +72,9 @@ public record BlobHandler : BlobInfo
   public async Task<BlobState> GetBlobStateAsync(CancellationToken cancellationToken = default)
   {
     var blobClient = await ArmoniKClient.GetBlobService();
-    return await blobClient.GetBlobStateAsync(this,
-                                              cancellationToken);
+    return await blobClient.GetBlobStateAsync(BlobInfo,
+                                              cancellationToken)
+                           .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -107,6 +108,7 @@ public record BlobHandler : BlobInfo
     // Upload the blob chunk
     await blobClient.UploadBlobAsync(this,
                                      blobContent,
-                                     cancellationToken);
+                                     cancellationToken)
+                    .ConfigureAwait(false);
   }
 }
