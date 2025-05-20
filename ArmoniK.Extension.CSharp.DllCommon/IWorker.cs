@@ -23,7 +23,7 @@ namespace ArmoniK.Extension.CSharp.DllCommon;
 
 public interface IWorker
 {
-  Task<Output> Execute(ITaskHandler      taskHandler,
-                       ILogger           logger,
-                       CancellationToken cancellationToken);
+  Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
+                            ILogger           logger,
+                            CancellationToken cancellationToken);
 }

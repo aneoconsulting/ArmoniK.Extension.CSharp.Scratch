@@ -79,8 +79,8 @@ public class ComputerService : WorkerStreamWrapper
     Output output;
     try
     {
-      await ServiceRequestContext.ExecuteTask(taskHandler,
-                                              cancellationToken);
+      await ServiceRequestContext.ExecuteTaskAsync(taskHandler,
+                                                   cancellationToken);
 
       output = new Output
                {
