@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -14,65 +14,70 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using NUnit.Framework;
-using System;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Health;
+
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
-namespace ArmoniK.Tests.Common.Domain
+namespace ArmoniK.Tests.Common.Domain;
+
+[TestFixture]
+public class HealthTests
 {
-    [TestFixture]
-    public class HealthTests
+  [Test]
+  public void CreateHealthTest()
+  {
+    var health = new Health
+                 {
+                   Name    = "ComponentName",
+                   Message = "Component is healthy",
+                   Status  = HealthStatusEnum.Healthy,
+                 };
+
+    ClassicAssert.AreEqual("ComponentName",
+                           health.Name);
+    ClassicAssert.AreEqual("Component is healthy",
+                           health.Message);
+    ClassicAssert.AreEqual(HealthStatusEnum.Healthy,
+                           health.Status);
+  }
+
+  [TestCase(HealthStatusEnum.Unspecified)]
+  [TestCase(HealthStatusEnum.Healthy)]
+  [TestCase(HealthStatusEnum.Degraded)]
+  [TestCase(HealthStatusEnum.Unhealthy)]
+  [TestCase((HealthStatusEnum)99)]
+  public void TestHealthStatus(HealthStatusEnum status)
+  {
+    var health = new Health
+                 {
+                   Status = status,
+                 };
+
+    ClassicAssert.AreEqual(status,
+                           health.Status);
+
+    switch (status)
     {
-        [Test]
-        public void CreateHealthTest()
-        {
-            var health = new Health
-            {
-                Name = "ComponentName",
-                Message = "Component is healthy",
-                Status = HealthStatusEnum.Healthy
-            };
+      case HealthStatusEnum.Unspecified:
+      case HealthStatusEnum.Healthy:
+      case HealthStatusEnum.Degraded:
+      case HealthStatusEnum.Unhealthy:
 
-            ClassicAssert.AreEqual("ComponentName", health.Name);
-            ClassicAssert.AreEqual("Component is healthy", health.Message);
-            ClassicAssert.AreEqual(HealthStatusEnum.Healthy, health.Status);
-        }
+        var grpcStatus = status.ToGrpcStatus();
+        ClassicAssert.AreEqual(status.ToString(),
+                               grpcStatus.ToString());
 
-        [TestCase(HealthStatusEnum.Unspecified)]
-        [TestCase(HealthStatusEnum.Healthy)]
-        [TestCase(HealthStatusEnum.Degraded)]
-        [TestCase(HealthStatusEnum.Unhealthy)]
-        [TestCase((HealthStatusEnum)99)] 
-        public void TestHealthStatus(HealthStatusEnum status)
-        {
-            var health = new Health
-            {
-                Status = status
-            };
-
-            ClassicAssert.AreEqual(status, health.Status);
-
-            switch (status)
-            {
-                case HealthStatusEnum.Unspecified:
-                case HealthStatusEnum.Healthy:
-                case HealthStatusEnum.Degraded:
-                case HealthStatusEnum.Unhealthy:
-
-                    var grpcStatus = HealthStatusExt.ToGrpcStatus(status);
-                    ClassicAssert.AreEqual(status.ToString(), grpcStatus.ToString());
-
-                    var internalStatus = HealthStatusExt.ToInternalStatus(grpcStatus);
-                    ClassicAssert.AreEqual(status, internalStatus);
-                    break;
-                default:
-                    Assert.Throws<ArgumentOutOfRangeException>(() =>
-                    {
-                        HealthStatusExt.ToGrpcStatus(status);
-                    });
-                    break;
-            }
-        }
+        var internalStatus = grpcStatus.ToInternalStatus();
+        ClassicAssert.AreEqual(status,
+                               internalStatus);
+        break;
+      default:
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+                                                   {
+                                                     status.ToGrpcStatus();
+                                                   });
+        break;
     }
+  }
 }
