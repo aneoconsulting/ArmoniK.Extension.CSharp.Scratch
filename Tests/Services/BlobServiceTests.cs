@@ -41,8 +41,8 @@ public class BlobServiceTests
     var mockCallInvoker = new Mock<CallInvoker>();
 
     var responseAsync = new CreateResultsMetaDataResponse
-                        {
-                          Results =
+    {
+      Results =
                           {
                             new ResultRaw
                             {
@@ -53,7 +53,7 @@ public class BlobServiceTests
                               SessionId   = "sessionId",
                             },
                           },
-                        };
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(responseAsync);
 
@@ -79,8 +79,8 @@ public class BlobServiceTests
     var name = "blobName";
 
     var responseAsync = new CreateResultsMetaDataResponse
-                        {
-                          Results =
+    {
+      Results =
                           {
                             new ResultRaw
                             {
@@ -92,7 +92,7 @@ public class BlobServiceTests
                               SessionId = "sessionId",
                             },
                           },
-                        };
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(responseAsync);
 
@@ -124,15 +124,15 @@ public class BlobServiceTests
                                                       .ToArray());
 
     var serviceConfigurationResponse = new ResultsServiceConfigurationResponse
-                                       {
-                                         DataChunkMaxSize = 500,
-                                       };
+    {
+      DataChunkMaxSize = 500,
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(serviceConfigurationResponse);
 
     var metadataCreationResponse = new CreateResultsMetaDataResponse
-                                   {
-                                     Results =
+    {
+      Results =
                                      {
                                        new ResultRaw
                                        {
@@ -144,13 +144,13 @@ public class BlobServiceTests
                                          SessionId = "sessionId",
                                        },
                                      },
-                                   };
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(metadataCreationResponse);
 
     var createResultResponse = new CreateResultsResponse
-                               {
-                                 Results =
+    {
+      Results =
                                  {
                                    new ResultRaw
                                    {
@@ -162,20 +162,20 @@ public class BlobServiceTests
                                      SessionId = "sessionId",
                                    },
                                  },
-                               };
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(createResultResponse);
 
     var mockStream = new Mock<IClientStreamWriter<UploadResultDataRequest>>();
 
     var responseTask = new UploadResultDataResponse
-                       {
-                         Result = new ResultRaw
-                                  {
-                                    Name     = "anyResult",
-                                    ResultId = "anyResultId",
-                                  },
-                       };
+    {
+      Result = new ResultRaw
+      {
+        Name = "anyResult",
+        ResultId = "anyResultId",
+      },
+    };
 
     mockCallInvoker.SetupAsyncClientStreamingCall(responseTask,
                                                   mockStream.Object);
@@ -204,15 +204,15 @@ public class BlobServiceTests
                                                       .ToArray());
 
     var serviceConfigurationResponse = new ResultsServiceConfigurationResponse
-                                       {
-                                         DataChunkMaxSize = 20,
-                                       };
+    {
+      DataChunkMaxSize = 20,
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(serviceConfigurationResponse);
 
     var metadataCreationResponse = new CreateResultsMetaDataResponse
-                                   {
-                                     Results =
+    {
+      Results =
                                      {
                                        new ResultRaw
                                        {
@@ -224,13 +224,13 @@ public class BlobServiceTests
                                          SessionId = "sessionId",
                                        },
                                      },
-                                   };
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(metadataCreationResponse);
 
     var createResultResponse = new CreateResultsResponse
-                               {
-                                 Results =
+    {
+      Results =
                                  {
                                    new ResultRaw
                                    {
@@ -242,20 +242,20 @@ public class BlobServiceTests
                                      SessionId = "sessionId",
                                    },
                                  },
-                               };
+    };
 
     mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(createResultResponse);
 
     var mockStream = new Mock<IClientStreamWriter<UploadResultDataRequest>>();
 
     var responseTask = new UploadResultDataResponse
-                       {
-                         Result = new ResultRaw
-                                  {
-                                    Name     = "anyResult",
-                                    ResultId = "anyResultId",
-                                  },
-                       };
+    {
+      Result = new ResultRaw
+      {
+        Name = "anyResult",
+        ResultId = "anyResultId",
+      },
+    };
 
     mockCallInvoker.SetupAsyncClientStreamingCall(responseTask,
                                                   mockStream.Object);
