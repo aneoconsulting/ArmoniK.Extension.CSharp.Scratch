@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2024. All rights reserved.
+// Copyright (C) ANEO, 2021-2025. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -14,91 +14,97 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using NUnit.Framework;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
+
+using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
-namespace ArmoniK.Tests.Common.Domain
+namespace ArmoniK.Tests.Common.Domain;
+
+[TestFixture]
+public class SessionInfoTests
 {
-    [TestFixture]
-    public class SessionInfoTests
-    {
-        [Test]
-        public void CreateSessionInfoTest()
-        {
-            var sessionId = "session123";
-            var sessionInfo = new SessionInfo(sessionId);
+  [Test]
+  public void CreateSessionInfoTest()
+  {
+    var sessionId   = "session123";
+    var sessionInfo = new SessionInfo(sessionId);
 
-            ClassicAssert.AreEqual(sessionId, sessionInfo.SessionId);
-        }
+    ClassicAssert.AreEqual(sessionId,
+                           sessionInfo.SessionId);
+  }
 
-        [Test]
-        public void SessionInfoEqualityTest()
-        {
-            var sessionId = "session123";
-            var sessionInfo1 = new SessionInfo(sessionId);
-            var sessionInfo2 = new SessionInfo(sessionId);
+  [Test]
+  public void SessionInfoEqualityTest()
+  {
+    var sessionId    = "session123";
+    var sessionInfo1 = new SessionInfo(sessionId);
+    var sessionInfo2 = new SessionInfo(sessionId);
 
-            ClassicAssert.AreEqual(sessionInfo1, sessionInfo2);
-        }
+    ClassicAssert.AreEqual(sessionInfo1,
+                           sessionInfo2);
+  }
 
-        [Test]
-        public void SessionInfoInequalityTest()
-        {
-            var sessionInfo1 = new SessionInfo("session123");
-            var sessionInfo2 = new SessionInfo("session456");
+  [Test]
+  public void SessionInfoInequalityTest()
+  {
+    var sessionInfo1 = new SessionInfo("session123");
+    var sessionInfo2 = new SessionInfo("session456");
 
-            ClassicAssert.AreNotEqual(sessionInfo1, sessionInfo2);
-        }
+    ClassicAssert.AreNotEqual(sessionInfo1,
+                              sessionInfo2);
+  }
 
-        [Test]
-        public void SessionInfoGetHashCodeEqualForSameSessionId()
-        {
-            var sessionId = "session123";
-            var sessionInfo1 = new SessionInfo(sessionId);
-            var sessionInfo2 = new SessionInfo(sessionId);
+  [Test]
+  public void SessionInfoGetHashCodeEqualForSameSessionId()
+  {
+    var sessionId    = "session123";
+    var sessionInfo1 = new SessionInfo(sessionId);
+    var sessionInfo2 = new SessionInfo(sessionId);
 
-            ClassicAssert.AreEqual(sessionInfo1.GetHashCode(), sessionInfo2.GetHashCode());
-        }
+    ClassicAssert.AreEqual(sessionInfo1.GetHashCode(),
+                           sessionInfo2.GetHashCode());
+  }
 
-        [Test]
-        public void SessionInfoGetHashCodeDifferentForDifferentSessionId()
-        {
-            var sessionInfo1 = new SessionInfo("session123");
-            var sessionInfo2 = new SessionInfo("session456");
+  [Test]
+  public void SessionInfoGetHashCodeDifferentForDifferentSessionId()
+  {
+    var sessionInfo1 = new SessionInfo("session123");
+    var sessionInfo2 = new SessionInfo("session456");
 
-            ClassicAssert.AreNotEqual(sessionInfo1.GetHashCode(), sessionInfo2.GetHashCode());
-        }
+    ClassicAssert.AreNotEqual(sessionInfo1.GetHashCode(),
+                              sessionInfo2.GetHashCode());
+  }
 
-        [Test]
-        public void SessionInfoToStringContainsSessionId()
-        {
-            var sessionId = "session123";
-            var sessionInfo = new SessionInfo(sessionId);
+  [Test]
+  public void SessionInfoToStringContainsSessionId()
+  {
+    var sessionId   = "session123";
+    var sessionInfo = new SessionInfo(sessionId);
 
-            var stringRepresentation = sessionInfo.ToString();
+    var stringRepresentation = sessionInfo.ToString();
 
-            StringAssert.Contains(sessionId, stringRepresentation);
-        }
+    StringAssert.Contains(sessionId,
+                          stringRepresentation);
+  }
 
-        [Test]
-        public void SessionInfoEqualityOperatorReturnsTrueForSameSessionId()
-        {
-            var sessionInfo1 = new SessionInfo("session123");
-            var sessionInfo2 = new SessionInfo("session123");
+  [Test]
+  public void SessionInfoEqualityOperatorReturnsTrueForSameSessionId()
+  {
+    var sessionInfo1 = new SessionInfo("session123");
+    var sessionInfo2 = new SessionInfo("session123");
 
-            Assert.That(sessionInfo1 == sessionInfo2, Is.True);
-        }
+    Assert.That(sessionInfo1 == sessionInfo2,
+                Is.True);
+  }
 
-        [Test]
-        public void SessionInfoInequalityOperatorReturnsTrueForDifferentSessionId()
-        {
-            var sessionInfo1 = new SessionInfo("session123");
-            var sessionInfo2 = new SessionInfo("session456");
+  [Test]
+  public void SessionInfoInequalityOperatorReturnsTrueForDifferentSessionId()
+  {
+    var sessionInfo1 = new SessionInfo("session123");
+    var sessionInfo2 = new SessionInfo("session456");
 
-            Assert.That(sessionInfo1 != sessionInfo2, Is.True);
-        }
-
-        
-    }
+    Assert.That(sessionInfo1 != sessionInfo2,
+                Is.True);
+  }
 }
