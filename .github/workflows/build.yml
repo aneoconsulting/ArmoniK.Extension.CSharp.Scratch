@@ -1,1 +1,43 @@
+name: Build and Test
+on:
+  push:
+    branches-ignore:
+      - release
 
+jobs:
+  buildProject:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.ref }}
+        submodules: true
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build the solution
+      run: dotnet build ArmoniK.CSharp.Extension.Scratch.sln -c Release
+
+  runTests:
+    needs: buildProject
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.ref }}
+        submodules: true
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build tests
+      run: dotnet build Tests/Tests.csproj -c Release
+
+    - name: List built test files
+      run: ls -lR Tests/bin/Release/net8.0
+
+    - name: Run Tests
+      run: dotnet test Tests/Tests.csproj -c Release --verbosity normal
