@@ -40,8 +40,6 @@ namespace ArmoniK.Extension.CSharp.Client;
 public class ArmoniKClient
 {
   private readonly ILogger                 logger_;
-  private readonly ILoggerFactory          loggerFactory_;
-  private readonly Properties              properties_;
   private readonly ServiceProvider         serviceProvider_;
   private          ObjectPool<ChannelBase> channelPool_;
 
@@ -52,42 +50,40 @@ public class ArmoniKClient
   /// <param name="properties">The properties for configuring the client.</param>
   /// <param name="loggerFactory">The factory for creating loggers.</param>
   /// <param name="taskConfiguration">The default task configuration</param>
-  /// <exception cref="ArgumentNullException">Thrown when properties or loggerFactory is null.</exception>
-  public ArmoniKClient(Properties        properties,
-                       ILoggerFactory    loggerFactory,
-                       TaskConfiguration taskConfiguration)
+  /// <param name="servicesConfiguration">The default task configuration</param>
+  /// <exception cref="ArgumentNullException"></exception>
+  public ArmoniKClient(Properties             properties,
+                       ILoggerFactory         loggerFactory,
+                       TaskConfiguration      taskConfiguration,
+                       IServicesConfiguration servicesConfiguration = null)
   {
-    properties_    = properties    ?? throw new ArgumentNullException(nameof(properties));
-    loggerFactory_ = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-    logger_        = loggerFactory.CreateLogger<ArmoniKClient>();
+    Properties    = properties    ?? throw new ArgumentNullException(nameof(properties));
+    LoggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+    logger_       = loggerFactory.CreateLogger<ArmoniKClient>();
 
     var services = new ServiceCollection();
-    services.AddSingleton<IBlobService>(_ => new BlobService(ChannelPool,
-                                                             loggerFactory_));
-    services.AddSingleton<IEventsService>(_ => new EventsService(ChannelPool,
-                                                                 loggerFactory_));
-    services.AddSingleton<IHealthCheckService>(_ => new HealthCheckService(ChannelPool,
-                                                                           loggerFactory_));
-    services.AddSingleton<IPartitionsService>(_ => new PartitionsService(ChannelPool,
-                                                                         loggerFactory_));
-    services.AddSingleton<ISessionService>(_ => new SessionService(ChannelPool,
-                                                                   properties_,
-                                                                   loggerFactory_));
-    services.AddSingleton<ITasksService>(_ => new TasksService(ChannelPool,
-                                                               BlobService,
-                                                               loggerFactory_));
-    services.AddSingleton<IVersionsService>(_ => new VersionsService(ChannelPool,
-                                                                     loggerFactory_));
-
+    servicesConfiguration ??= new DefaultServicesConfiguration();
+    servicesConfiguration?.AddServices(this,
+                                       services);
     serviceProvider_ = services.BuildServiceProvider();
   }
+
+  /// <summary>
+  ///   The properties
+  /// </summary>
+  public Properties Properties { get; }
+
+  /// <summary>
+  ///   The logger factory
+  /// </summary>
+  public ILoggerFactory LoggerFactory { get; }
 
   /// <summary>
   ///   Gets the channel pool used for managing GRPC channels.
   /// </summary>
   public ObjectPool<ChannelBase> ChannelPool
-    => channelPool_ ??= ClientServiceConnector.ControlPlaneConnectionPool(properties_,
-                                                                          loggerFactory_);
+    => channelPool_ ??= ClientServiceConnector.ControlPlaneConnectionPool(Properties,
+                                                                          LoggerFactory);
 
   /// <summary>
   ///   Gets the blob service

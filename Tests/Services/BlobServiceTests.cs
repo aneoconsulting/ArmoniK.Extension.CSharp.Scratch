@@ -16,17 +16,24 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
+using ArmoniK.Extension.CSharp.Client;
+using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 using Google.Protobuf.WellKnownTypes;
 
 using Grpc.Core;
+
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 using Moq;
 
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 using Empty = ArmoniK.Api.gRPC.V1.Empty;
@@ -35,11 +42,39 @@ namespace Tests.Services;
 
 public class BlobServiceTests
 {
+  private ArmoniKClient?        client_;
+  private Properties?           defaultProperties_;
+  private TaskConfiguration?    defaultTaskOptions_;
+  private Mock<ILoggerFactory>? loggerFactoryMock_;
+  private Mock<CallInvoker>?    mockCallInvoker_;
+
+  [SetUp]
+  public void SetUp()
+  {
+    IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
+                                                             .AddJsonFile("appsettings.tests.json",
+                                                                          false)
+                                                             .AddEnvironmentVariables()
+                                                             .Build();
+    defaultTaskOptions_ = new TaskConfiguration(2,
+                                                1,
+                                                "subtasking",
+                                                TimeSpan.FromHours(1));
+
+    defaultProperties_ = new Properties(configuration);
+
+    loggerFactoryMock_ = new Mock<ILoggerFactory>();
+    mockCallInvoker_   = new Mock<CallInvoker>();
+
+    client_ = new ArmoniKClient(defaultProperties_,
+                                loggerFactoryMock_.Object,
+                                defaultTaskOptions_,
+                                new MockedServicesConfiguration(mockCallInvoker_));
+  }
+
   [Test]
   public async Task CreateBlob_ReturnsNewBlobInfo()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-
     var responseAsync = new CreateResultsMetaDataResponse
                         {
                           Results =
@@ -55,15 +90,10 @@ public class BlobServiceTests
                           },
                         };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(responseAsync);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(responseAsync);
 
-    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
-
-    var results = blobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
-                                                       new[]
-                                                       {
-                                                         "blobName",
-                                                       });
+    var results = client_!.BlobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
+                                                                ["blobName"]);
 
     var blobInfos = await results.ToListAsync();
     ClassicAssert.AreEqual("blobName",
@@ -74,8 +104,6 @@ public class BlobServiceTests
   [Test]
   public async Task CreateBlob_WithName_ReturnsNewBlobInfo()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-
     var name = "blobName";
 
     var responseAsync = new CreateResultsMetaDataResponse
@@ -94,15 +122,10 @@ public class BlobServiceTests
                           },
                         };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(responseAsync);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(responseAsync);
 
-    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
-
-    var result = blobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
-                                                      new[]
-                                                      {
-                                                        name,
-                                                      });
+    var result = client_!.BlobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
+                                                               [name]);
 
     var blobInfos = await result.ToListAsync();
 
@@ -115,8 +138,6 @@ public class BlobServiceTests
   [Test]
   public async Task CreateBlobAsync_WithContent_CreatesBlobAndUploadsContent()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-
     var name = "blobName";
     var contents = new ReadOnlyMemory<byte>(Enumerable.Range(1,
                                                              20)
@@ -128,7 +149,7 @@ public class BlobServiceTests
                                          DataChunkMaxSize = 500,
                                        };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(serviceConfigurationResponse);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(serviceConfigurationResponse);
 
     var metadataCreationResponse = new CreateResultsMetaDataResponse
                                    {
@@ -146,7 +167,7 @@ public class BlobServiceTests
                                      },
                                    };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(metadataCreationResponse);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(metadataCreationResponse);
 
     var createResultResponse = new CreateResultsResponse
                                {
@@ -164,7 +185,7 @@ public class BlobServiceTests
                                  },
                                };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(createResultResponse);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(createResultResponse);
 
     var mockStream = new Mock<IClientStreamWriter<UploadResultDataRequest>>();
 
@@ -177,14 +198,12 @@ public class BlobServiceTests
                                   },
                        };
 
-    mockCallInvoker.SetupAsyncClientStreamingCall(responseTask,
-                                                  mockStream.Object);
+    mockCallInvoker_!.SetupAsyncClientStreamingCall(responseTask,
+                                                    mockStream.Object);
 
-    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
-
-    var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
-                                                   name,
-                                                   contents);
+    var result = await client_!.BlobService.CreateBlobAsync(new SessionInfo("sessionId"),
+                                                            name,
+                                                            contents);
 
     ClassicAssert.AreEqual("sessionId",
                            result.SessionId);
@@ -195,8 +214,6 @@ public class BlobServiceTests
   [Test]
   public async Task CreateBlobAsync_WithBigContent_CreatesBlobAndUploadsContent()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-
     var name = "blobName";
     var contents = new ReadOnlyMemory<byte>(Enumerable.Range(1,
                                                              500)
@@ -208,7 +225,7 @@ public class BlobServiceTests
                                          DataChunkMaxSize = 20,
                                        };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(serviceConfigurationResponse);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(serviceConfigurationResponse);
 
     var metadataCreationResponse = new CreateResultsMetaDataResponse
                                    {
@@ -226,7 +243,7 @@ public class BlobServiceTests
                                      },
                                    };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(metadataCreationResponse);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(metadataCreationResponse);
 
     var createResultResponse = new CreateResultsResponse
                                {
@@ -244,7 +261,7 @@ public class BlobServiceTests
                                  },
                                };
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(createResultResponse);
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(createResultResponse);
 
     var mockStream = new Mock<IClientStreamWriter<UploadResultDataRequest>>();
 
@@ -257,14 +274,12 @@ public class BlobServiceTests
                                   },
                        };
 
-    mockCallInvoker.SetupAsyncClientStreamingCall(responseTask,
-                                                  mockStream.Object);
+    mockCallInvoker_!.SetupAsyncClientStreamingCall(responseTask,
+                                                    mockStream.Object);
 
-    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
-
-    var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
-                                                   name,
-                                                   contents);
+    var result = await client_!.BlobService.CreateBlobAsync(new SessionInfo("sessionId"),
+                                                            name,
+                                                            contents);
 
     ClassicAssert.AreEqual("sessionId",
                            result.SessionId);

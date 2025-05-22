@@ -32,22 +32,19 @@ namespace Tests;
 
 public class ArmoniKClientTests
 {
-  private readonly ArmoniKClient        client_;
-  private readonly Properties           defaultProperties_;
-  private readonly TaskConfiguration    defaultTaskOptions_;
-  private readonly Mock<ILoggerFactory> loggerFactoryMock_;
+  private ArmoniKClient?        client_;
+  private Properties?           defaultProperties_;
+  private TaskConfiguration?    defaultTaskOptions_;
+  private Mock<ILoggerFactory>? loggerFactoryMock_;
 
-  public ArmoniKClientTests()
+  [SetUp]
+  public void SetUp()
   {
     IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
                                                              .AddJsonFile("appsettings.tests.json",
                                                                           false)
                                                              .AddEnvironmentVariables()
                                                              .Build();
-    List<string> defaultPartitionsIds = new()
-                                        {
-                                          "subtasking",
-                                        };
     defaultTaskOptions_ = new TaskConfiguration(2,
                                                 1,
                                                 "subtasking",
@@ -67,7 +64,7 @@ public class ArmoniKClientTests
   {
     // Act 
     var exception = Assert.Throws<ArgumentNullException>(() => new ArmoniKClient(null,
-                                                                                 loggerFactoryMock_.Object,
+                                                                                 loggerFactoryMock_!.Object,
                                                                                  defaultTaskOptions_));
 
     // Assert
@@ -97,7 +94,7 @@ public class ArmoniKClientTests
                              .ToString(),
                   };
     // Act
-    var blobService = client_.BlobService;
+    var blobService = client_!.BlobService;
     // Assert
     Assert.That(client_.BlobService,
                 Is.InstanceOf<IBlobService>(),
@@ -108,7 +105,7 @@ public class ArmoniKClientTests
   public void GetSessionService_ShouldReturnInstance()
   {
     // Act
-    var sessionService = client_.SessionService;
+    var sessionService = client_!.SessionService;
     // Assert
     Assert.That(sessionService,
                 Is.InstanceOf<ISessionService>(),
@@ -116,7 +113,7 @@ public class ArmoniKClientTests
   }
 
   [Test]
-  public async Task GetTasksService_ShouldReturnInstance()
+  public void GetTasksService_ShouldReturnInstance()
   {
     // Arrange
     var session = new Session
@@ -125,7 +122,7 @@ public class ArmoniKClientTests
                              .ToString(),
                   };
     // Act
-    var taskService = client_.TasksService;
+    var taskService = client_!.TasksService;
     // Assert
     Assert.That(taskService,
                 Is.InstanceOf<ITasksService>(),
@@ -133,7 +130,7 @@ public class ArmoniKClientTests
   }
 
   [Test]
-  public async Task GetEventsService_ShouldReturnInstance()
+  public void GetEventsService_ShouldReturnInstance()
   {
     // Arrange
     var session = new Session
@@ -142,7 +139,7 @@ public class ArmoniKClientTests
                              .ToString(),
                   };
     // Act
-    var eventsService = client_.EventsService;
+    var eventsService = client_!.EventsService;
     // Assert
     Assert.That(eventsService,
                 Is.InstanceOf<IEventsService>(),

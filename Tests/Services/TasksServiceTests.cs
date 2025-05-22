@@ -16,7 +16,11 @@
 
 using System.Collections.Immutable;
 
+using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Api.gRPC.V1.Tasks;
+using ArmoniK.Extension.CSharp.Client;
+using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
@@ -25,17 +29,51 @@ using ArmoniK.Utils;
 
 using Grpc.Core;
 
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
 using Moq;
 
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 namespace Tests.Services;
 
 public class TasksServiceTests
 {
+  private ArmoniKClient?        client_;
+  private Properties?           defaultProperties_;
+  private TaskConfiguration?    defaultTaskOptions_;
+  private Mock<ILoggerFactory>? loggerFactoryMock_;
+  private Mock<CallInvoker>?    mockCallInvoker_;
+
+  [SetUp]
+  public void SetUp()
+  {
+    IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
+                                                             .AddJsonFile("appsettings.tests.json",
+                                                                          false)
+                                                             .AddEnvironmentVariables()
+                                                             .Build();
+    defaultTaskOptions_ = new TaskConfiguration(2,
+                                                1,
+                                                "subtasking",
+                                                TimeSpan.FromHours(1));
+
+    defaultProperties_ = new Properties(configuration);
+
+    loggerFactoryMock_ = new Mock<ILoggerFactory>();
+    mockCallInvoker_   = new Mock<CallInvoker>();
+
+    client_ = new ArmoniKClient(defaultProperties_,
+                                loggerFactoryMock_.Object,
+                                defaultTaskOptions_,
+                                new MockedServicesConfiguration(mockCallInvoker_));
+  }
+
   [Test]
   public async Task CreateTask_ReturnsNewTaskWithId()
   {
@@ -57,12 +95,7 @@ public class TasksServiceTests
                                  },
                                },
                              };
-
-    var mockInvoker = new Mock<CallInvoker>();
-
-    var callInvoker = mockInvoker.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(submitTaskResponse);
-
-    var taskService = MockHelper.GetTasksServiceMock(callInvoker);
+    var callInvoker = mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(submitTaskResponse);
     // Act
     var taskNodes = new List<TaskNode>
                     {
@@ -92,8 +125,8 @@ public class TasksServiceTests
                       },
                     };
 
-    var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+    var result = await client_!.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
+                                                              taskNodes);
 
     // Assert
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
@@ -136,13 +169,7 @@ public class TasksServiceTests
                            },
                          },
                        };
-
-    var mockInvoker = new Mock<CallInvoker>();
-
-    var callInvoker = mockInvoker.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
-
-    var taskService = MockHelper.GetTasksServiceMock(callInvoker);
-
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
     var taskNodes = new List<TaskNode>
                     {
                       new()
@@ -194,9 +221,9 @@ public class TasksServiceTests
                     };
 
     // Act
-    var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes)
-                                  .ToListAsync();
+    var result = await client_!.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
+                                                              taskNodes)
+                               .ToListAsync();
     // Assert
     ClassicAssert.AreEqual(2,
                            result.Count());
@@ -213,9 +240,6 @@ public class TasksServiceTests
   public Task SubmitTasksAsync_WithEmptyExpectedOutputs_ThrowsException()
   {
     // Arrange
-
-    var taskService = MockHelper.GetTasksServiceMock();
-
     var taskNodes = new List<TaskNode>
                     {
                       new()
@@ -236,8 +260,8 @@ public class TasksServiceTests
                     };
 
     // Act & Assert
-    Assert.ThrowsAsync<InvalidOperationException>(() => taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                                                     taskNodes));
+    Assert.ThrowsAsync<InvalidOperationException>(() => client_!.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
+                                                                                               taskNodes));
     return Task.CompletedTask;
   }
 
@@ -312,12 +336,7 @@ public class TasksServiceTests
                         DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
                                                   {
                                                     {
-                                                      "dependencyBlob", new ReadOnlyMemory<byte>(new byte[]
-                                                                                                 {
-                                                                                                   1,
-                                                                                                   2,
-                                                                                                   3,
-                                                                                                 })
+                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
                                                     },
                                                   },
                       },
@@ -359,10 +378,7 @@ public class TasksServiceTests
                            },
                          },
                        };
-
-    var mockInvoker = new Mock<CallInvoker>();
-
-    var callInvoker = mockInvoker.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
+    var callInvoker = mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
 
     var expectedBlobs = new List<BlobInfo>
                         {
@@ -383,7 +399,6 @@ public class TasksServiceTests
                                                      mockBlobService);
 
     var dataDependenciesContent = ImmutableDictionary<string, ReadOnlyMemory<byte>>.Empty;
-
     var taskNodes = new List<TaskNode>
                     {
                       new()
@@ -404,8 +419,8 @@ public class TasksServiceTests
                       },
                     };
     // Act
-    await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                       taskNodes);
+    await client_!.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
+                                                 taskNodes);
     // Assert
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),

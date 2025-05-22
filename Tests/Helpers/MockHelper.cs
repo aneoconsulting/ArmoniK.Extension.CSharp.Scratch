@@ -14,10 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Factory;
 using ArmoniK.Utils;
@@ -113,7 +111,6 @@ internal static class MockHelper
     return mockInvoker;
   }
 
-
   public static ITasksService GetTasksServiceMock(Mock<CallInvoker>?  mockInvoker     = null,
                                                   Mock<IBlobService>? mockBlobService = null)
   {
@@ -131,51 +128,6 @@ internal static class MockHelper
                                                             mockBlobService.Object,
                                                             NullLoggerFactory.Instance);
     return taskService;
-  }
-
-  public static IEventsService GetEventsServiceMock(Mock<CallInvoker>? mockInvoker = null)
-  {
-    mockInvoker ??= new Mock<CallInvoker>();
-    var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
-    mockChannelBase.Setup(m => m.CreateCallInvoker())
-                   .Returns(mockInvoker.Object);
-    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
-    return EventsServiceFactory.CreateEventsService(objectPool,
-                                                    NullLoggerFactory.Instance);
-  }
-
-  public static ISessionService GetSessionServiceMock(Properties         properties,
-                                                      TaskConfiguration  taskConfiguration,
-                                                      Mock<CallInvoker>? mockInvoker = null)
-  {
-    mockInvoker ??= new Mock<CallInvoker>();
-    var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
-    mockChannelBase.Setup(m => m.CreateCallInvoker())
-                   .Returns(mockInvoker.Object);
-    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
-    return SessionServiceFactory.CreateSessionService(objectPool,
-                                                      properties,
-                                                      NullLoggerFactory.Instance);
-  }
-
-  public static IBlobService GetBlobServiceMock(Mock<CallInvoker>? mockInvoker = null)
-  {
-    mockInvoker ??= new Mock<CallInvoker>();
-    var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
-    mockChannelBase.Setup(m => m.CreateCallInvoker())
-                   .Returns(mockInvoker.Object);
-    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
-    return BlobServiceFactory.CreateBlobService(objectPool,
-                                                NullLoggerFactory.Instance);
   }
 
   public static Mock<IBlobService> SetupCreateBlobMock(this Mock<IBlobService> blobService,

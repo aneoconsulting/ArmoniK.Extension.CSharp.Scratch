@@ -15,65 +15,72 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Sessions;
+using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 using Grpc.Core;
 
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 using Moq;
 
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 namespace Tests.Services;
 
 public class SessionServiceTests
 {
-  private readonly List<string> defaultPartitionsIds = new()
-                                                       {
-                                                         "subtasking",
-                                                       };
+  private readonly List<string> defaultPartitionsIds_ = ["subtasking"];
 
-  private readonly Properties        defaultProperties_;
-  private readonly TaskConfiguration defaultTaskConfiguration_;
+  private ArmoniKClient? client_;
 
-  public SessionServiceTests()
+  private Properties?           defaultProperties_;
+  private TaskConfiguration?    defaultTaskConfiguration_;
+  private Mock<ILoggerFactory>? loggerFactoryMock_;
+  private Mock<CallInvoker>?    mockCallInvoker_;
+
+  [SetUp]
+  public void SetUp()
   {
-    var configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                                                  .AddJsonFile("appsettings.tests.json",
-                                                               false)
-                                                  .AddEnvironmentVariables()
-                                                  .Build();
-
+    IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
+                                                             .AddJsonFile("appsettings.tests.json",
+                                                                          false)
+                                                             .AddEnvironmentVariables()
+                                                             .Build();
     defaultTaskConfiguration_ = new TaskConfiguration(2,
                                                       1,
-                                                      defaultPartitionsIds[0],
+                                                      defaultPartitionsIds_[0],
                                                       TimeSpan.FromHours(1));
+
     defaultProperties_ = new Properties(configuration);
+
+    loggerFactoryMock_ = new Mock<ILoggerFactory>();
+    mockCallInvoker_   = new Mock<CallInvoker>();
+
+    client_ = new ArmoniKClient(defaultProperties_,
+                                loggerFactoryMock_.Object,
+                                defaultTaskConfiguration_,
+                                new MockedServicesConfiguration(mockCallInvoker_));
   }
 
   [Test]
   public async Task CreateSession_ReturnsNewSessionWithId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-
     var createSessionReply = new CreateSessionReply
                              {
                                SessionId = "12345",
                              };
+    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
-
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
     // Act
-    var result = await sessionService.CreateSessionAsync(defaultTaskConfiguration_,
-                                                         defaultPartitionsIds);
+    var result = await client_!.SessionService.CreateSessionAsync(defaultTaskConfiguration_,
+                                                                  defaultPartitionsIds_);
     // Assert
     ClassicAssert.AreEqual("12345",
                            result.SessionId);
