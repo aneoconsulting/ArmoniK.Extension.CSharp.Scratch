@@ -29,7 +29,7 @@ using Grpc.Core;
 
 using Microsoft.Extensions.Logging;
 
-internal class PartitionsService : IPartitionsService
+public class PartitionsService : IPartitionsService
 {
   private readonly ObjectPool<ChannelBase>    channel_;
   private readonly ILogger<PartitionsService> logger_;
@@ -64,6 +64,7 @@ internal class PartitionsService : IPartitionsService
            };
   }
 
+  /// <inheritdoc />
   public async IAsyncEnumerable<(int, Partition)> ListPartitionsAsync(PartitionPagination                        partitionPagination,
                                                                       [EnumeratorCancellation] CancellationToken cancellationToken)
   {

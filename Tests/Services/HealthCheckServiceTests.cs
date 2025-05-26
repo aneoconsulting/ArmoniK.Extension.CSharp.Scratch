@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 using ArmoniK.Api.gRPC.V1.HealthChecks;
 
 using Grpc.Core;
@@ -28,33 +27,36 @@ using Tests.Helpers;
 
 namespace Tests.Services;
 
-
 public class HealthChecksServiceTests
 {
-   [Test]
-    public async Task GetHealthReturnsHealthObject()
-    {
-        var mockInvoker = new Mock<CallInvoker>();
+  [Test]
+  public async Task GetHealthReturnsHealthObject()
+  {
+    var mockInvoker = new Mock<CallInvoker>();
 
-        // We have to use this specific type for the mocking
-        var serviceHealth = new CheckHealthResponse.Types.ServiceHealth
-        {
-            Name = "Hello",
-            Message = "It is healthy",
-            Healthy = HealthStatusEnum.Healthy
-        };
+    // We have to use this specific type for the mocking
+    var serviceHealth = new CheckHealthResponse.Types.ServiceHealth
+                        {
+                          Name    = "Hello",
+                          Message = "It is healthy",
+                          Healthy = HealthStatusEnum.Healthy,
+                        };
 
-        var healthResponse = new CheckHealthResponse();
-        healthResponse.Services.Add(serviceHealth);
+    var healthResponse = new CheckHealthResponse();
+    healthResponse.Services.Add(serviceHealth);
 
-        mockInvoker.SetupAsyncUnaryCallInvokerMock<CheckHealthRequest, CheckHealthResponse>(healthResponse);
+    mockInvoker.SetupAsyncUnaryCallInvokerMock<CheckHealthRequest, CheckHealthResponse>(healthResponse);
 
-        var healthServiceMock = MockHelper.GetHealthCheckServiceMock(mockInvoker);
+    var healthServiceMock = mockInvoker.GetHealthCheckServiceMock();
 
-        var result = await healthServiceMock.GetHealth(CancellationToken.None).SingleAsync();
+    var result = await healthServiceMock.GetHealthAsync(CancellationToken.None)
+                                        .SingleAsync();
 
-        ClassicAssert.AreEqual("Hello", result.Name);
-        ClassicAssert.AreEqual("It is healthy", result.Message);
-        ClassicAssert.AreEqual(ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy, result.Status);
-    }
+    ClassicAssert.AreEqual("Hello",
+                           result.Name);
+    ClassicAssert.AreEqual("It is healthy",
+                           result.Message);
+    ClassicAssert.AreEqual(ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
+                           result.Status);
+  }
 }
