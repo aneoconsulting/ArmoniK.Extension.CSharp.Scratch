@@ -34,6 +34,12 @@ internal class VersionsService : IVersionsService
 
   private readonly ILogger<VersionsService> logger_;
 
+  /// <summary>
+  ///   Method for creating a new VersionService
+  /// </summary>
+  /// <param name="channel">Grpc Channel</param>
+  /// <param name="loggerFactory">Optional LoggerFactory</param>
+  /// <returns></returns>
   public VersionsService(ObjectPool<ChannelBase> channel,
                          ILoggerFactory          loggerFactory)
   {

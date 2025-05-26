@@ -29,11 +29,29 @@ using Grpc.Core;
 
 using Microsoft.Extensions.Logging;
 
+namespace ArmoniK.Extension.CSharp.Client.Services;
+
+/// <summary>
+///   Service responsible for managing data partitioning across different nodes or services.
+/// </summary>
 internal class PartitionsService : IPartitionsService
 {
   private readonly ObjectPool<ChannelBase>    channel_;
   private readonly ILogger<PartitionsService> logger_;
 
+  /// <summary>
+  ///   Creates an instance of <see cref="IPartitionsService" /> using the specified GRPC channel and an optional logger
+  ///   factory.
+  /// </summary>
+  /// <param name="channel">
+  ///   An object pool that manages GRPC channels, providing efficient handling and reuse of channel
+  ///   resources.
+  /// </param>
+  /// <param name="loggerFactory">
+  ///   An optional factory for creating loggers, which can be used to enable logging within the
+  ///   partitions service. If null, logging will be disabled.
+  /// </param>
+  /// <returns>An instance of <see cref="IPartitionsService" /> configured with the provided parameters.</returns>
   public PartitionsService(ObjectPool<ChannelBase> channel,
                            ILoggerFactory          loggerFactory)
   {

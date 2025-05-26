@@ -44,6 +44,17 @@ internal class TasksService : ITasksService
   private readonly ObjectPool<ChannelBase> channelPool_;
   private readonly ILogger<TasksService>   logger_;
 
+  /// <summary>
+  ///   Creates an instance of <see cref="ITasksService" /> using the specified GRPC channel, blob service, and an optional
+  ///   logger factory.
+  /// </summary>
+  /// <param name="channel">An object pool that manages GRPC channels. This provides efficient handling of channel resources.</param>
+  /// <param name="blobService">The blob service to be used for blob manipulation operations within the task service.</param>
+  /// <param name="loggerFactory">
+  ///   An optional logger factory to enable logging within the task service. If null, logging will
+  ///   be disabled.
+  /// </param>
+  /// <returns>An instance of <see cref="ITasksService" /> that can be used to perform task operations.</returns>
   public TasksService(ObjectPool<ChannelBase> channel,
                       IBlobService            blobService,
                       ILoggerFactory          loggerFactory)

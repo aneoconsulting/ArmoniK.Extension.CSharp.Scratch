@@ -20,9 +20,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
-internal sealed class DefaultServicesConfiguration : IServicesConfiguration
+/// <summary>
+///   Provides the default services configuration for the ArmoniK client
+/// </summary>
+public class DefaultServicesConfiguration : IServicesConfiguration
 {
-  public void AddServices(ArmoniKClient     client,
+  /// <summary>
+  ///   Adds the services necessary for the client
+  /// </summary>
+  /// <param name="client">The client that needs to be configured</param>
+  /// <param name="services">The service collection</param>
+  public void AddServices(IArmoniKClient    client,
                           ServiceCollection services)
   {
     services.AddSingleton<IBlobService>(_ => new BlobService(client.ChannelPool,

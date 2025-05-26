@@ -16,18 +16,8 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Events;
-using ArmoniK.Extension.CSharp.Client;
-using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-
-using Grpc.Core;
-
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
-using Moq;
 
 using NUnit.Framework;
 
@@ -38,39 +28,10 @@ namespace Tests.Services;
 
 public class EventsServiceTests
 {
-  private ArmoniKClient?        client_;
-  private Properties?           defaultProperties_;
-  private TaskConfiguration?    defaultTaskOptions_;
-  private Mock<ILoggerFactory>? loggerFactoryMock_;
-  private Mock<CallInvoker>?    mockCallInvoker_;
-
-  [SetUp]
-  public void SetUp()
-  {
-    IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                                                             .AddJsonFile("appsettings.tests.json",
-                                                                          false)
-                                                             .AddEnvironmentVariables()
-                                                             .Build();
-    defaultTaskOptions_ = new TaskConfiguration(2,
-                                                1,
-                                                "subtasking",
-                                                TimeSpan.FromHours(1));
-
-    defaultProperties_ = new Properties(configuration);
-
-    loggerFactoryMock_ = new Mock<ILoggerFactory>();
-    mockCallInvoker_   = new Mock<CallInvoker>();
-
-    client_ = new ArmoniKClient(defaultProperties_,
-                                loggerFactoryMock_.Object,
-                                defaultTaskOptions_,
-                                new MockedServicesConfiguration(mockCallInvoker_));
-  }
-
   [Test]
   public Task CreateSession_ReturnsNewSessionWithId()
   {
+    var client = new MockedArmoniKClient();
     var responses = new EventSubscriptionResponse
                     {
                       SessionId = "1234",
@@ -81,19 +42,19 @@ public class EventsServiceTests
                                   },
                     };
 
-    var callInvoker = mockCallInvoker_!.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
+    client.CallInvokerMock.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
     // Act
 
-    Assert.DoesNotThrowAsync(async () => await client_!.EventsService.WaitForBlobsAsync(new SessionInfo("sessionId"),
-                                                                                        new[]
+    Assert.DoesNotThrowAsync(async () => await client.EventsService.WaitForBlobsAsync(new SessionInfo("sessionId"),
+                                                                                      new[]
+                                                                                      {
+                                                                                        new BlobInfo
                                                                                         {
-                                                                                          new BlobInfo
-                                                                                          {
-                                                                                            BlobName  = "",
-                                                                                            BlobId    = "1234",
-                                                                                            SessionId = "sessionId",
-                                                                                          },
-                                                                                        }));
+                                                                                          BlobName  = "",
+                                                                                          BlobId    = "1234",
+                                                                                          SessionId = "sessionId",
+                                                                                        },
+                                                                                      }));
     return Task.CompletedTask;
   }
 }

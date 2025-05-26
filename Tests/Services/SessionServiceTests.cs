@@ -15,16 +15,6 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Sessions;
-using ArmoniK.Extension.CSharp.Client;
-using ArmoniK.Extension.CSharp.Client.Common;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-
-using Grpc.Core;
-
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
-using Moq;
 
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
@@ -38,49 +28,19 @@ public class SessionServiceTests
 {
   private readonly List<string> defaultPartitionsIds_ = ["subtasking"];
 
-  private ArmoniKClient? client_;
-
-  private Properties?           defaultProperties_;
-  private TaskConfiguration?    defaultTaskConfiguration_;
-  private Mock<ILoggerFactory>? loggerFactoryMock_;
-  private Mock<CallInvoker>?    mockCallInvoker_;
-
-  [SetUp]
-  public void SetUp()
-  {
-    IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                                                             .AddJsonFile("appsettings.tests.json",
-                                                                          false)
-                                                             .AddEnvironmentVariables()
-                                                             .Build();
-    defaultTaskConfiguration_ = new TaskConfiguration(2,
-                                                      1,
-                                                      defaultPartitionsIds_[0],
-                                                      TimeSpan.FromHours(1));
-
-    defaultProperties_ = new Properties(configuration);
-
-    loggerFactoryMock_ = new Mock<ILoggerFactory>();
-    mockCallInvoker_   = new Mock<CallInvoker>();
-
-    client_ = new ArmoniKClient(defaultProperties_,
-                                loggerFactoryMock_.Object,
-                                defaultTaskConfiguration_,
-                                new MockedServicesConfiguration(mockCallInvoker_));
-  }
-
   [Test]
   public async Task CreateSession_ReturnsNewSessionWithId()
   {
+    var client = new MockedArmoniKClient();
     var createSessionReply = new CreateSessionReply
                              {
                                SessionId = "12345",
                              };
-    mockCallInvoker_!.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
 
     // Act
-    var result = await client_!.SessionService.CreateSessionAsync(defaultTaskConfiguration_,
-                                                                  defaultPartitionsIds_);
+    var result = await client.SessionService.CreateSessionAsync(client.TaskOptions,
+                                                                defaultPartitionsIds_);
     // Assert
     ClassicAssert.AreEqual("12345",
                            result.SessionId);

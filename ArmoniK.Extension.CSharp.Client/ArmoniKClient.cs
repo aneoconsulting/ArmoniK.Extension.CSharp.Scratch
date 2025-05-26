@@ -37,7 +37,7 @@ namespace ArmoniK.Extension.CSharp.Client;
 ///   Provides a client for interacting with the ArmoniK services, including blob, session, task, event, health check,
 ///   partition, and version services.
 /// </summary>
-public class ArmoniKClient
+public class ArmoniKClient : IArmoniKClient
 {
   private readonly ILogger                 logger_;
   private readonly ServiceProvider         serviceProvider_;
@@ -51,7 +51,7 @@ public class ArmoniKClient
   /// <param name="loggerFactory">The factory for creating loggers.</param>
   /// <param name="taskConfiguration">The default task configuration</param>
   /// <param name="servicesConfiguration">The default task configuration</param>
-  /// <exception cref="ArgumentNullException"></exception>
+  /// <exception cref="ArgumentNullException">Thrown when properties or loggerFactory is null.</exception>
   public ArmoniKClient(Properties             properties,
                        ILoggerFactory         loggerFactory,
                        TaskConfiguration      taskConfiguration,

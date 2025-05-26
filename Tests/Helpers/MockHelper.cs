@@ -17,12 +17,8 @@
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Factory;
-using ArmoniK.Utils;
 
 using Grpc.Core;
-
-using Microsoft.Extensions.Logging.Abstractions;
 
 using Moq;
 
@@ -109,25 +105,6 @@ internal static class MockHelper
                                                            }));
 
     return mockInvoker;
-  }
-
-  public static ITasksService GetTasksServiceMock(Mock<CallInvoker>?  mockInvoker     = null,
-                                                  Mock<IBlobService>? mockBlobService = null)
-  {
-    mockInvoker ??= new Mock<CallInvoker>();
-    var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
-    mockChannelBase.Setup(m => m.CreateCallInvoker())
-                   .Returns(mockInvoker.Object);
-    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
-    mockBlobService ??= new Mock<IBlobService>();
-
-    var taskService = TasksServiceFactory.CreateTaskService(objectPool,
-                                                            mockBlobService.Object,
-                                                            NullLoggerFactory.Instance);
-    return taskService;
   }
 
   public static Mock<IBlobService> SetupCreateBlobMock(this Mock<IBlobService> blobService,

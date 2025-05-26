@@ -28,6 +28,6 @@ public interface IServicesConfiguration
   /// </summary>
   /// <param name="client">The ArmoniK client</param>
   /// <param name="services">The services collection</param>
-  void AddServices(ArmoniKClient     client,
+  void AddServices(IArmoniKClient    client,
                    ServiceCollection services);
 }
