@@ -93,7 +93,8 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
 
     // Assert
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
@@ -196,7 +197,8 @@ public class TasksServiceTests
     // Act
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
                                                     taskNodes)
-                                  .ToListAsync();
+                                  .ToListAsync()
+                                  .ConfigureAwait(false);
     // Assert
     ClassicAssert.AreEqual(2,
                            result.Count());
@@ -324,7 +326,8 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
 
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
@@ -405,7 +408,8 @@ public class TasksServiceTests
                     };
     // Act
     await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                       taskNodes);
+                                       taskNodes)
+                     .ConfigureAwait(false);
     // Assert
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),

@@ -60,7 +60,8 @@ public class EventsServiceTests
                                                                                    BlobId    = "1234",
                                                                                    SessionId = "sessionId",
                                                                                  },
-                                                                               }));
+                                                                               })
+                                                            .ConfigureAwait(false));
     return Task.CompletedTask;
   }
 }
