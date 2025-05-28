@@ -17,7 +17,6 @@
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
 
@@ -37,15 +36,17 @@ public class TaskStateTests
                                   endedAt,
                                   startedAt,
                                   TaskStatus.Completed);
-
-    ClassicAssert.AreEqual(createAt,
-                           taskState.CreateAt);
-    ClassicAssert.AreEqual(endedAt,
-                           taskState.EndedAt);
-    ClassicAssert.AreEqual(startedAt,
-                           taskState.StartedAt);
-    ClassicAssert.AreEqual(TaskStatus.Completed,
-                           taskState.Status);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(taskState.CreateAt,
+                                  Is.EqualTo(createAt));
+                      Assert.That(taskState.EndedAt,
+                                  Is.EqualTo(endedAt));
+                      Assert.That(taskState.StartedAt,
+                                  Is.EqualTo(startedAt));
+                      Assert.That(taskState.Status,
+                                  Is.EqualTo(TaskStatus.Completed));
+                    });
   }
 
   [TestCase(TaskStatus.Unspecified)]
@@ -78,18 +79,16 @@ public class TaskStateTests
       case TaskStatus.Processed:
       case TaskStatus.Retried:
         var grpcStatus = status.ToGrpcStatus();
-        ClassicAssert.AreEqual(status.ToString(),
-                               grpcStatus.ToString());
+        Assert.That(grpcStatus.ToString(),
+                    Is.EqualTo(status.ToString()));
 
         var internalStatus = grpcStatus.ToInternalStatus();
-        ClassicAssert.AreEqual(status,
-                               internalStatus);
+        Assert.That(internalStatus,
+                    Is.EqualTo(status));
         break;
       default:
-        ClassicAssert.Throws<ArgumentOutOfRangeException>(() =>
-                                                          {
-                                                            status.ToGrpcStatus();
-                                                          });
+        Assert.That(() => status.ToGrpcStatus(),
+                    Throws.Exception.TypeOf<ArgumentOutOfRangeException>());
         break;
     }
   }

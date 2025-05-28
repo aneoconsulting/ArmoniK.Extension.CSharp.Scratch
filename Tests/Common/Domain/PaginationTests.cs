@@ -20,7 +20,6 @@ using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Generic;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ArmoniK.Tests.Common;
 
@@ -39,18 +38,16 @@ public class SortDirectionTests
       case SortDirection.Asc:
       case SortDirection.Desc:
         var grpcDirection = direction.ToGrpc();
-        ClassicAssert.AreEqual(direction.ToString(),
-                               grpcDirection.ToString());
+        Assert.That(grpcDirection.ToString(),
+                    Is.EqualTo(direction.ToString()));
 
         var internalDirection = grpcDirection.ToIternal();
-        ClassicAssert.AreEqual(direction,
-                               internalDirection);
+        Assert.That(internalDirection,
+                    Is.EqualTo(direction));
         break;
       default:
-        ClassicAssert.Throws<ArgumentOutOfRangeException>(() =>
-                                                          {
-                                                            direction.ToGrpc();
-                                                          });
+        Assert.That(() => direction.ToGrpc(),
+                    Throws.Exception.TypeOf<ArgumentOutOfRangeException>());
         break;
     }
   }
@@ -71,16 +68,16 @@ public class PaginationTests
                        Filter        = "testFilter",
                      };
 
-    ClassicAssert.AreEqual(1,
-                           pagination.Page);
-    ClassicAssert.AreEqual(10,
-                           pagination.PageSize);
-    ClassicAssert.AreEqual(100,
-                           pagination.Total);
-    ClassicAssert.AreEqual(SortDirection.Asc,
-                           pagination.SortDirection);
-    ClassicAssert.AreEqual("testFilter",
-                           pagination.Filter);
+    Assert.That(pagination.Page,
+                Is.EqualTo(1));
+    Assert.That(pagination.PageSize,
+                Is.EqualTo(10));
+    Assert.That(pagination.Total,
+                Is.EqualTo(100));
+    Assert.That(pagination.SortDirection,
+                Is.EqualTo(SortDirection.Asc));
+    Assert.That(pagination.Filter,
+                Is.EqualTo("testFilter"));
   }
 
   [Test]
@@ -95,14 +92,15 @@ public class PaginationTests
                                 Filter        = new Filters(),
                               };
 
-    ClassicAssert.AreEqual(1,
-                           partitionPagination.Page);
-    ClassicAssert.AreEqual(10,
-                           partitionPagination.PageSize);
-    ClassicAssert.AreEqual(100,
-                           partitionPagination.Total);
-    ClassicAssert.AreEqual(SortDirection.Asc,
-                           partitionPagination.SortDirection);
-    ClassicAssert.IsNotNull(partitionPagination.Filter);
+    Assert.That(partitionPagination.Page,
+                Is.EqualTo(1));
+    Assert.That(partitionPagination.PageSize,
+                Is.EqualTo(10));
+    Assert.That(partitionPagination.Total,
+                Is.EqualTo(100));
+    Assert.That(partitionPagination.SortDirection,
+                Is.EqualTo(SortDirection.Asc));
+    Assert.That(partitionPagination.Filter,
+                Is.Not.Null);
   }
 }

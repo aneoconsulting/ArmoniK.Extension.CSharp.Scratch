@@ -17,7 +17,6 @@
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ArmoniK.Tests.Common.Domain;
 
@@ -30,8 +29,8 @@ public class SessionInfoTests
     var sessionId   = "session123";
     var sessionInfo = new SessionInfo(sessionId);
 
-    ClassicAssert.AreEqual(sessionId,
-                           sessionInfo.SessionId);
+    Assert.That(sessionInfo.SessionId,
+                Is.EqualTo(sessionId));
   }
 
   [Test]
@@ -41,8 +40,8 @@ public class SessionInfoTests
     var sessionInfo1 = new SessionInfo(sessionId);
     var sessionInfo2 = new SessionInfo(sessionId);
 
-    ClassicAssert.AreEqual(sessionInfo1,
-                           sessionInfo2);
+    Assert.That(sessionInfo1,
+                Is.EqualTo(sessionInfo2));
   }
 
   [Test]
@@ -51,8 +50,8 @@ public class SessionInfoTests
     var sessionInfo1 = new SessionInfo("session123");
     var sessionInfo2 = new SessionInfo("session456");
 
-    ClassicAssert.AreNotEqual(sessionInfo1,
-                              sessionInfo2);
+    Assert.That(sessionInfo1,
+                Is.Not.EqualTo(sessionInfo2));
   }
 
   [Test]
@@ -62,8 +61,8 @@ public class SessionInfoTests
     var sessionInfo1 = new SessionInfo(sessionId);
     var sessionInfo2 = new SessionInfo(sessionId);
 
-    ClassicAssert.AreEqual(sessionInfo1.GetHashCode(),
-                           sessionInfo2.GetHashCode());
+    Assert.That(sessionInfo1.GetHashCode(),
+                Is.EqualTo(sessionInfo2.GetHashCode()));
   }
 
   [Test]
@@ -72,8 +71,8 @@ public class SessionInfoTests
     var sessionInfo1 = new SessionInfo("session123");
     var sessionInfo2 = new SessionInfo("session456");
 
-    ClassicAssert.AreNotEqual(sessionInfo1.GetHashCode(),
-                              sessionInfo2.GetHashCode());
+    Assert.That(sessionInfo1.GetHashCode(),
+                Is.Not.EqualTo(sessionInfo2.GetHashCode()));
   }
 
   [Test]
@@ -84,8 +83,8 @@ public class SessionInfoTests
 
     var stringRepresentation = sessionInfo.ToString();
 
-    StringAssert.Contains(sessionId,
-                          stringRepresentation);
+    Assert.That(stringRepresentation,
+                Does.Contain(sessionId));
   }
 
   [Test]

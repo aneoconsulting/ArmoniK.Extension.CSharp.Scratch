@@ -17,7 +17,6 @@
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Health;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ArmoniK.Tests.Common.Domain;
 
@@ -34,12 +33,12 @@ public class HealthTests
                    Status  = HealthStatusEnum.Healthy,
                  };
 
-    ClassicAssert.AreEqual("ComponentName",
-                           health.Name);
-    ClassicAssert.AreEqual("Component is healthy",
-                           health.Message);
-    ClassicAssert.AreEqual(HealthStatusEnum.Healthy,
-                           health.Status);
+    Assert.That(health.Name,
+                Is.EqualTo("ComponentName"));
+    Assert.That(health.Message,
+                Is.EqualTo("Component is healthy"));
+    Assert.That(health.Status,
+                Is.EqualTo(HealthStatusEnum.Healthy));
   }
 
   [TestCase(HealthStatusEnum.Unspecified)]
@@ -54,8 +53,8 @@ public class HealthTests
                    Status = status,
                  };
 
-    ClassicAssert.AreEqual(status,
-                           health.Status);
+    Assert.That(health.Status,
+                Is.EqualTo(status));
 
     switch (status)
     {
@@ -65,18 +64,16 @@ public class HealthTests
       case HealthStatusEnum.Unhealthy:
 
         var grpcStatus = status.ToGrpcStatus();
-        ClassicAssert.AreEqual(status.ToString(),
-                               grpcStatus.ToString());
+        Assert.That(grpcStatus.ToString(),
+                    Is.EqualTo(status.ToString()));
 
         var internalStatus = grpcStatus.ToInternalStatus();
-        ClassicAssert.AreEqual(status,
-                               internalStatus);
+        Assert.That(internalStatus,
+                    Is.EqualTo(status));
         break;
       default:
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-                                                   {
-                                                     status.ToGrpcStatus();
-                                                   });
+        Assert.That(() => status.ToGrpcStatus(),
+                    Throws.Exception.TypeOf<ArgumentOutOfRangeException>());
         break;
     }
   }
