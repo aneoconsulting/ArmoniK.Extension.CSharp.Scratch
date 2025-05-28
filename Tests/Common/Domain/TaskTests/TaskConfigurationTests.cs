@@ -17,7 +17,6 @@
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ArmoniK.Tests.Common.Domain;
 
@@ -43,16 +42,16 @@ public class TaskConfigurationTests
                                                   TimeSpan.FromMinutes(30),
                                                   options);
 
-    ClassicAssert.AreEqual(3,
-                           taskConfiguration.MaxRetries);
-    ClassicAssert.AreEqual(1,
-                           taskConfiguration.Priority);
-    ClassicAssert.AreEqual("partition1",
-                           taskConfiguration.PartitionId);
-    ClassicAssert.AreEqual(options,
-                           taskConfiguration.Options);
-    ClassicAssert.AreEqual(TimeSpan.FromMinutes(30),
-                           taskConfiguration.MaxDuration);
+    Assert.That(taskConfiguration.MaxRetries,
+                Is.EqualTo(3));
+    Assert.That(taskConfiguration.Priority,
+                Is.EqualTo(1));
+    Assert.That(taskConfiguration.PartitionId,
+                Is.EqualTo("partition1"));
+    Assert.That(taskConfiguration.Options,
+                Is.EqualTo(options));
+    Assert.That(taskConfiguration.MaxDuration,
+                Is.EqualTo(TimeSpan.FromMinutes(30)));
   }
 
   [Test]
@@ -75,17 +74,19 @@ public class TaskConfigurationTests
                                                   options);
 
     var taskOptions = taskConfiguration.ToTaskOptions();
-
-    ClassicAssert.AreEqual(3,
-                           taskOptions.MaxRetries);
-    ClassicAssert.AreEqual(1,
-                           taskOptions.Priority);
-    ClassicAssert.AreEqual("partition1",
-                           taskOptions.PartitionId);
-    ClassicAssert.AreEqual(2,
-                           taskOptions.Options.Count);
-    ClassicAssert.AreEqual(TimeSpan.FromMinutes(30),
-                           taskOptions.MaxDuration.ToTimeSpan());
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(taskOptions.MaxRetries,
+                                  Is.EqualTo(3));
+                      Assert.That(taskOptions.Priority,
+                                  Is.EqualTo(1));
+                      Assert.That(taskOptions.PartitionId,
+                                  Is.EqualTo("partition1"));
+                      Assert.That(taskOptions.Options.Count,
+                                  Is.EqualTo(2));
+                      Assert.That(taskOptions.MaxDuration.ToTimeSpan(),
+                                  Is.EqualTo(TimeSpan.FromMinutes(30)));
+                    });
   }
 
   [Test]
@@ -97,16 +98,18 @@ public class TaskConfigurationTests
                                                   TimeSpan.FromMinutes(30));
 
     var taskOptions = taskConfiguration.ToTaskOptions();
-
-    ClassicAssert.AreEqual(3,
-                           taskOptions.MaxRetries);
-    ClassicAssert.AreEqual(1,
-                           taskOptions.Priority);
-    ClassicAssert.AreEqual("partition1",
-                           taskOptions.PartitionId);
-    ClassicAssert.AreEqual(0,
-                           taskOptions.Options.Count);
-    ClassicAssert.AreEqual(TimeSpan.FromMinutes(30),
-                           taskOptions.MaxDuration.ToTimeSpan());
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(taskOptions.MaxRetries,
+                                  Is.EqualTo(3));
+                      Assert.That(taskOptions.Priority,
+                                  Is.EqualTo(1));
+                      Assert.That(taskOptions.PartitionId,
+                                  Is.EqualTo("partition1"));
+                      Assert.That(taskOptions.Options.Count,
+                                  Is.EqualTo(0));
+                      Assert.That(taskOptions.MaxDuration.ToTimeSpan(),
+                                  Is.EqualTo(TimeSpan.FromMinutes(30)));
+                    });
   }
 }

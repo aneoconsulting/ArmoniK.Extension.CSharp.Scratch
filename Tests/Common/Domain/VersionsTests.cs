@@ -17,7 +17,6 @@
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Versions;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ArmoniK.Tests.Common.Domain;
 
@@ -33,10 +32,10 @@ public class VersionsInfoTests
                          Api  = "2.0.0",
                        };
 
-    ClassicAssert.AreEqual("1.0.0",
-                           versionsInfo.Core);
-    ClassicAssert.AreEqual("2.0.0",
-                           versionsInfo.Api);
+    Assert.That(versionsInfo.Core,
+                Is.EqualTo("1.0.0"));
+    Assert.That(versionsInfo.Api,
+                Is.EqualTo("2.0.0"));
   }
 
   [Test]
@@ -54,8 +53,8 @@ public class VersionsInfoTests
                           Api  = "2.0.0",
                         };
 
-    ClassicAssert.AreEqual(versionsInfo1,
-                           versionsInfo2);
+    Assert.That(versionsInfo1,
+                Is.EqualTo(versionsInfo2));
   }
 
   [Test]
@@ -73,8 +72,8 @@ public class VersionsInfoTests
                           Api  = "4.0.0",
                         };
 
-    ClassicAssert.AreNotEqual(versionsInfo1,
-                              versionsInfo2);
+    Assert.That(versionsInfo1,
+                Is.Not.EqualTo(versionsInfo2));
   }
 
   [Test]
@@ -86,7 +85,9 @@ public class VersionsInfoTests
                          Api  = string.Empty,
                        };
 
-    ClassicAssert.IsNull(versionsInfo.Core);
-    ClassicAssert.IsEmpty(versionsInfo.Api);
+    Assert.That(versionsInfo.Core,
+                Is.Null);
+    Assert.That(versionsInfo.Api,
+                Is.Empty);
   }
 }

@@ -19,7 +19,6 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
 
@@ -39,16 +38,19 @@ public class TaskPaginationTests
                            SortDirection = SortDirection.Asc,
                            Filter        = new Filters(),
                          };
-
-    ClassicAssert.AreEqual(1,
-                           taskPagination.Page);
-    ClassicAssert.AreEqual(10,
-                           taskPagination.PageSize);
-    ClassicAssert.AreEqual(100,
-                           taskPagination.Total);
-    ClassicAssert.AreEqual(SortDirection.Asc,
-                           taskPagination.SortDirection);
-    ClassicAssert.IsNotNull(taskPagination.Filter);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(taskPagination.Page,
+                                  Is.EqualTo(1));
+                      Assert.That(taskPagination.PageSize,
+                                  Is.EqualTo(10));
+                      Assert.That(taskPagination.Total,
+                                  Is.EqualTo(100));
+                      Assert.That(taskPagination.SortDirection,
+                                  Is.EqualTo(SortDirection.Asc));
+                      Assert.That(taskPagination.Filter,
+                                  Is.Not.Null);
+                    });
   }
 }
 
@@ -72,10 +74,10 @@ public class TaskPageTests
                      TasksData  = tasksData,
                    };
 
-    ClassicAssert.AreEqual(2,
-                           taskPage.TotalTasks);
-    ClassicAssert.AreEqual(tasksData,
-                           taskPage.TasksData);
+    Assert.That(taskPage.TotalTasks,
+                Is.EqualTo(2));
+    Assert.That(taskPage.TasksData,
+                Is.EqualTo(tasksData));
   }
 }
 
@@ -105,9 +107,9 @@ public class TaskDetailedPageTests
                              TaskDetails = taskDetails,
                            };
 
-    ClassicAssert.AreEqual(2,
-                           taskDetailedPage.TotalTasks);
-    ClassicAssert.AreEqual(taskDetails,
-                           taskDetailedPage.TaskDetails);
+    Assert.That(taskDetailedPage.TotalTasks,
+                Is.EqualTo(2));
+    Assert.That(taskDetailedPage.TaskDetails,
+                Is.EqualTo(taskDetails));
   }
 }

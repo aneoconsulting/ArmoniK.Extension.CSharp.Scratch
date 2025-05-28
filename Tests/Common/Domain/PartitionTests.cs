@@ -17,7 +17,6 @@
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Partition;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ArmoniK.Tests.Common.Domain;
 
@@ -51,20 +50,20 @@ public class PartitionTests
                       Priority             = 1,
                     };
 
-    ClassicAssert.AreEqual("partition1",
-                           partition.Id);
-    ClassicAssert.AreEqual(parentPartitionIds,
-                           partition.ParentPartitionIds);
-    ClassicAssert.AreEqual(podConfiguration,
-                           partition.PodConfiguration);
-    ClassicAssert.AreEqual(100,
-                           partition.PodMax);
-    ClassicAssert.AreEqual(10,
-                           partition.PodReserved);
-    ClassicAssert.AreEqual(20,
-                           partition.PreemptionPercentage);
-    ClassicAssert.AreEqual(1,
-                           partition.Priority);
+    Assert.That(partition.Id,
+                Is.EqualTo("partition1"));
+    Assert.That(partition.ParentPartitionIds,
+                Is.EqualTo(parentPartitionIds));
+    Assert.That(partition.PodConfiguration,
+                Is.EqualTo(podConfiguration));
+    Assert.That(partition.PodMax,
+                Is.EqualTo(100));
+    Assert.That(partition.PodReserved,
+                Is.EqualTo(10));
+    Assert.That(partition.PreemptionPercentage,
+                Is.EqualTo(20));
+    Assert.That(partition.Priority,
+                Is.EqualTo(1));
   }
 
   [Test]
@@ -105,8 +104,8 @@ public class PartitionTests
                        Priority             = 1,
                      };
 
-    ClassicAssert.AreEqual(partition1,
-                           partition2);
+    Assert.That(partition1,
+                Is.EqualTo(partition2));
   }
 
   [Test]
@@ -160,7 +159,7 @@ public class PartitionTests
                        Priority             = 2,
                      };
 
-    ClassicAssert.AreNotEqual(partition1,
-                              partition2);
+    Assert.That(partition1,
+                Is.Not.EqualTo(partition2));
   }
 }
