@@ -21,7 +21,6 @@ using Grpc.Core;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using Tests.Helpers;
 
@@ -49,14 +48,27 @@ public class HealthChecksServiceTests
 
     var healthServiceMock = mockInvoker.GetHealthCheckServiceMock();
 
-    var result = await healthServiceMock.GetHealthAsync(CancellationToken.None)
-                                        .SingleAsync();
+    var results = await healthServiceMock.GetHealthAsync(CancellationToken.None)
+                                         .ToListAsync()
+                                         .ConfigureAwait(false);
 
-    ClassicAssert.AreEqual("Hello",
-                           result.Name);
-    ClassicAssert.AreEqual("It is healthy",
-                           result.Message);
-    ClassicAssert.AreEqual(ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
-                           result.Status);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(results.Select(r => r.Name),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "Hello",
+                                             }));
+                      Assert.That(results.Select(r => r.Message),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "It is healthy",
+                                             }));
+                      Assert.That(results.Select(r => r.Status),
+                                  Is.EqualTo(new[]
+                                             {
+                                               ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
+                                             }));
+                    });
   }
 }

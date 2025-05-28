@@ -31,7 +31,6 @@ using Grpc.Core;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using Tests.Helpers;
 
@@ -97,18 +96,31 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
 
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
-    ClassicAssert.AreEqual("taskId1",
-                           taskInfosEnumerable.FirstOrDefault()
-                                              ?.TaskId);
-    ClassicAssert.AreEqual("payloadId1",
-                           taskInfosEnumerable.FirstOrDefault()
-                                              ?.PayloadId);
-    ClassicAssert.AreEqual("blobId1",
-                           taskInfosEnumerable.FirstOrDefault()
-                                              ?.ExpectedOutputs.First());
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(taskInfosEnumerable,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(taskInfosEnumerable.Length,
+                                  Is.EqualTo(1),
+                                  "Expected one task info in the response.");
+                      Assert.That(taskInfosEnumerable.First()
+                                                     .TaskId,
+                                  Is.EqualTo("taskId1"),
+                                  "Expected task ID to match.");
+                      Assert.That(taskInfosEnumerable.First()
+                                                     .PayloadId,
+                                  Is.EqualTo("payloadId1"),
+                                  "Expected payload ID to match.");
+                      Assert.That(taskInfosEnumerable.First()
+                                                     .ExpectedOutputs.First(),
+                                  Is.EqualTo("blobId1"),
+                                  "Expected blob ID to match.");
+                    });
   }
 
   [Test]
@@ -197,9 +209,11 @@ public class TasksServiceTests
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
                                                     taskNodes)
-                                  .ToListAsync();
-    ClassicAssert.AreEqual(2,
-                           result.Count());
+                                  .ToListAsync()
+                                  .ConfigureAwait(false);
+    Assert.That(result,
+                Has.Count.EqualTo(2),
+                "Result should contain two task infos");
     Assert.That(result,
                 Has.Some.Matches<TaskInfos>(r => r.TaskId == "taskId1" && r.PayloadId == "payloadId1" && r.ExpectedOutputs.Contains("outputId1")),
                 "Result should contain an item with taskId1, payloadId1, and outputId1");
@@ -210,7 +224,7 @@ public class TasksServiceTests
 
 
   [Test]
-  public Task SubmitTasksAsyncWithEmptyExpectedOutputsThrowsException()
+  public void SubmitTasksAsyncWithEmptyExpectedOutputsThrowsException()
   {
     var taskService = MockHelper.GetTasksServiceMock();
 
@@ -233,9 +247,9 @@ public class TasksServiceTests
                       },
                     };
 
-    Assert.ThrowsAsync<InvalidOperationException>(() => taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                                                     taskNodes));
-    return Task.CompletedTask;
+    Assert.That(async () => await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
+                                                               taskNodes),
+                Throws.Exception.TypeOf<InvalidOperationException>());
   }
 
   [Test]
@@ -321,19 +335,25 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
 
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
                                                    It.IsAny<CancellationToken>()),
                            Times.Once);
-    ClassicAssert.AreEqual("dependencyBlobId",
-                           taskNodes.First()
-                                    .DataDependencies.First()
-                                    .BlobId);
-    ClassicAssert.AreEqual("dependencyBlobId",
-                           result.First()
-                                 .DataDependencies.First());
+    Assert.Multiple(() =>
+                    {
+                      Assert.That("dependencyBlobId",
+                                  Is.EqualTo(result.First()
+                                                   .DataDependencies.First()),
+                                  "Expected data dependency blob ID to match.");
+                      Assert.That("dependencyBlobId",
+                                  Is.EqualTo(taskNodes.First()
+                                                      .DataDependencies.First()
+                                                      .BlobId),
+                                  "Expected data dependency blob ID in task node to match.");
+                    });
   }
 
   [Test]
@@ -399,7 +419,8 @@ public class TasksServiceTests
                       },
                     };
     await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                       taskNodes);
+                                       taskNodes)
+                     .ConfigureAwait(false);
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
                                                    It.IsAny<CancellationToken>()),
@@ -451,18 +472,26 @@ public class TasksServiceTests
                             };
 
     var result = await taskService.ListTasksAsync(paginationOptions)
-                                  .ToListAsync();
-
-    ClassicAssert.IsNotNull(result);
-    ClassicAssert.AreEqual(1,
-                           result.Count);
-    ClassicAssert.AreEqual(2,
-                           result[0].TotalTasks);
+                                  .ToListAsync()
+                                  .ConfigureAwait(false);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result,
+                                  Has.Count.EqualTo(1),
+                                  "Expected one page of tasks.");
+                      Assert.That(result.Count,
+                                  Is.EqualTo(1));
+                      Assert.That(result[0].TotalTasks,
+                                  Is.EqualTo(2));
+                    });
 
     var tasksData = result[0]
                     .TasksData.ToList();
-    ClassicAssert.AreEqual(2,
-                           tasksData.Count);
+    Assert.That(tasksData.Count,
+                Is.EqualTo(2));
 
     var expectedTaskIds = new List<string>
                           {
@@ -477,10 +506,10 @@ public class TasksServiceTests
 
     for (var i = 0; i < tasksData.Count; i++)
     {
-      ClassicAssert.AreEqual(expectedTaskIds[i],
-                             tasksData[i].Item1);
-      ClassicAssert.AreEqual(expectedStatuses[i],
-                             tasksData[i].Item2);
+      Assert.That(expectedTaskIds[i],
+                  Is.EqualTo(tasksData[i].Item1));
+      Assert.That(expectedStatuses[i],
+                  Is.EqualTo(tasksData[i].Item2));
     }
   }
 
@@ -512,15 +541,26 @@ public class TasksServiceTests
 
     var taskService = MockHelper.GetTasksServiceMock(callInvoker);
 
-    var result = await taskService.GetTasksDetailedAsync("taskId1");
-
-    ClassicAssert.IsNotNull(result);
-    ClassicAssert.AreEqual("taskId1",
-                           result.TaskId);
-    ClassicAssert.AreEqual("outputId1",
-                           result.ExpectedOutputs.First());
-    ClassicAssert.AreEqual("dependencyId1",
-                           result.DataDependencies.First());
+    var result = await taskService.GetTasksDetailedAsync("taskId1")
+                                  .ConfigureAwait(false);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result.ExpectedOutputs,
+                                  Has.Count.EqualTo(1),
+                                  "Expected one expected output.");
+                      Assert.That(result.ExpectedOutputs.First(),
+                                  Is.EqualTo("outputId1"),
+                                  "Expected output ID to match.");
+                      Assert.That(result.DataDependencies,
+                                  Has.Count.EqualTo(1),
+                                  "Expected one data dependency.");
+                      Assert.That(result.DataDependencies.First(),
+                                  Is.EqualTo("dependencyId1"),
+                                  "Expected data dependency ID to match.");
+                    });
   }
 
   [Test]
@@ -583,10 +623,12 @@ public class TasksServiceTests
 
     var result = await taskService.ListTasksDetailedAsync(new SessionInfo("sessionId1"),
                                                           paginationOptions)
-                                  .FirstOrDefaultAsync();
+                                  .FirstOrDefaultAsync()
+                                  .ConfigureAwait(false);
 
-
-    ClassicAssert.IsNotNull(result);
+    Assert.That(result,
+                Is.Not.Null,
+                "Result should not be null.");
   }
 
   [Test]
@@ -603,7 +645,8 @@ public class TasksServiceTests
                     "taskId2",
                   };
 
-    await taskService.CancelTasksAsync(taskIds);
+    await taskService.CancelTasksAsync(taskIds)
+                     .ConfigureAwait(false);
 
     mockInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelTasksRequest, CancelTasksResponse>>(),
                                                          It.IsAny<string>(),
@@ -675,9 +718,12 @@ public class TasksServiceTests
                                                      mockBlobService);
 
     var result = await taskService.SubmitTasksAsync(session,
-                                                    taskNodes);
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
 
-    ClassicAssert.IsNotNull(result);
+    Assert.That(result,
+                Is.Not.Null,
+                "Result should not be null.");
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
                                                    It.IsAny<CancellationToken>()),
@@ -765,18 +811,29 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
-
-    ClassicAssert.IsNotNull(result);
-    ClassicAssert.AreEqual("taskId1",
-                           result.First()
-                                 .TaskId);
-    ClassicAssert.AreEqual("payloadId1",
-                           result.First()
-                                 .PayloadId);
-    ClassicAssert.AreEqual("outputId1",
-                           result.First()
-                                 .ExpectedOutputs.First());
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result.Count,
+                                  Is.EqualTo(1),
+                                  "Expected one task info in the response.");
+                      Assert.That(result.First()
+                                        .TaskId,
+                                  Is.EqualTo("taskId1"),
+                                  "Expected task ID to match.");
+                      Assert.That(result.First()
+                                        .PayloadId,
+                                  Is.EqualTo("payloadId1"),
+                                  "Expected payload ID to match.");
+                      Assert.That(result.First()
+                                        .ExpectedOutputs.First(),
+                                  Is.EqualTo("outputId1"),
+                                  "Expected output ID to match.");
+                    });
   }
 
   [Test]
@@ -792,7 +849,8 @@ public class TasksServiceTests
 
     var taskService = MockHelper.GetTasksServiceMock(mockInvoker);
 
-    Assert.ThrowsAsync<RpcException>(() => taskService.GetTasksDetailedAsync("nonExistentTaskId"));
+    Assert.That(async () => await taskService.GetTasksDetailedAsync("nonExistentTaskId"),
+                Throws.Exception.TypeOf<RpcException>());
   }
 
   [Test]
@@ -814,6 +872,7 @@ public class TasksServiceTests
                     "nonExistentTaskId2",
                   };
 
-    Assert.ThrowsAsync<RpcException>(() => taskService.CancelTasksAsync(taskIds));
+    Assert.That(async () => await taskService.CancelTasksAsync(taskIds),
+                Throws.Exception.TypeOf<RpcException>());
   }
 }

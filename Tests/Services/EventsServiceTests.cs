@@ -32,7 +32,7 @@ namespace Tests.Services;
 public class EventsServiceTests
 {
   [Test]
-  public Task CreateSession_ReturnsNewSessionWithId()
+  public Task CreateSessionReturnsNewSessionWithId()
   {
     var responses = new EventSubscriptionResponse
                     {
@@ -49,8 +49,6 @@ public class EventsServiceTests
     var callInvoker = mockInvoker.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
 
     var eventsService = MockHelper.GetEventsServiceMock(callInvoker);
-    // Act
-
     Assert.DoesNotThrowAsync(async () => await eventsService.WaitForBlobsAsync(new SessionInfo("sessionId"),
                                                                                new[]
                                                                                {
@@ -60,7 +58,8 @@ public class EventsServiceTests
                                                                                    BlobId    = "1234",
                                                                                    SessionId = "sessionId",
                                                                                  },
-                                                                               }));
+                                                                               })
+                                                            .ConfigureAwait(false));
     return Task.CompletedTask;
   }
 }
