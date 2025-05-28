@@ -26,7 +26,6 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using Tests.Helpers;
 
@@ -73,9 +72,10 @@ public class SessionServiceTests
                                                           defaultTaskConfiguration_,
                                                           mockCallInvoker);
     var result = await sessionService.CreateSessionAsync(defaultTaskConfiguration_,
-                                                         defaultPartitionsIds_);
-    ClassicAssert.AreEqual("12345",
-                           result.SessionId);
+                                                         defaultPartitionsIds_)
+                                     .ConfigureAwait(false);
+    Assert.That(result.SessionId,
+                Is.EqualTo("12345"));
   }
 
   [Test]
@@ -92,7 +92,8 @@ public class SessionServiceTests
 
     var sessionInfo = new SessionInfo(sessionId);
 
-    await sessionService.CloseSessionAsync(sessionInfo);
+    await sessionService.CloseSessionAsync(sessionInfo)
+                        .ConfigureAwait(false);
 
     mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CloseSessionRequest, CloseSessionResponse>>(),
                                                              It.IsAny<string>(),
@@ -112,7 +113,8 @@ public class SessionServiceTests
                                                           defaultTaskConfiguration_,
                                                           mockCallInvoker);
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.PauseSessionAsync(sessionInfo);
+    await sessionService.PauseSessionAsync(sessionInfo)
+                        .ConfigureAwait(false);
     mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<PauseSessionRequest, PauseSessionResponse>>(),
                                                              It.IsAny<string>(),
                                                              It.IsAny<CallOptions>(),
@@ -131,7 +133,8 @@ public class SessionServiceTests
                                                           defaultTaskConfiguration_,
                                                           mockCallInvoker);
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.ResumeSessionAsync(sessionInfo);
+    await sessionService.ResumeSessionAsync(sessionInfo)
+                        .ConfigureAwait(false);
     mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<ResumeSessionRequest, ResumeSessionResponse>>(),
                                                              It.IsAny<string>(),
                                                              It.IsAny<CallOptions>(),
@@ -150,7 +153,8 @@ public class SessionServiceTests
                                                           defaultTaskConfiguration_,
                                                           mockCallInvoker);
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.StopSubmissionAsync(sessionInfo);
+    await sessionService.StopSubmissionAsync(sessionInfo)
+                        .ConfigureAwait(false);
     mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<StopSubmissionRequest, StopSubmissionResponse>>(),
                                                              It.IsAny<string>(),
                                                              It.IsAny<CallOptions>(),
@@ -168,7 +172,8 @@ public class SessionServiceTests
                                                           defaultTaskConfiguration_,
                                                           mockCallInvoker);
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.PurgeSessionAsync(sessionInfo);
+    await sessionService.PurgeSessionAsync(sessionInfo)
+                        .ConfigureAwait(false);
     mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<PurgeSessionRequest, PurgeSessionResponse>>(),
                                                              It.IsAny<string>(),
                                                              It.IsAny<CallOptions>(),
@@ -186,7 +191,8 @@ public class SessionServiceTests
                                                           defaultTaskConfiguration_,
                                                           mockCallInvoker);
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.DeleteSessionAsync(sessionInfo);
+    await sessionService.DeleteSessionAsync(sessionInfo)
+                        .ConfigureAwait(false);
     mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<DeleteSessionRequest, DeleteSessionResponse>>(),
                                                              It.IsAny<string>(),
                                                              It.IsAny<CallOptions>(),
@@ -204,7 +210,8 @@ public class SessionServiceTests
                                                           defaultTaskConfiguration_,
                                                           mockCallInvoker);
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.CancelSessionAsync(sessionInfo);
+    await sessionService.CancelSessionAsync(sessionInfo)
+                        .ConfigureAwait(false);
     mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelSessionRequest, CancelSessionResponse>>(),
                                                              It.IsAny<string>(),
                                                              It.IsAny<CallOptions>(),

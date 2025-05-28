@@ -28,7 +28,6 @@ using Grpc.Core;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using Tests.Helpers;
 
@@ -39,7 +38,7 @@ namespace Tests.Services;
 public class BlobServiceTests
 {
   [Test]
-  public async Task CreateBlob_ReturnsNewBlobInfo()
+  public async Task CreateBlobReturnsNewBlobInfo()
   {
     var mockCallInvoker = new Mock<CallInvoker>();
 
@@ -52,7 +51,7 @@ public class BlobServiceTests
                               CompletedAt = DateTime.UtcNow.ToTimestamp(), // Use UtcNow for consistency
                               Status      = ResultStatus.Created,
                               Name        = "blobName",
-                              ResultId    = "blodId",
+                              ResultId    = "blobId",
                               SessionId   = "sessionId",
                             },
                           },
@@ -69,13 +68,21 @@ public class BlobServiceTests
                                                        });
 
     var blobInfos = await results.ToListAsync();
-    ClassicAssert.AreEqual("blobName",
-                           blobInfos[0].BlobName);
+    Assert.That(blobInfos,
+                Is.EqualTo(new BlobInfo[]
+                           {
+                             new()
+                             {
+                               SessionId = "sessionId",
+                               BlobName  = "blobName",
+                               BlobId    = "blobId",
+                             },
+                           }));
   }
 
 
   [Test]
-  public async Task CreateBlob_WithName_ReturnsNewBlobInfo()
+  public async Task CreateBlobWithNameReturnsNewBlobInfo()
   {
     var mockCallInvoker = new Mock<CallInvoker>();
 
@@ -91,7 +98,7 @@ public class BlobServiceTests
                                                     .ToTimestamp(),
                               Status    = ResultStatus.Created,
                               Name      = name,
-                              ResultId  = "blodId",
+                              ResultId  = "blobId",
                               SessionId = "sessionId",
                             },
                           },
@@ -109,12 +116,19 @@ public class BlobServiceTests
 
     var blobInfos = await result.ToListAsync();
 
-    ClassicAssert.AreEqual("sessionId",
-                           blobInfos[0].SessionId);
-    ClassicAssert.AreEqual(name,
-                           blobInfos[0].BlobName);
+    Assert.That(blobInfos,
+                Is.EqualTo(new BlobInfo[]
+                           {
+                             new()
+                             {
+                               SessionId = "sessionId",
+                               BlobName  = name,
+                               BlobId    = "blobId",
+                             },
+                           }));
   }
 
+// Assert.That(blobInfos.Select(b=> b.BlobName), Is.EqualTo((string[])new[] { "blobname" }));
   [Test]
   public async Task CreateBlobAsyncWithContentCreatesBlobAndUploadsContent()
   {
@@ -188,11 +202,22 @@ public class BlobServiceTests
     var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
                                                    name,
                                                    contents);
-
-    ClassicAssert.AreEqual("sessionId",
-                           result.SessionId);
-    ClassicAssert.AreEqual(name,
-                           result.BlobName);
+    Assert.That(new[]
+                {
+                  result,
+                }.Select(r => r.SessionId),
+                Is.EqualTo(new[]
+                           {
+                             "sessionId",
+                           }));
+    Assert.That(new[]
+                {
+                  result,
+                }.Select(r => r.BlobName),
+                Is.EqualTo(new[]
+                           {
+                             name,
+                           }));
   }
 
   [Test]
@@ -269,10 +294,10 @@ public class BlobServiceTests
                                                    name,
                                                    contents);
 
-    ClassicAssert.AreEqual("sessionId",
-                           result.SessionId);
-    ClassicAssert.AreEqual(name,
-                           result.BlobName);
+    Assert.That(result.SessionId,
+                Is.EqualTo("sessionId"));
+    Assert.That(result.BlobName,
+                Is.EqualTo(name));
   }
 
   [Test]
@@ -284,12 +309,14 @@ public class BlobServiceTests
                    {
                      Result = new ResultRaw
                               {
-                                Status      = ResultStatus.Notfound,
-                                ResultId    = "nonExistentBlobId",
-                                SessionId   = "sessionId",
-                                Name        = "nonExistentBlob",
-                                CreatedAt   = DateTime.UtcNow.ToTimestamp(),
-                                CompletedAt = DateTime.UtcNow.ToTimestamp(),
+                                Status    = ResultStatus.Notfound,
+                                ResultId  = "nonExistentBlobId",
+                                SessionId = "sessionId",
+                                Name      = "nonExistentBlob",
+                                CompletedAt = DateTime.Now.ToUniversalTime()
+                                                      .ToTimestamp(),
+                                CreatedAt = DateTime.Now.ToUniversalTime()
+                                                    .ToTimestamp(),
                               },
                    };
 
@@ -306,61 +333,77 @@ public class BlobServiceTests
 
     var result = await blobService.GetBlobStateAsync(blobInfo);
 
-    ClassicAssert.AreEqual(BlobStatus.Notfound,
-                           result.Status);
-    ClassicAssert.AreEqual(response.Result.ResultId,
-                           result.BlobId);
-    ClassicAssert.AreEqual(response.Result.SessionId,
-                           result.SessionId);
-    ClassicAssert.AreEqual(response.Result.Name,
-                           result.BlobName);
-    ClassicAssert.AreEqual(response.Result.CreatedAt.ToDateTime(),
-                           result.CreateAt);
-    ClassicAssert.AreEqual(response.Result.CompletedAt.ToDateTime(),
-                           result.CompletedAt);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.Status,
+                                  Is.EqualTo(BlobStatus.Notfound),
+                                  "Status should be NotFound");
+
+                      Assert.That(result.BlobId,
+                                  Is.EqualTo(response.Result.ResultId),
+                                  "BlobId should match the requested ID");
+
+                      Assert.That(result.SessionId,
+                                  Is.EqualTo(response.Result.SessionId),
+                                  "SessionId should match");
+
+                      Assert.That(result.BlobName,
+                                  Is.EqualTo(response.Result.Name),
+                                  "BlobName should match");
+                    });
   }
 
-  //TODO Understand why we have a null reference
-  // [Test]
-  // public async Task UploadBlobAsync_WithValidContent_UploadsBlob()
-  // {
-  //   var mockCallInvoker = new Mock<CallInvoker>();
+  [Test]
+  public async Task UploadBlobAsyncWithValidContentUploadsBlob()
+  {
+    var mockCallInvoker = new Mock<CallInvoker>();
+    var contents = new ReadOnlyMemory<byte>(new byte[]
+                                            {
+                                              1,
+                                              2,
+                                              3,
+                                              4,
+                                              5,
+                                            });
 
-  //   var contents = new ReadOnlyMemory<byte>(new byte[] { 1, 2, 3, 4, 5 });
+    var serviceConfig = new ResultsServiceConfigurationResponse
+                        {
+                          DataChunkMaxSize = 1000,
+                        };
+    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(serviceConfig);
 
-  //   var response = new UploadResultDataResponse()
-  //   {
-  //     Result = new ResultRaw
-  //     {
-  //       Name = "validBlob",
-  //       ResultId = "validBlobId",
-  //       SessionId = "sessionId",
-  //       Status = ResultStatus.Created,
-  //       CompletedAt = DateTime.Now.ToUniversalTime()
-  //                                                   .ToTimestamp(),
-  //       CreatedAt = DateTime.Now.ToUniversalTime()
-  //                                                   .ToTimestamp(),
-  //     }
-  //   };
+    var uploadResponse = new UploadResultDataResponse
+                         {
+                           Result = new ResultRaw
+                                    {
+                                      ResultId  = "testBlobId",
+                                      SessionId = "sessionId",
+                                      Status    = ResultStatus.Completed,
+                                    },
+                         };
 
-  //   // Configuration du mock pour l'appel unary
-  //   mockCallInvoker.SetupAsyncUnaryCallInvokerMock<UploadResultDataRequest, UploadResultDataResponse>(response);
+    var mockStream = new Mock<IClientStreamWriter<UploadResultDataRequest>>();
+    mockCallInvoker.SetupAsyncClientStreamingCall(uploadResponse,
+                                                  mockStream.Object);
 
-  //   var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
+    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
+    var blobInfo = new BlobInfo
+                   {
+                     BlobName  = "testBlob",
+                     BlobId    = "testBlobId",
+                     SessionId = "sessionId",
+                   };
 
-  //   var blobInfo = new BlobInfo
-  //   {
-  //     BlobName = "validBlob",
-  //     BlobId = "validBlobId",
-  //     SessionId = "sessionId",
-  //   };
+    await blobService.UploadBlobAsync(blobInfo,
+                                      contents,
+                                      CancellationToken.None);
 
-  //   // Appel de la méthode UploadBlobAsync
-  //   await blobService.UploadBlobAsync(blobInfo, contents, CancellationToken.None);
+    mockCallInvoker.Verify(x => x.AsyncClientStreamingCall(It.IsAny<Method<UploadResultDataRequest, UploadResultDataResponse>>(),
+                                                           It.IsAny<string>(),
+                                                           It.IsAny<CallOptions>()),
+                           Times.Once);
+  }
 
-  //   // Vérification que le blob a été téléversé sans erreur
-  //   Assert.Pass();
-  // }
   [Test]
   public async Task DownloadBlobWithChunksAsyncWithValidBlobReturnsBlobChunks()
   {
@@ -372,11 +415,8 @@ public class BlobServiceTests
                    {
                      DataChunk = ByteString.CopyFrom(1,
                                                      2,
-                                                     3),
-                   },
-                   new()
-                   {
-                     DataChunk = ByteString.CopyFrom(4,
+                                                     3,
+                                                     4,
                                                      5,
                                                      6),
                    },
@@ -399,15 +439,28 @@ public class BlobServiceTests
       resultChunks.Add(chunk);
     }
 
-    ClassicAssert.AreEqual(1,
-                           resultChunks.Count);
-    CollectionAssert.AreEqual(new byte[]
-                              {
-                                1,
-                                2,
-                                3,
-                              },
-                              resultChunks[0]);
+    var expectedChunk = new byte[]
+                        {
+                          1,
+                          2,
+                          3,
+                          4,
+                          5,
+                          6,
+                        };
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(resultChunks,
+                                  Has.Count.EqualTo(1),
+                                  "Should receive exactly 1 chunk");
+
+                      Assert.That(resultChunks.Select(c => c),
+                                  Is.EqualTo(new[]
+                                             {
+                                               expectedChunk,
+                                             }));
+                    });
   }
 
   [Test]
@@ -459,11 +512,95 @@ public class BlobServiceTests
       resultBlobs.Add(blobPage);
     }
 
-    ClassicAssert.AreEqual(2,
-                           resultBlobs.Count);
-    ClassicAssert.AreEqual("blob1",
-                           resultBlobs[0].BlobDetails.BlobName);
-    ClassicAssert.AreEqual("blob2",
-                           resultBlobs[1].BlobDetails.BlobName);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(response.Results.Count,
+                                  Is.EqualTo(2));
+                      Assert.That(resultBlobs.Select(b => b.BlobDetails.BlobName),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "blob1",
+                                               "blob2",
+                                             }));
+                    });
+  }
+
+  [Test]
+  public async Task GetBlobStateAsyncWithExistingBlobReturnsCorrectState()
+  {
+    var mockCallInvoker = new Mock<CallInvoker>();
+    var createdAt       = DateTime.UtcNow;
+    var completedAt     = DateTime.UtcNow.AddMinutes(5);
+
+    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<GetResultRequest, GetResultResponse>(new GetResultResponse
+                                                                                        {
+                                                                                          Result = new ResultRaw
+                                                                                                   {
+                                                                                                     ResultId    = "existingBlobId",
+                                                                                                     SessionId   = "sessionId",
+                                                                                                     Name        = "existingBlob",
+                                                                                                     Status      = ResultStatus.Completed,
+                                                                                                     CreatedAt   = createdAt.ToTimestamp(),
+                                                                                                     CompletedAt = completedAt.ToTimestamp(),
+                                                                                                   },
+                                                                                        });
+
+    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
+    var blobInfo = new BlobInfo
+                   {
+                     BlobId    = "existingBlobId",
+                     SessionId = "sessionId",
+                     BlobName  = "existingBlob",
+                   };
+
+    var result = await blobService.GetBlobStateAsync(blobInfo);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.Status,
+                                  Is.EqualTo(BlobStatus.Completed));
+                      Assert.That(result.BlobId,
+                                  Is.EqualTo("existingBlobId"));
+                      Assert.That(result.CreateAt,
+                                  Is.EqualTo(createdAt)
+                                    .Within(TimeSpan.FromSeconds(1)));
+                      Assert.That(result.CompletedAt,
+                                  Is.EqualTo(completedAt)
+                                    .Within(TimeSpan.FromSeconds(1)));
+                    });
+  }
+
+  [Test]
+  public async Task DownloadBlobAsyncWithValidBlobReturnsContent()
+  {
+    var mockCallInvoker = new Mock<CallInvoker>();
+    var expectedContent = new byte[]
+                          {
+                            1,
+                            2,
+                            3,
+                            4,
+                            5,
+                          };
+
+    var downloadResponse = new DownloadResultDataResponse
+                           {
+                             DataChunk = ByteString.CopyFrom(expectedContent),
+                           };
+
+    mockCallInvoker.SetupAsyncServerStreamingCallInvokerMock<DownloadResultDataRequest, DownloadResultDataResponse>(downloadResponse);
+
+    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
+    var blobInfo = new BlobInfo
+                   {
+                     BlobId    = "testId",
+                     SessionId = "sessionId",
+                     BlobName  = "test",
+                   };
+
+    var result = await blobService.DownloadBlobAsync(blobInfo);
+
+    Assert.That(result,
+                Is.EqualTo(expectedContent));
   }
 }

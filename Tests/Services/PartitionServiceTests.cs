@@ -66,12 +66,30 @@ public class PartitionServiceTests
     var partitionsService = callInvoker.GetPartitionsServiceMock();
 
     var result = await partitionsService.GetPartitionAsync(partitionId,
-                                                           CancellationToken.None);
-    ClassicAssert.AreEqual(partitionId,
-                           result.Id);
+                                                           CancellationToken.None)
+                                        .ConfigureAwait(false);
+
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result.Id,
+                                  Is.EqualTo(partitionId));
+                      Assert.That(result.PodMax,
+                                  Is.EqualTo(10));
+                      Assert.That(result.PodReserved,
+                                  Is.EqualTo(5));
+                      Assert.That(result.PreemptionPercentage,
+                                  Is.EqualTo(15));
+                      Assert.That(result.Priority,
+                                  Is.EqualTo(2));
+                      Assert.That(result.ParentPartitionIds,
+                                  Contains.Item("parentId"));
+                      Assert.That(result.ParentPartitionIds,
+                                  Contains.Item("parentId2"));
+                    });
   }
 
-
+  //TODO
+  // FIX CONSTRAINT ASSERT
   [Test]
   public void GetPartitionShouldThrowExceptionWhenPartitionNotFound()
   {
@@ -87,14 +105,14 @@ public class PartitionServiceTests
 
     var partitionsService = mockCallInvoker.GetPartitionsServiceMock();
 
+
     var ex = Assert.ThrowsAsync<RpcException>(async () =>
                                               {
                                                 await partitionsService.GetPartitionAsync(partitionId,
                                                                                           CancellationToken.None);
                                               });
-
-    ClassicAssert.AreEqual(StatusCode.NotFound,
-                           ex!.StatusCode);
+    Assert.That(StatusCode.NotFound,
+                Is.EqualTo(ex!.StatusCode));
     StringAssert.Contains("Partition not found",
                           ex.Message);
   }
@@ -176,41 +194,38 @@ public class PartitionServiceTests
     var receivedPartitions = new List<Partition>();
     var totalCount         = 0;
 
-    await foreach (var partitionTuple in result)
+    await foreach (var partitionTuple in result.ConfigureAwait(false))
     {
       totalCount = partitionTuple.Item1;
       receivedPartitions.Add(partitionTuple.Item2);
     }
 
-    ClassicAssert.AreEqual(expectedPartitions.Count,
-                           totalCount);
-    ClassicAssert.AreEqual(expectedPartitions.Count,
-                           receivedPartitions.Count);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(totalCount,
+                                  Is.EqualTo(2));
+                      Assert.That(receivedPartitions,
+                                  Has.Count.EqualTo(2));
 
-    for (var i = 0; i < expectedPartitions.Count; i++)
-    {
-      var expected = expectedPartitions[i];
-      var actual   = receivedPartitions[i];
+                      // Première partition
+                      Assert.That(receivedPartitions[0].Id,
+                                  Is.EqualTo("partitionId1"));
+                      Assert.That(receivedPartitions[0].PodMax,
+                                  Is.EqualTo(10));
+                      Assert.That(receivedPartitions[0].PodReserved,
+                                  Is.EqualTo(5));
+                      Assert.That(receivedPartitions[0].Priority,
+                                  Is.EqualTo(2));
 
-      ClassicAssert.AreEqual(expected.Id,
-                             actual.Id,
-                             $"Partition ID mismatch at index {i}");
-      ClassicAssert.AreEqual(expected.PodMax,
-                             actual.PodMax,
-                             $"PodMax mismatch at index {i}");
-      ClassicAssert.AreEqual(expected.PodReserved,
-                             actual.PodReserved,
-                             $"PodReserved mismatch at index {i}");
-      ClassicAssert.AreEqual(expected.PreemptionPercentage,
-                             actual.PreemptionPercentage,
-                             $"PreemptionPercentage mismatch at index {i}");
-      ClassicAssert.AreEqual(expected.Priority,
-                             actual.Priority,
-                             $"Priority mismatch at index {i}");
-
-      CollectionAssert.AreEquivalent(expected.ParentPartitionIds,
-                                     actual.ParentPartitionIds,
-                                     $"ParentPartitionIds mismatch at index {i}");
-    }
+                      // Deuxième partition
+                      Assert.That(receivedPartitions[1].Id,
+                                  Is.EqualTo("partitionId2"));
+                      Assert.That(receivedPartitions[1].PodMax,
+                                  Is.EqualTo(20));
+                      Assert.That(receivedPartitions[1].PodReserved,
+                                  Is.EqualTo(10));
+                      Assert.That(receivedPartitions[1].Priority,
+                                  Is.EqualTo(3));
+                    });
   }
 }

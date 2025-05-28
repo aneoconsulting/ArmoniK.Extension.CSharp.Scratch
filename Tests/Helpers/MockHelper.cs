@@ -189,7 +189,7 @@ internal static class MockHelper
     return blobService;
   }
 
-  public static IHealthCheckService GetHealthCheckServiceMock(this Mock<CallInvoker> mockInvoker)
+  public static IHealthCheckService GetHealthCheckServiceMock(this Mock<CallInvoker>? mockInvoker)
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")
@@ -203,7 +203,7 @@ internal static class MockHelper
                                                               NullLoggerFactory.Instance);
   }
 
-  public static IPartitionsService GetPartitionsServiceMock(this Mock<CallInvoker> mockInvoker)
+  public static IPartitionsService GetPartitionsServiceMock(this Mock<CallInvoker>? mockInvoker)
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")
@@ -218,7 +218,7 @@ internal static class MockHelper
                                                             NullLoggerFactory.Instance);
   }
 
-  public static IVersionsService GetVersionsServiceMock(this Mock<CallInvoker> mockInvoker)
+  public static IVersionsService GetVersionsServiceMock(this Mock<CallInvoker>? mockInvoker)
   {
     mockInvoker ??= new Mock<CallInvoker>();
     var mockChannelBase = new Mock<ChannelBase>("localhost")

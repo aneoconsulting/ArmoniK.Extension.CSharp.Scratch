@@ -26,7 +26,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace Tests;
 
@@ -71,8 +70,8 @@ public class ArmoniKClientTests
                                                                                  defaultTaskOptions_));
 
     // Assert
-    ClassicAssert.AreEqual("properties",
-                           exception?.ParamName);
+    Assert.That("properties",
+                Is.EqualTo(exception?.ParamName));
   }
 
   [Test]
@@ -83,8 +82,8 @@ public class ArmoniKClientTests
                                                                                  null,
                                                                                  defaultTaskOptions_));
     // Assert
-    ClassicAssert.AreEqual("loggerFactory",
-                           exception?.ParamName);
+    Assert.That("loggerFactory",
+                Is.EqualTo(exception?.ParamName));
   }
 
   [Test]

@@ -21,7 +21,6 @@ using Grpc.Core;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using Tests.Helpers;
 
@@ -44,10 +43,14 @@ public class VersionServiceTests
 
     var versionsService = mockCallInvoker.GetVersionsServiceMock();
     var result          = await versionsService.GetVersionsAsync(CancellationToken.None);
-
-    ClassicAssert.AreEqual("1.0.0",
-                           result.Api);
-    ClassicAssert.AreEqual("1.0.0",
-                           result.Core);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null);
+                      Assert.That(result.Api,
+                                  Is.EqualTo("1.0.0"));
+                      Assert.That(result.Core,
+                                  Is.EqualTo("1.0.0"));
+                    });
   }
 }
