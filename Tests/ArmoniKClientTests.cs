@@ -68,10 +68,8 @@ public class ArmoniKClientTests
     var exception = Assert.Throws<ArgumentNullException>(() => new ArmoniKClient(null,
                                                                                  loggerFactoryMock_.Object,
                                                                                  defaultTaskOptions_));
-
-    // Assert
-    Assert.That("properties",
-                Is.EqualTo(exception?.ParamName));
+    Assert.That(exception?.ParamName,
+                Is.EqualTo("properties"));
   }
 
   [Test]
@@ -82,8 +80,8 @@ public class ArmoniKClientTests
                                                                                  null,
                                                                                  defaultTaskOptions_));
     // Assert
-    Assert.That("loggerFactory",
-                Is.EqualTo(exception?.ParamName));
+    Assert.That(exception?.ParamName,
+                Is.EqualTo("loggerFactory"));
   }
 
   [Test]

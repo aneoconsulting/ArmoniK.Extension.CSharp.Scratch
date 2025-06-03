@@ -22,7 +22,6 @@ using Grpc.Core;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using Tests.Helpers;
 
@@ -37,7 +36,7 @@ public class PartitionServiceTests
     var mockInvoker = new Mock<CallInvoker>();
     var grpcPartition = new PartitionRaw
                         {
-                          Id = "partitionId",
+                          Id = partitionId,
 
                           PodConfiguration =
                           {
@@ -85,11 +84,15 @@ public class PartitionServiceTests
                                   Contains.Item("parentId"));
                       Assert.That(result.ParentPartitionIds,
                                   Contains.Item("parentId2"));
+                      mockInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<GetPartitionRequest, GetPartitionResponse>>(),
+                                                               It.IsAny<string>(),
+                                                               It.IsAny<CallOptions>(),
+                                                               It.Is<GetPartitionRequest>(r => r.Id == partitionId)),
+                                         Times.Once,
+                                         "AsyncUnaryCall should be called exactly once");
                     });
   }
 
-  //TODO
-  // FIX CONSTRAINT ASSERT
   [Test]
   public void GetPartitionShouldThrowExceptionWhenPartitionNotFound()
   {
@@ -111,10 +114,12 @@ public class PartitionServiceTests
                                                 await partitionsService.GetPartitionAsync(partitionId,
                                                                                           CancellationToken.None);
                                               });
-    Assert.That(StatusCode.NotFound,
-                Is.EqualTo(ex!.StatusCode));
-    StringAssert.Contains("Partition not found",
-                          ex.Message);
+    Assert.That(async () => await partitionsService.GetPartitionAsync(partitionId,
+                                                                      CancellationToken.None),
+                Throws.TypeOf<RpcException>()
+                      .With.Property("StatusCode")
+                      .EqualTo(StatusCode.NotFound)
+                      .And.Message.Contains("Partition not found"));
   }
 
   [Test]
@@ -207,7 +212,6 @@ public class PartitionServiceTests
                       Assert.That(receivedPartitions,
                                   Has.Count.EqualTo(2));
 
-                      // Première partition
                       Assert.That(receivedPartitions[0].Id,
                                   Is.EqualTo("partitionId1"));
                       Assert.That(receivedPartitions[0].PodMax,
@@ -217,7 +221,6 @@ public class PartitionServiceTests
                       Assert.That(receivedPartitions[0].Priority,
                                   Is.EqualTo(2));
 
-                      // Deuxième partition
                       Assert.That(receivedPartitions[1].Id,
                                   Is.EqualTo("partitionId2"));
                       Assert.That(receivedPartitions[1].PodMax,
@@ -226,6 +229,13 @@ public class PartitionServiceTests
                                   Is.EqualTo(10));
                       Assert.That(receivedPartitions[1].Priority,
                                   Is.EqualTo(3));
+
+                      mockInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<ListPartitionsRequest, ListPartitionsResponse>>(),
+                                                               It.IsAny<string>(),
+                                                               It.IsAny<CallOptions>(),
+                                                               It.IsAny<ListPartitionsRequest>()),
+                                         Times.Once,
+                                         "AsyncUnaryCall should be called exactly once");
                     });
   }
 }

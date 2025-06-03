@@ -33,7 +33,6 @@ public class HealthChecksServiceTests
   {
     var mockInvoker = new Mock<CallInvoker>();
 
-    // We have to use this specific type for the mocking
     var serviceHealth = new CheckHealthResponse.Types.ServiceHealth
                         {
                           Name    = "Hello",
@@ -69,6 +68,13 @@ public class HealthChecksServiceTests
                                              {
                                                ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
                                              }));
+
+                      mockInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<CheckHealthRequest, CheckHealthResponse>>(),
+                                                               It.IsAny<string>(),
+                                                               It.IsAny<CallOptions>(),
+                                                               It.IsAny<CheckHealthRequest>()),
+                                         Times.Once,
+                                         "AsyncUnaryCall should be called exactly once");
                     });
   }
 }
