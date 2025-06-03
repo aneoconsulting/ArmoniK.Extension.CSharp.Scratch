@@ -48,7 +48,7 @@ public class BlobServiceTests
                           {
                             new ResultRaw
                             {
-                              CompletedAt = DateTime.UtcNow.ToTimestamp(), // Use UtcNow for consistency
+                              CompletedAt = DateTime.UtcNow.ToTimestamp(),
                               Status      = ResultStatus.Created,
                               Name        = "blobName",
                               ResultId    = "blobId",
@@ -78,6 +78,12 @@ public class BlobServiceTests
                                BlobId    = "blobId",
                              },
                            }));
+    mockCallInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>>(),
+                                                 It.IsAny<string>(),
+                                                 It.IsAny<CallOptions>(),
+                                                 It.IsAny<CreateResultsMetaDataRequest>()),
+                           Times.Once,
+                           "AsyncUnaryCall for CreateResultsMetaDataRequest should be called exactly once");
   }
 
 
@@ -126,9 +132,14 @@ public class BlobServiceTests
                                BlobId    = "blobId",
                              },
                            }));
+    mockCallInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>>(),
+                                                 It.IsAny<string>(),
+                                                 It.IsAny<CallOptions>(),
+                                                 It.IsAny<CreateResultsMetaDataRequest>()),
+                           Times.Once,
+                           "AsyncUnaryCall for CreateResultsMetaDataRequest should be called exactly once");
   }
 
-// Assert.That(blobInfos.Select(b=> b.BlobName), Is.EqualTo((string[])new[] { "blobname" }));
   [Test]
   public async Task CreateBlobAsyncWithContentCreatesBlobAndUploadsContent()
   {
@@ -157,7 +168,7 @@ public class BlobServiceTests
                                                                .ToTimestamp(),
                                          Status    = ResultStatus.Created,
                                          Name      = name,
-                                         ResultId  = "blodId",
+                                         ResultId  = "blobId",
                                          SessionId = "sessionId",
                                        },
                                      },
@@ -175,7 +186,7 @@ public class BlobServiceTests
                                                            .ToTimestamp(),
                                      Status    = ResultStatus.Created,
                                      Name      = name,
-                                     ResultId  = "blodId",
+                                     ResultId  = "blobId",
                                      SessionId = "sessionId",
                                    },
                                  },
@@ -189,35 +200,34 @@ public class BlobServiceTests
                        {
                          Result = new ResultRaw
                                   {
-                                    Name     = "anyResult",
-                                    ResultId = "anyResultId",
+                                    Name      = "anyResult",
+                                    ResultId  = "anyResultId",
+                                    SessionId = "sessionId",
                                   },
                        };
 
-    mockCallInvoker.SetupAsyncClientStreamingCall(responseTask,
-                                                  mockStream.Object);
+    mockCallInvoker.Setup(x => x.AsyncClientStreamingCall(It.IsAny<Method<UploadResultDataRequest, UploadResultDataResponse>>(),
+                                                          It.IsAny<string>(),
+                                                          It.IsAny<CallOptions>()))
+                   .Returns(new AsyncClientStreamingCall<UploadResultDataRequest, UploadResultDataResponse>(Mock.Of<IClientStreamWriter<UploadResultDataRequest>>(),
+                                                                                                            Task.FromResult(responseTask),
+                                                                                                            Task.FromResult(new Metadata()),
+                                                                                                            () => Status.DefaultSuccess,
+                                                                                                            () => new Metadata(),
+                                                                                                            () =>
+                                                                                                            {
+                                                                                                            }));
+
 
     var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
 
     var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
                                                    name,
                                                    contents);
-    Assert.That(new[]
-                {
-                  result,
-                }.Select(r => r.SessionId),
-                Is.EqualTo(new[]
-                           {
-                             "sessionId",
-                           }));
-    Assert.That(new[]
-                {
-                  result,
-                }.Select(r => r.BlobName),
-                Is.EqualTo(new[]
-                           {
-                             name,
-                           }));
+    Assert.That(result.SessionId,
+                Is.EqualTo("sessionId"));
+    Assert.That(result.BlobName,
+                Is.EqualTo(name));
   }
 
   [Test]
@@ -248,7 +258,7 @@ public class BlobServiceTests
                                                                .ToTimestamp(),
                                          Status    = ResultStatus.Created,
                                          Name      = name,
-                                         ResultId  = "blodId",
+                                         ResultId  = "blobId",
                                          SessionId = "sessionId",
                                        },
                                      },
@@ -266,7 +276,7 @@ public class BlobServiceTests
                                                            .ToTimestamp(),
                                      Status    = ResultStatus.Created,
                                      Name      = name,
-                                     ResultId  = "blodId",
+                                     ResultId  = "blobId",
                                      SessionId = "sessionId",
                                    },
                                  },
@@ -298,6 +308,19 @@ public class BlobServiceTests
                 Is.EqualTo("sessionId"));
     Assert.That(result.BlobName,
                 Is.EqualTo(name));
+    Assert.That(result,
+                Is.EqualTo(new BlobInfo
+                           {
+                             SessionId = "sessionId",
+                             BlobName  = name,
+                             BlobId    = "blobId",
+                           }));
+    mockCallInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>>(),
+                                                 It.IsAny<string>(),
+                                                 It.IsAny<CallOptions>(),
+                                                 It.IsAny<CreateResultsMetaDataRequest>()),
+                           Times.Once,
+                           "AsyncUnaryCall for CreateResultsMetaDataRequest should be called exactly once");
   }
 
   [Test]
@@ -350,6 +373,12 @@ public class BlobServiceTests
                       Assert.That(result.BlobName,
                                   Is.EqualTo(response.Result.Name),
                                   "BlobName should match");
+                      mockCallInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<GetResultRequest, GetResultResponse>>(),
+                                                                   It.IsAny<string>(),
+                                                                   It.IsAny<CallOptions>(),
+                                                                   It.IsAny<GetResultRequest>()),
+                                             Times.Once,
+                                             "AsyncUnaryCall should be called exactly once");
                     });
   }
 
@@ -398,10 +427,21 @@ public class BlobServiceTests
                                       contents,
                                       CancellationToken.None);
 
-    mockCallInvoker.Verify(x => x.AsyncClientStreamingCall(It.IsAny<Method<UploadResultDataRequest, UploadResultDataResponse>>(),
-                                                           It.IsAny<string>(),
-                                                           It.IsAny<CallOptions>()),
-                           Times.Once);
+    Assert.Multiple(() =>
+                    {
+                      mockCallInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<Empty, ResultsServiceConfigurationResponse>>(),
+                                                                   It.IsAny<string>(),
+                                                                   It.IsAny<CallOptions>(),
+                                                                   It.IsAny<Empty>()),
+                                             Times.Once,
+                                             "Service configuration should be called");
+
+                      mockCallInvoker.Verify(x => x.AsyncClientStreamingCall(It.IsAny<Method<UploadResultDataRequest, UploadResultDataResponse>>(),
+                                                                             It.IsAny<string>(),
+                                                                             It.IsAny<CallOptions>()),
+                                             Times.Once,
+                                             "Upload streaming should be called");
+                    });
   }
 
   [Test]
@@ -409,59 +449,82 @@ public class BlobServiceTests
   {
     var mockCallInvoker = new Mock<CallInvoker>();
 
-    var chunks = new List<DownloadResultDataResponse>
-                 {
-                   new()
-                   {
-                     DataChunk = ByteString.CopyFrom(1,
-                                                     2,
-                                                     3,
-                                                     4,
-                                                     5,
-                                                     6),
-                   },
-                 };
+    var expectedChunks = new List<byte[]>
+                         {
+                           new byte[]
+                           {
+                             0x01,
+                             0x02,
+                             0x03,
+                           },
+                           new byte[]
+                           {
+                             0x04,
+                             0x05,
+                             0x06,
+                           },
+                         };
 
-    mockCallInvoker.SetupAsyncServerStreamingCallInvokerMock<DownloadResultDataRequest, DownloadResultDataResponse>(chunks[0]);
+    // Create a mock for the asynchronous stream reader to simulate streaming data
+    var responseStreamMock = new Mock<IAsyncStreamReader<DownloadResultDataResponse>>();
+
+    // Configure the sequence of MoveNext and Current calls to simulate the streaming behavior
+    var callCount = 0; // Tracks the number of times MoveNext is called
+
+    responseStreamMock.Setup(x => x.MoveNext(It.IsAny<CancellationToken>()))
+                      .Returns(() => Task.FromResult(callCount < expectedChunks.Count)) // Returns true until all chunks are read
+                      .Callback(() => callCount++);                                     // Increment callCount each time MoveNext is called
+
+    // Setup the Current property to return the appropriate chunk based on callCount
+    responseStreamMock.Setup(x => x.Current)
+                      .Returns(() => new DownloadResultDataResponse
+                                     {
+                                       DataChunk = ByteString.CopyFrom(expectedChunks[callCount - 1]), // Return the chunk corresponding to the current callCount
+                                     });
+
+    // Setup the mock CallInvoker to return our mock stream when AsyncServerStreamingCall is invoked
+    mockCallInvoker.Setup(x => x.AsyncServerStreamingCall(It.IsAny<Method<DownloadResultDataRequest, DownloadResultDataResponse>>(),
+                                                          It.IsAny<string>(),
+                                                          It.IsAny<CallOptions>(),
+                                                          It.IsAny<DownloadResultDataRequest>()))
+                   .Returns(new AsyncServerStreamingCall<DownloadResultDataResponse>(responseStreamMock.Object,
+                                                                                     Task.FromResult(new Metadata()),
+                                                                                     () => Status.DefaultSuccess,
+                                                                                     () => new Metadata(),
+                                                                                     () =>
+                                                                                     {
+                                                                                     })); // Return the mock streaming call setup
+
 
     var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
 
     var blobInfo = new BlobInfo
                    {
-                     BlobName  = "validBlob",
-                     BlobId    = "validBlobId",
-                     SessionId = "sessionId",
+                     BlobId    = "testBlobId",
+                     SessionId = "testSessionId",
                    };
 
+    // Collect the chunks of data returned by the DownloadBlobWithChunksAsync method
     var resultChunks = new List<byte[]>();
     await foreach (var chunk in blobService.DownloadBlobWithChunksAsync(blobInfo))
     {
       resultChunks.Add(chunk);
     }
 
-    var expectedChunk = new byte[]
-                        {
-                          1,
-                          2,
-                          3,
-                          4,
-                          5,
-                          6,
-                        };
 
-    Assert.Multiple(() =>
-                    {
-                      Assert.That(resultChunks,
-                                  Has.Count.EqualTo(1),
-                                  "Should receive exactly 1 chunk");
+    // Verify that the chunks received match the expected chunks
+    Assert.That(expectedChunks,
+                Is.EqualTo(resultChunks));
 
-                      Assert.That(resultChunks.Select(c => c),
-                                  Is.EqualTo(new[]
-                                             {
-                                               expectedChunk,
-                                             }));
-                    });
+    // Verify that the AsyncServerStreamingCall method was called exactly once
+    mockCallInvoker.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<DownloadResultDataRequest, DownloadResultDataResponse>>(),
+                                                           It.IsAny<string>(),
+                                                           It.IsAny<CallOptions>(),
+                                                           It.IsAny<DownloadResultDataRequest>()),
+                           Times.Once,
+                           "Download streaming should be called");
   }
+
 
   [Test]
   public async Task ListBlobsAsyncWithPaginationReturnsBlobs()
@@ -522,6 +585,12 @@ public class BlobServiceTests
                                                "blob1",
                                                "blob2",
                                              }));
+                      mockCallInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<ListResultsRequest, ListResultsResponse>>(),
+                                                                   It.IsAny<string>(),
+                                                                   It.IsAny<CallOptions>(),
+                                                                   It.IsAny<ListResultsRequest>()),
+                                             Times.Once,
+                                             "AsyncUnaryCall should be called exactly once");
                     });
   }
 
@@ -567,6 +636,22 @@ public class BlobServiceTests
                       Assert.That(result.CompletedAt,
                                   Is.EqualTo(completedAt)
                                     .Within(TimeSpan.FromSeconds(1)));
+                      Assert.That(result,
+                                  Is.EqualTo(new BlobState
+                                             {
+                                               Status      = BlobStatus.Completed,
+                                               BlobId      = "existingBlobId",
+                                               SessionId   = "sessionId",
+                                               BlobName    = "existingBlob",
+                                               CreateAt    = createdAt,
+                                               CompletedAt = completedAt,
+                                             }));
+                      mockCallInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<GetResultRequest, GetResultResponse>>(),
+                                                                   It.IsAny<string>(),
+                                                                   It.IsAny<CallOptions>(),
+                                                                   It.IsAny<GetResultRequest>()),
+                                             Times.Once,
+                                             "AsyncUnaryCall should be called exactly once");
                     });
   }
 
@@ -590,6 +675,7 @@ public class BlobServiceTests
 
     mockCallInvoker.SetupAsyncServerStreamingCallInvokerMock<DownloadResultDataRequest, DownloadResultDataResponse>(downloadResponse);
 
+
     var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
     var blobInfo = new BlobInfo
                    {
@@ -599,8 +685,17 @@ public class BlobServiceTests
                    };
 
     var result = await blobService.DownloadBlobAsync(blobInfo);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.EqualTo(expectedContent));
 
-    Assert.That(result,
-                Is.EqualTo(expectedContent));
+                      mockCallInvoker.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<DownloadResultDataRequest, DownloadResultDataResponse>>(),
+                                                                             It.IsAny<string>(),
+                                                                             It.IsAny<CallOptions>(),
+                                                                             It.IsAny<DownloadResultDataRequest>()),
+                                             Times.Once,
+                                             "AsyncServerStreamingCall should be called exactly once");
+                    });
   }
 }

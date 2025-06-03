@@ -79,6 +79,16 @@ public class SessionServiceTests
   }
 
   [Test]
+  public void CompareTwoSessionsWithSameIdReturnsTrue()
+  {
+    var session1 = new SessionInfo("12345");
+    var session2 = new SessionInfo("12345");
+
+    Assert.That(session1,
+                Is.EqualTo(session2));
+  }
+
+  [Test]
   public async Task CloseSessionCallsGrpcWithCorrectSessionId()
   {
     var mockCallInvoker = new Mock<CallInvoker>();
