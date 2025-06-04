@@ -67,6 +67,7 @@ public class BlobServiceTests
                                                          "blobName",
                                                        });
 
+
     var blobInfos = await results.ToListAsync();
     Assert.That(blobInfos,
                 Is.EqualTo(new BlobInfo[]
@@ -120,7 +121,8 @@ public class BlobServiceTests
                                                         name,
                                                       });
 
-    var blobInfos = await result.ToListAsync();
+    var blobInfos = await result.ToListAsync()
+                                .ConfigureAwait(false);
 
     Assert.That(blobInfos,
                 Is.EqualTo(new BlobInfo[]
@@ -302,7 +304,8 @@ public class BlobServiceTests
 
     var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
                                                    name,
-                                                   contents);
+                                                   contents)
+                                  .ConfigureAwait(false);
 
     Assert.That(result.SessionId,
                 Is.EqualTo("sessionId"));

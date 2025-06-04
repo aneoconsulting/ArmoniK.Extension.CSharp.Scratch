@@ -64,12 +64,15 @@ public class EventsServiceTests
     eventsService.WaitForBlobsAsync(sessionInfo,
                                     blobInfos);
 
+
     mockInvoker.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
                                                        It.IsAny<string>(),
                                                        It.IsAny<CallOptions>(),
                                                        It.IsAny<EventSubscriptionRequest>()),
                        Times.Once,
                        "AsyncServerStreamingCall should be called exactly once");
+
+
     return Task.CompletedTask;
   }
 }

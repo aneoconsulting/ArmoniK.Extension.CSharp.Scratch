@@ -51,7 +51,8 @@ public class PartitionsService : IPartitionsService
                                                              {
                                                                Id = partitionId,
                                                              },
-                                                             cancellationToken: cancellationToken);
+                                                             cancellationToken: cancellationToken)
+                                          .ConfigureAwait(false);
     return new Partition
            {
              Id                   = partition.Partition.Id,
@@ -80,7 +81,8 @@ public class PartitionsService : IPartitionsService
                                                                          {
                                                                            Direction = (SortDirection)partitionPagination.SortDirection,
                                                                          },
-                                                                });
+                                                                })
+                                           .ConfigureAwait(false);
 
     foreach (var partition in partitions.Partitions)
     {

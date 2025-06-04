@@ -50,7 +50,8 @@ public class SessionHandler
   {
     var sessionService = await armoniKClient_.GetSessionService();
     await sessionService.CancelSessionAsync(sessionInfo_,
-                                            cancellationToken);
+                                            cancellationToken)
+                        .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -61,7 +62,8 @@ public class SessionHandler
   {
     var sessionService = await armoniKClient_.GetSessionService();
     await sessionService.CloseSessionAsync(sessionInfo_,
-                                           cancellationToken);
+                                           cancellationToken)
+                        .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -72,7 +74,8 @@ public class SessionHandler
   {
     var sessionService = await armoniKClient_.GetSessionService();
     await sessionService.PauseSessionAsync(sessionInfo_,
-                                           cancellationToken);
+                                           cancellationToken)
+                        .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -83,7 +86,8 @@ public class SessionHandler
   {
     var sessionService = await armoniKClient_.GetSessionService();
     await sessionService.StopSubmissionAsync(sessionInfo_,
-                                             cancellationToken);
+                                             cancellationToken)
+                        .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -94,7 +98,8 @@ public class SessionHandler
   {
     var sessionService = await armoniKClient_.GetSessionService();
     await sessionService.ResumeSessionAsync(sessionInfo_,
-                                            cancellationToken);
+                                            cancellationToken)
+                        .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -105,7 +110,8 @@ public class SessionHandler
   {
     var sessionService = await armoniKClient_.GetSessionService();
     await sessionService.PurgeSessionAsync(sessionInfo_,
-                                           cancellationToken);
+                                           cancellationToken)
+                        .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -116,6 +122,7 @@ public class SessionHandler
   {
     var sessionService = await armoniKClient_.GetSessionService();
     await sessionService.DeleteSessionAsync(sessionInfo_,
-                                            cancellationToken);
+                                            cancellationToken)
+                        .ConfigureAwait(false);
   }
 }

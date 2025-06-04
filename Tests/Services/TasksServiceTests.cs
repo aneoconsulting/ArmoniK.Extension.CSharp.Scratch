@@ -211,9 +211,11 @@ public class TasksServiceTests
                                                     taskNodes)
                                   .ToListAsync()
                                   .ConfigureAwait(false);
+
     Assert.That(result,
                 Has.Count.EqualTo(2),
                 "Result should contain two task infos");
+
     Assert.That(result,
                 Has.Some.Matches<TaskInfos>(r => r.TaskId == "taskId1" && r.PayloadId == "payloadId1" && r.ExpectedOutputs.Contains("outputId1")),
                 "Result should contain an item with taskId1, payloadId1, and outputId1");
@@ -421,6 +423,7 @@ public class TasksServiceTests
     await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
                                        taskNodes)
                      .ConfigureAwait(false);
+
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
                                                    It.IsAny<CancellationToken>()),
