@@ -62,10 +62,7 @@ public class BlobServiceTests
     var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
 
     var results = blobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
-                                                       new[]
-                                                       {
-                                                         "blobName",
-                                                       });
+                                                       ["blobName"]);
 
     var blobInfos = await results.ToListAsync().ConfigureAwait(false);
     Assert.That(blobInfos,
@@ -115,10 +112,7 @@ public class BlobServiceTests
     var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
 
     var result = blobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
-                                                      new[]
-                                                      {
-                                                        name,
-                                                      });
+                                                      [name]);
 
     var blobInfos = await result.ToListAsync()
                                 .ConfigureAwait(false);
@@ -387,14 +381,7 @@ public class BlobServiceTests
   public async Task UploadBlobAsyncWithValidContentUploadsBlob()
   {
     var mockCallInvoker = new Mock<CallInvoker>();
-    var contents = new ReadOnlyMemory<byte>(new byte[]
-                                            {
-                                              1,
-                                              2,
-                                              3,
-                                              4,
-                                              5,
-                                            });
+    var contents        = new ReadOnlyMemory<byte>([1, 2, 3, 4, 5]);
 
     var serviceConfig = new ResultsServiceConfigurationResponse
                         {

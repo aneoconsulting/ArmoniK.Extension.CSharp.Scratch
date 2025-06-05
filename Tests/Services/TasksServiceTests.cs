@@ -323,12 +323,7 @@ public class TasksServiceTests
                         DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
                                                   {
                                                     {
-                                                      "dependencyBlob", new ReadOnlyMemory<byte>(new byte[]
-                                                                                                 {
-                                                                                                   1,
-                                                                                                   2,
-                                                                                                   3,
-                                                                                                 })
+                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
                                                     },
                                                   },
                       },
@@ -687,12 +682,7 @@ public class TasksServiceTests
                         DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
                                                   {
                                                     {
-                                                      "dependencyBlob", new ReadOnlyMemory<byte>(new byte[]
-                                                                                                 {
-                                                                                                   1,
-                                                                                                   2,
-                                                                                                   3,
-                                                                                                 })
+                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
                                                     },
                                                   },
                       },
@@ -799,12 +789,7 @@ public class TasksServiceTests
                         DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
                                                   {
                                                     {
-                                                      "dependencyBlob", new ReadOnlyMemory<byte>(new byte[]
-                                                                                                 {
-                                                                                                   1,
-                                                                                                   2,
-                                                                                                   3,
-                                                                                                 })
+                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
                                                     },
                                                   },
                       },
