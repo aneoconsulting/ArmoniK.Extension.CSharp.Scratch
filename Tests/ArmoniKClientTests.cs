@@ -63,26 +63,21 @@ public class ArmoniKClientTests
 
   [Test]
   public void Constructor_ThrowsArgumentNullException_IfPropertiesIsNull()
-  {
-    // Act 
-    var exception = Assert.Throws<ArgumentNullException>(() => new ArmoniKClient(null,
-                                                                                 loggerFactoryMock_.Object,
-                                                                                 defaultTaskOptions_));
-    Assert.That(exception?.ParamName,
-                Is.EqualTo("properties"));
-  }
+    // Act & Assert
+    => Assert.That(() => new ArmoniKClient(null,
+                                           loggerFactoryMock_.Object,
+                                           defaultTaskOptions_),
+                   Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
+                         .EqualTo("properties"));
 
   [Test]
   public void Constructor_ThrowsArgumentNullException_IfLoggerFactoryIsNull()
-  {
-    // Act  
-    var exception = Assert.Throws<ArgumentNullException>(() => new ArmoniKClient(defaultProperties_,
-                                                                                 null,
-                                                                                 defaultTaskOptions_));
-    // Assert
-    Assert.That(exception?.ParamName,
-                Is.EqualTo("loggerFactory"));
-  }
+    // Act & Assert
+    => Assert.That(() => new ArmoniKClient(defaultProperties_,
+                                           null,
+                                           defaultTaskOptions_),
+                   Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
+                         .EqualTo("loggerFactory"));
 
   [Test]
   public async Task GetBlobService_ShouldReturnInstance()
