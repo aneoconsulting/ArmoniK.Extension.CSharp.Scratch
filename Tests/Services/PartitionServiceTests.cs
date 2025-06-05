@@ -108,12 +108,6 @@ public class PartitionServiceTests
 
     var partitionsService = mockCallInvoker.GetPartitionsServiceMock();
 
-
-    var ex = Assert.ThrowsAsync<RpcException>(async () =>
-                                              {
-                                                await partitionsService.GetPartitionAsync(partitionId,
-                                                                                          CancellationToken.None);
-                                              });
     Assert.That(async () => await partitionsService.GetPartitionAsync(partitionId,
                                                                       CancellationToken.None),
                 Throws.TypeOf<RpcException>()
