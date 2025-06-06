@@ -28,7 +28,7 @@ namespace ArmoniK.Extension.CSharp.Client.Handlers;
 ///   Provides methods for handling operations related to blobs, such as retrieving state, downloading, and uploading
 ///   blob data.
 /// </summary>
-public record BlobHandler : BlobInfo
+public record BlobHandle : BlobInfo
 {
   /// <summary>
   ///   The ArmoniK client used for performing blob operations.
@@ -36,31 +36,38 @@ public record BlobHandler : BlobInfo
   public readonly ArmoniKClient ArmoniKClient;
 
   /// <summary>
-  ///   Initializes a new instance of the <see cref="BlobHandler" /> class with specified blob information and an ArmoniK
+  ///   Initializes a new instance of the <see cref="BlobHandle" /> class with specified blob information and an ArmoniK
   ///   client.
   /// </summary>
   /// <param name="blobInfo">The information about the blob.</param>
   /// <param name="armoniKClient">The ArmoniK client used for performing blob operations.</param>
-  public BlobHandler(BlobInfo blobInfo, ArmoniKClient armoniKClient)
-       : this(blobInfo.SessionId, blobInfo.BlobName, blobInfo.BlobId, armoniKClient) // Calls the constructor above
+  public BlobHandle(BlobInfo      blobInfo,
+                    ArmoniKClient armoniKClient)
+    : this(blobInfo.SessionId,
+           blobInfo.BlobName,
+           blobInfo.BlobId,
+           armoniKClient) // Calls the constructor above
   {
   }
 
 
   /// <summary>
-  ///   Initializes a new instance of the <see cref="BlobHandler" /> class with specified blob details and an ArmoniK
+  ///   Initializes a new instance of the <see cref="BlobHandle" /> class with specified blob details and an ArmoniK
   ///   client.
   /// </summary>
   /// <param name="blobName">The name of the blob.</param>
   /// <param name="blobId">The identifier of the blob.</param>
   /// <param name="sessionId">The session identifier associated with the blob.</param>
   /// <param name="armoniKClient">The ArmoniK client used for performing blob operations.</param>
-  public BlobHandler(string sessionId, string blobName, string blobId, ArmoniKClient armoniKClient)
-  // Assuming BlobInfo has a constructor that takes these parameters
+  public BlobHandle(string        sessionId,
+                    string        blobName,
+                    string        blobId,
+                    ArmoniKClient armoniKClient)
+    // Assuming BlobInfo has a constructor that takes these parameters
   {
-    BlobName = blobName;
-    BlobId = blobId;
-    SessionId = sessionId;
+    BlobName      = blobName;
+    BlobId        = blobId;
+    SessionId     = sessionId;
     ArmoniKClient = armoniKClient;
   }
 
@@ -72,7 +79,7 @@ public record BlobHandler : BlobInfo
   public async Task<BlobState> GetBlobStateAsync(CancellationToken cancellationToken = default)
   {
     var blobClient = await ArmoniKClient.GetBlobService();
-    return await blobClient.GetBlobStateAsync(BlobInfo,
+    return await blobClient.GetBlobStateAsync(this,
                                               cancellationToken)
                            .ConfigureAwait(false);
   }

@@ -64,7 +64,8 @@ public class BlobServiceTests
     var results = blobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
                                                        ["blobName"]);
 
-    var blobInfos = await results.ToListAsync().ConfigureAwait(false);
+    var blobInfos = await results.ToListAsync()
+                                 .ConfigureAwait(false);
     Assert.That(blobInfos,
                 Is.EqualTo(new BlobInfo[]
                            {
@@ -218,7 +219,8 @@ public class BlobServiceTests
 
     var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
                                                    name,
-                                                   contents).ConfigureAwait(false);
+                                                   contents)
+                                  .ConfigureAwait(false);
     Assert.That(result.SessionId,
                 Is.EqualTo("sessionId"));
     Assert.That(result.BlobName,
@@ -297,7 +299,8 @@ public class BlobServiceTests
 
     var result = await blobService.CreateBlobAsync(new SessionInfo("sessionId"),
                                                    name,
-                                                   contents).ConfigureAwait(false);
+                                                   contents)
+                                  .ConfigureAwait(false);
 
     Assert.That(result.SessionId,
                 Is.EqualTo("sessionId"));
