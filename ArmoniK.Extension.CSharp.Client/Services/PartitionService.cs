@@ -29,7 +29,7 @@ using Grpc.Core;
 
 using Microsoft.Extensions.Logging;
 
-public class PartitionsService : IPartitionsService
+internal class PartitionsService : IPartitionsService
 {
   private readonly ObjectPool<ChannelBase>    channel_;
   private readonly ILogger<PartitionsService> logger_;
