@@ -65,6 +65,7 @@ internal class PartitionsService : IPartitionsService
            };
   }
 
+  /// <inheritdoc />
   public async IAsyncEnumerable<(int, Partition)> ListPartitionsAsync(PartitionPagination                        partitionPagination,
                                                                       [EnumeratorCancellation] CancellationToken cancellationToken)
   {

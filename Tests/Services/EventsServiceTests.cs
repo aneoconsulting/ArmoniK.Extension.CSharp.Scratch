@@ -32,7 +32,7 @@ namespace Tests.Services;
 public class EventsServiceTests
 {
   [Test]
-  public Task CreateSession_ReturnsNewSessionWithId()
+  public Task CreateSessionReturnsNewSessionWithId()
   {
     var responses = new EventSubscriptionResponse
                     {
@@ -45,23 +45,34 @@ public class EventsServiceTests
                     };
 
     var mockInvoker = new Mock<CallInvoker>();
-
     var callInvoker = mockInvoker.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
 
     var eventsService = MockHelper.GetEventsServiceMock(callInvoker);
-    // Act
+    var blobId        = "1234";
+    var sessionId     = "sessionId";
 
-    Assert.DoesNotThrowAsync(async () => await eventsService.WaitForBlobsAsync(new SessionInfo("sessionId"),
-                                                                               new[]
-                                                                               {
-                                                                                 new BlobInfo
-                                                                                 {
-                                                                                   BlobName  = "",
-                                                                                   BlobId    = "1234",
-                                                                                   SessionId = "sessionId",
-                                                                                 },
-                                                                               })
-                                                            .ConfigureAwait(false));
+    var sessionInfo = new SessionInfo(sessionId);
+    var blobInfos = new[]
+                    {
+                      new BlobInfo
+                      {
+                        BlobName  = "",
+                        BlobId    = blobId,
+                        SessionId = sessionId,
+                      },
+                    };
+    eventsService.WaitForBlobsAsync(sessionInfo,
+                                    blobInfos);
+
+
+    mockInvoker.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
+                                                       It.IsAny<string>(),
+                                                       It.IsAny<CallOptions>(),
+                                                       It.IsAny<EventSubscriptionRequest>()),
+                       Times.Once,
+                       "AsyncServerStreamingCall should be called exactly once");
+
+
     return Task.CompletedTask;
   }
 }
