@@ -102,9 +102,6 @@ public class TasksServiceTests
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
     Assert.Multiple(() =>
                     {
-                      Assert.That(taskInfosEnumerable,
-                                  Is.Not.Null,
-                                  "Result should not be null.");
                       Assert.That(taskInfosEnumerable.Length,
                                   Is.EqualTo(1),
                                   "Expected one task info in the response.");
