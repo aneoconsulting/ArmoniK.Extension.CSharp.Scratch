@@ -19,7 +19,7 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 /// <summary>
 ///   Represents information that minimally defines a blob.
 /// </summary>
-public record BlobInfo
+public class BlobInfo
 {
   /// <summary>
   ///   Session ID associated with the blob.
