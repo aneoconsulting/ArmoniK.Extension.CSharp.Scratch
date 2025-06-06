@@ -110,7 +110,7 @@ public class PartitionServiceTests
 
     Assert.That(async () => await partitionsService.GetPartitionAsync(partitionId,
                                                                       CancellationToken.None),
-                Throws.TypeOf<RpcException>()
+                Throws.InstanceOf<RpcException>()
                       .With.Property("StatusCode")
                       .EqualTo(StatusCode.NotFound)
                       .And.Message.Contains("Partition not found"));
