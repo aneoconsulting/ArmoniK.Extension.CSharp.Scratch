@@ -21,7 +21,6 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
-using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Utils;
 
 using Google.Protobuf.WellKnownTypes;
@@ -93,8 +92,8 @@ public class TasksServiceTests
                     };
 
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes)
-                                  .ConfigureAwait(false);
+                                                            taskNodes)
+                             .ConfigureAwait(false);
 
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
     Assert.Multiple(() =>
@@ -197,9 +196,9 @@ public class TasksServiceTests
                     };
 
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes)
-                                  .ToListAsync()
-                                  .ConfigureAwait(false);
+                                                            taskNodes)
+                             .ToListAsync()
+                             .ConfigureAwait(false);
     Assert.That(result,
                 Has.Count.EqualTo(2),
                 "Result should contain two task infos");
@@ -239,7 +238,7 @@ public class TasksServiceTests
                     };
 
     Assert.That(async () => await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                               taskNodes),
+                                                                       taskNodes),
                 Throws.Exception.TypeOf<InvalidOperationException>());
   }
 
@@ -314,8 +313,8 @@ public class TasksServiceTests
                     };
 
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes)
-                                  .ConfigureAwait(false);
+                                                            taskNodes)
+                             .ConfigureAwait(false);
 
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                           It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
@@ -390,8 +389,8 @@ public class TasksServiceTests
                       },
                     };
     await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                       taskNodes)
-                     .ConfigureAwait(false);
+                                               taskNodes)
+                .ConfigureAwait(false);
 
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                           It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
@@ -443,8 +442,8 @@ public class TasksServiceTests
                             };
 
     var result = await client.TasksService.ListTasksAsync(paginationOptions)
-                                  .ToListAsync()
-                                  .ConfigureAwait(false);
+                             .ToListAsync()
+                             .ConfigureAwait(false);
     Assert.Multiple(() =>
                     {
                       Assert.That(result,
@@ -512,7 +511,7 @@ public class TasksServiceTests
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<GetTaskRequest, GetTaskResponse>(taskResponse);
 
     var result = await client.TasksService.GetTasksDetailedAsync("taskId1")
-                                  .ConfigureAwait(false);
+                             .ConfigureAwait(false);
     Assert.Multiple(() =>
                     {
                       Assert.That(result,
@@ -590,9 +589,9 @@ public class TasksServiceTests
                             };
 
     var result = await client.TasksService.ListTasksDetailedAsync(new SessionInfo("sessionId1"),
-                                                          paginationOptions)
-                                  .FirstOrDefaultAsync()
-                                  .ConfigureAwait(false);
+                                                                  paginationOptions)
+                             .FirstOrDefaultAsync()
+                             .ConfigureAwait(false);
 
     Assert.That(result,
                 Is.Not.Null,
@@ -613,20 +612,20 @@ public class TasksServiceTests
                   };
 
     await client.TasksService.CancelTasksAsync(taskIds)
-                     .ConfigureAwait(false);
+                .ConfigureAwait(false);
 
     client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelTasksRequest, CancelTasksResponse>>(),
-                                                         It.IsAny<string>(),
-                                                         It.IsAny<CallOptions>(),
-                                                         It.Is<CancelTasksRequest>(req => req.TaskIds.Count == 2 && req.TaskIds.Contains("taskId1") &&
-                                                                                          req.TaskIds.Contains("taskId2"))),
-                       Times.Once);
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<CancelTasksRequest>(req => req.TaskIds.Count == 2 && req.TaskIds.Contains("taskId1") &&
+                                                                                                     req.TaskIds.Contains("taskId2"))),
+                                  Times.Once);
   }
 
   [Test]
   public async Task CreateNewBlobsAsyncCreatesBlobsCorrectly()
   {
-    var client = new MockedArmoniKClient();
+    var client  = new MockedArmoniKClient();
     var session = new SessionInfo("sessionId1");
     var taskNodes = new List<TaskNode>
                     {
@@ -671,19 +670,21 @@ public class TasksServiceTests
                           },
                         };
 
+    client.BlobServiceMock.SetupCreateBlobMock(expectedBlobs);
+
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(new SubmitTasksResponse());
 
     var result = await client.TasksService.SubmitTasksAsync(session,
-                                                    taskNodes)
-                                  .ConfigureAwait(false);
+                                                            taskNodes)
+                             .ConfigureAwait(false);
 
     Assert.That(result,
                 Is.Not.Null,
                 "Result should not be null.");
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                                   It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
-                                                   It.IsAny<CancellationToken>()),
-                           Times.Once);
+                                                          It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                          It.IsAny<CancellationToken>()),
+                                  Times.Once);
   }
 
   [Test]
@@ -758,8 +759,8 @@ public class TasksServiceTests
                     };
 
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes)
-                                  .ConfigureAwait(false);
+                                                            taskNodes)
+                             .ConfigureAwait(false);
     Assert.Multiple(() =>
                     {
                       Assert.That(result,
@@ -788,11 +789,11 @@ public class TasksServiceTests
   {
     var client = new MockedArmoniKClient();
     client.CallInvokerMock.Setup(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<GetTaskRequest, GetTaskResponse>>(),
-                                                        It.IsAny<string>(),
-                                                        It.IsAny<CallOptions>(),
-                                                        It.IsAny<GetTaskRequest>()))
-               .Throws(new RpcException(new Status(StatusCode.NotFound,
-                                                   "Task not found")));
+                                                                   It.IsAny<string>(),
+                                                                   It.IsAny<CallOptions>(),
+                                                                   It.IsAny<GetTaskRequest>()))
+          .Throws(new RpcException(new Status(StatusCode.NotFound,
+                                              "Task not found")));
 
     Assert.That(async () => await client.TasksService.GetTasksDetailedAsync("nonExistentTaskId"),
                 Throws.Exception.TypeOf<RpcException>());
@@ -803,11 +804,11 @@ public class TasksServiceTests
   {
     var client = new MockedArmoniKClient();
     client.CallInvokerMock.Setup(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelTasksRequest, CancelTasksResponse>>(),
-                                                        It.IsAny<string>(),
-                                                        It.IsAny<CallOptions>(),
-                                                        It.IsAny<CancelTasksRequest>()))
-               .Throws(new RpcException(new Status(StatusCode.NotFound,
-                                                   "Task not found")));
+                                                                   It.IsAny<string>(),
+                                                                   It.IsAny<CallOptions>(),
+                                                                   It.IsAny<CancelTasksRequest>()))
+          .Throws(new RpcException(new Status(StatusCode.NotFound,
+                                              "Task not found")));
 
     var taskIds = new List<string>
                   {

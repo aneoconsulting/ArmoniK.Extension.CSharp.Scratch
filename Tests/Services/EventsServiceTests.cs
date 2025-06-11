@@ -48,8 +48,8 @@ public class EventsServiceTests
 
     client.CallInvokerMock.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
 
-    var blobId        = "1234";
-    var sessionId     = "sessionId";
+    var blobId    = "1234";
+    var sessionId = "sessionId";
 
     var sessionInfo = new SessionInfo(sessionId);
     var blobInfos = new[]
@@ -62,14 +62,14 @@ public class EventsServiceTests
                       },
                     };
     client.EventsService.WaitForBlobsAsync(sessionInfo,
-                                    blobInfos);
+                                           blobInfos);
 
     client.CallInvokerMock.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
-                                                       It.IsAny<string>(),
-                                                       It.IsAny<CallOptions>(),
-                                                       It.IsAny<EventSubscriptionRequest>()),
-                       Times.Once,
-                       "AsyncServerStreamingCall should be called exactly once");
+                                                                  It.IsAny<string>(),
+                                                                  It.IsAny<CallOptions>(),
+                                                                  It.IsAny<EventSubscriptionRequest>()),
+                                  Times.Once,
+                                  "AsyncServerStreamingCall should be called exactly once");
 
 
     return Task.CompletedTask;

@@ -62,9 +62,14 @@ public class ArmoniKClient : IArmoniKClient
     logger_       = loggerFactory.CreateLogger<ArmoniKClient>();
 
     var services = new ServiceCollection();
-    servicesConfiguration ??= new DefaultServicesConfiguration();
-    servicesConfiguration?.AddServices(this,
-                                       services);
+    servicesConfiguration ??= new ServicesConfiguration(this);
+    services.AddSingleton(servicesConfiguration.BlobServiceBuilder);
+    services.AddSingleton(servicesConfiguration.EventsServiceBuilder);
+    services.AddSingleton(servicesConfiguration.HealthCheckServiceBuilder);
+    services.AddSingleton(servicesConfiguration.PartitionsServiceBuilder);
+    services.AddSingleton(servicesConfiguration.SessionServiceBuilder);
+    services.AddSingleton(servicesConfiguration.TaskServiceBuilder);
+    services.AddSingleton(servicesConfiguration.VersionsServiceBuilder);
     serviceProvider_ = services.BuildServiceProvider();
   }
 

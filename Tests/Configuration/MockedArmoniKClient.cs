@@ -34,14 +34,8 @@ namespace Tests.Configuration;
 
 internal sealed class MockedArmoniKClient : IArmoniKClient
 {
-  private readonly ServiceProvider            serviceProvider_;
-  private          Mock<IBlobService>?        blobServiceMock_;
-  private          Mock<IEventsService>?      eventServiceMock_;
-  private          Mock<IHealthCheckService>? healthCheckServiceMock_;
-  private          Mock<IPartitionsService>?  partitionServiceMock_;
-  private          Mock<ISessionService>?     sessionServiceMock_;
-  private          Mock<ITasksService>?       tasksServiceMock_;
-  private          Mock<IVersionsService>?    versionsServiceMock_;
+  private readonly ServiceProvider     serviceProvider_;
+  private          Mock<IBlobService>? blobServiceMock_;
 
   public MockedArmoniKClient()
   {
@@ -66,9 +60,14 @@ internal sealed class MockedArmoniKClient : IArmoniKClient
     ChannelPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
 
     var services              = new ServiceCollection();
-    var servicesConfiguration = new DefaultServicesConfiguration();
-    servicesConfiguration.AddServices(this,
-                                      services);
+    var servicesConfiguration = new ServicesConfiguration(this);
+    services.AddSingleton<IBlobService>(servicesConfiguration.BlobServiceBuilder);
+    services.AddSingleton<IEventsService>(servicesConfiguration.EventsServiceBuilder);
+    services.AddSingleton<IHealthCheckService>(servicesConfiguration.HealthCheckServiceBuilder);
+    services.AddSingleton<IPartitionsService>(servicesConfiguration.PartitionsServiceBuilder);
+    services.AddSingleton<ISessionService>(servicesConfiguration.SessionServiceBuilder);
+    services.AddSingleton<ITasksService>(servicesConfiguration.TaskServiceBuilder);
+    services.AddSingleton<IVersionsService>(servicesConfiguration.VersionsServiceBuilder);
     serviceProvider_ = services.BuildServiceProvider();
   }
 
@@ -78,24 +77,6 @@ internal sealed class MockedArmoniKClient : IArmoniKClient
 
   public Mock<IBlobService> BlobServiceMock
     => blobServiceMock_ ??= new Mock<IBlobService>();
-
-  public Mock<ITasksService> TaskServiceMock
-    => tasksServiceMock_ ??= new Mock<ITasksService>();
-
-  public Mock<ISessionService> SessionServiceMock
-    => sessionServiceMock_ ??= new Mock<ISessionService>();
-
-  public Mock<IEventsService> EventServiceMock
-    => eventServiceMock_ ??= new Mock<IEventsService>();
-
-  public Mock<IVersionsService> VersionsServiceMock
-    => versionsServiceMock_ ??= new Mock<IVersionsService>();
-
-  public Mock<IPartitionsService> PartitionsServiceMock
-    => partitionServiceMock_ ??= new Mock<IPartitionsService>();
-
-  public Mock<IHealthCheckService> HealthServiceMock
-    => healthCheckServiceMock_ ??= new Mock<IHealthCheckService>();
 
   public Properties Properties { get; }
 
@@ -108,20 +89,20 @@ internal sealed class MockedArmoniKClient : IArmoniKClient
     => blobServiceMock_?.Object ?? serviceProvider_.GetRequiredService<IBlobService>();
 
   public ITasksService TasksService
-    => tasksServiceMock_?.Object ?? serviceProvider_.GetRequiredService<ITasksService>();
+    => serviceProvider_.GetRequiredService<ITasksService>();
 
   public ISessionService SessionService
-    => sessionServiceMock_?.Object ?? serviceProvider_.GetRequiredService<ISessionService>();
+    => serviceProvider_.GetRequiredService<ISessionService>();
 
   public IEventsService EventsService
-    => eventServiceMock_?.Object ?? serviceProvider_.GetRequiredService<IEventsService>();
+    => serviceProvider_.GetRequiredService<IEventsService>();
 
   public IVersionsService VersionService
-    => versionsServiceMock_?.Object ?? serviceProvider_.GetRequiredService<IVersionsService>();
+    => serviceProvider_.GetRequiredService<IVersionsService>();
 
   public IPartitionsService PartitionsService
-    => partitionServiceMock_?.Object ?? serviceProvider_.GetRequiredService<IPartitionsService>();
+    => serviceProvider_.GetRequiredService<IPartitionsService>();
 
   public IHealthCheckService HealthCheckService
-    => healthCheckServiceMock_?.Object ?? serviceProvider_.GetRequiredService<IHealthCheckService>();
+    => serviceProvider_.GetRequiredService<IHealthCheckService>();
 }

@@ -14,20 +14,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.Extensions.DependencyInjection;
+using System;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 
 /// <summary>
-///   Allows to define a set of services
+///   Defines the set of services used by a ArmoniK client instance
 /// </summary>
 public interface IServicesConfiguration
 {
   /// <summary>
-  ///   Add a list of services
+  ///   Returns the function that creates the BlobService
   /// </summary>
-  /// <param name="client">The ArmoniK client</param>
-  /// <param name="services">The services collection</param>
-  void AddServices(IArmoniKClient    client,
-                   ServiceCollection services);
+  Func<IServiceProvider, IBlobService> BlobServiceBuilder { get; }
+
+  /// <summary>
+  ///   Returns the function that creates the EventsService
+  /// </summary>
+  Func<IServiceProvider, IEventsService> EventsServiceBuilder { get; }
+
+  /// <summary>
+  ///   Returns the function that creates the HealthCheckService
+  /// </summary>
+  Func<IServiceProvider, IHealthCheckService> HealthCheckServiceBuilder { get; }
+
+  /// <summary>
+  ///   Returns the function that creates the PartitionsService
+  /// </summary>
+  Func<IServiceProvider, IPartitionsService> PartitionsServiceBuilder { get; }
+
+  /// <summary>
+  ///   Returns the function that creates the SessionService
+  /// </summary>
+  Func<IServiceProvider, ISessionService> SessionServiceBuilder { get; }
+
+  /// <summary>
+  ///   Returns the function that creates the TasksService
+  /// </summary>
+  Func<IServiceProvider, ITasksService> TaskServiceBuilder { get; }
+
+  /// <summary>
+  ///   Returns the function that creates the VersionsService
+  /// </summary>
+  Func<IServiceProvider, IVersionsService> VersionsServiceBuilder { get; }
 }

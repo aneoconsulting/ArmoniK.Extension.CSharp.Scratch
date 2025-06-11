@@ -117,48 +117,4 @@ internal static class MockHelper
 
     return blobService;
   }
-
-  public static IHealthCheckService GetHealthCheckServiceMock(this Mock<CallInvoker>? mockInvoker)
-  {
-    mockInvoker ??= new Mock<CallInvoker>();
-    var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
-    mockChannelBase.Setup(m => m.CreateCallInvoker())
-                   .Returns(mockInvoker.Object);
-    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
-    return HealthCheckServiceFactory.CreateHealthCheckService(objectPool,
-                                                              NullLoggerFactory.Instance);
-  }
-
-  public static IPartitionsService GetPartitionsServiceMock(this Mock<CallInvoker>? mockInvoker)
-  {
-    mockInvoker ??= new Mock<CallInvoker>();
-    var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
-    mockChannelBase.Setup(m => m.CreateCallInvoker())
-                   .Returns(mockInvoker.Object);
-    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
-
-    return PartitionsServiceFactory.CreatePartitionsService(objectPool,
-                                                            NullLoggerFactory.Instance);
-  }
-
-  public static IVersionsService GetVersionsServiceMock(this Mock<CallInvoker>? mockInvoker)
-  {
-    mockInvoker ??= new Mock<CallInvoker>();
-    var mockChannelBase = new Mock<ChannelBase>("localhost")
-                          {
-                            CallBase = true,
-                          };
-    mockChannelBase.Setup(m => m.CreateCallInvoker())
-                   .Returns(mockInvoker.Object);
-    var objectPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
-
-    return VersionsServiceFactory.CreateVersionsService(objectPool,
-                                                        NullLoggerFactory.Instance);
-  }
 }

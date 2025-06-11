@@ -87,15 +87,8 @@ internal class Program
                                                                         new[]
                                                                         {
                                                                           dynamicLib,
-                                                                        });
-
-    var session = await sessionService.CreateSessionWithDllAsync(defaultTaskOptions,
-                                                                 ["dll"],
-                                                                 new[]
-                                                                 {
-                                                                   dynamicLib,
-                                                                 })
-                                      .ConfigureAwait(false);
+                                                                        })
+                              .ConfigureAwait(false);
 
     Console.WriteLine($"sessionId: {session.SessionId}");
 
