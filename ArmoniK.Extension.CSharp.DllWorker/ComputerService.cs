@@ -80,7 +80,8 @@ public class ComputerService : WorkerStreamWrapper
     try
     {
       await ServiceRequestContext.ExecuteTaskAsync(taskHandler,
-                                                   cancellationToken);
+                                                   cancellationToken)
+                                 .ConfigureAwait(false);
 
       output = new Output
                {

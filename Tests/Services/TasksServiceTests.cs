@@ -20,22 +20,29 @@ using ArmoniK.Api.gRPC.V1.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Utils;
+
+using Google.Protobuf.WellKnownTypes;
+
+using Grpc.Core;
 
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 using Tests.Configuration;
 using Tests.Helpers;
+
+using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
 
 namespace Tests.Services;
 
 public class TasksServiceTests
 {
   [Test]
-  public async Task CreateTask_ReturnsNewTaskWithId()
+  public async Task CreateTaskReturnsNewTaskWithId()
   {
     var client = new MockedArmoniKClient();
     var submitTaskResponse = new SubmitTasksResponse
@@ -57,7 +64,6 @@ public class TasksServiceTests
                                },
                              };
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(submitTaskResponse);
-    // Act
     var taskNodes = new List<TaskNode>
                     {
                       new()
@@ -87,25 +93,33 @@ public class TasksServiceTests
                     };
 
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                            taskNodes);
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
 
-    // Assert
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
-    ClassicAssert.AreEqual("taskId1",
-                           taskInfosEnumerable.FirstOrDefault()
-                                              ?.TaskId);
-    ClassicAssert.AreEqual("payloadId1",
-                           taskInfosEnumerable.FirstOrDefault()
-                                              ?.PayloadId);
-    ClassicAssert.AreEqual("blobId1",
-                           taskInfosEnumerable.FirstOrDefault()
-                                              ?.ExpectedOutputs.First());
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(taskInfosEnumerable.Length,
+                                  Is.EqualTo(1),
+                                  "Expected one task info in the response.");
+                      Assert.That(taskInfosEnumerable.First()
+                                                     .TaskId,
+                                  Is.EqualTo("taskId1"),
+                                  "Expected task ID to match.");
+                      Assert.That(taskInfosEnumerable.First()
+                                                     .PayloadId,
+                                  Is.EqualTo("payloadId1"),
+                                  "Expected payload ID to match.");
+                      Assert.That(taskInfosEnumerable.First()
+                                                     .ExpectedOutputs.First(),
+                                  Is.EqualTo("blobId1"),
+                                  "Expected blob ID to match.");
+                    });
   }
 
   [Test]
-  public async Task SubmitTasksAsync_MultipleTasksWithOutputs_ReturnsCorrectResponses()
+  public async Task SubmitTasksAsyncMultipleTasksWithOutputsReturnsCorrectResponses()
   {
-    // Arrange
     var client = new MockedArmoniKClient();
     var taskResponse = new SubmitTasksResponse
                        {
@@ -182,13 +196,14 @@ public class TasksServiceTests
                       },
                     };
 
-    // Act
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                            taskNodes)
-                             .ToListAsync();
-    // Assert
-    ClassicAssert.AreEqual(2,
-                           result.Count());
+                                                    taskNodes)
+                                  .ToListAsync()
+                                  .ConfigureAwait(false);
+    Assert.That(result,
+                Has.Count.EqualTo(2),
+                "Result should contain two task infos");
+
     Assert.That(result,
                 Has.Some.Matches<TaskInfos>(r => r.TaskId == "taskId1" && r.PayloadId == "payloadId1" && r.ExpectedOutputs.Contains("outputId1")),
                 "Result should contain an item with taskId1, payloadId1, and outputId1");
@@ -199,10 +214,11 @@ public class TasksServiceTests
 
 
   [Test]
-  public Task SubmitTasksAsync_WithEmptyExpectedOutputs_ThrowsException()
+  public void SubmitTasksAsyncWithEmptyExpectedOutputsThrowsException()
   {
     // Arrange
     var client = new MockedArmoniKClient();
+
     var taskNodes = new List<TaskNode>
                     {
                       new()
@@ -213,7 +229,7 @@ public class TasksServiceTests
                                     BlobId    = "payloadId1",
                                     SessionId = "sessionId1",
                                   },
-                        ExpectedOutputs = new List<BlobInfo>(), // Empty expected outputs
+                        ExpectedOutputs = new List<BlobInfo>(),
                         Session         = new SessionInfo("sessionId1"),
                         TaskOptions = new TaskConfiguration
                                       {
@@ -222,14 +238,13 @@ public class TasksServiceTests
                       },
                     };
 
-    // Act & Assert
-    Assert.ThrowsAsync<InvalidOperationException>(() => client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                                                             taskNodes));
-    return Task.CompletedTask;
+    Assert.That(async () => await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
+                                                               taskNodes),
+                Throws.Exception.TypeOf<InvalidOperationException>());
   }
 
   [Test]
-  public async Task SubmitTasksAsync_WithDataDependencies_CreatesBlobsCorrectly()
+  public async Task SubmitTasksAsyncWithDataDependenciesCreatesBlobsCorrectly()
   {
     var client = new MockedArmoniKClient();
 
@@ -299,23 +314,29 @@ public class TasksServiceTests
                     };
 
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                            taskNodes);
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
 
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                           It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
                                                           It.IsAny<CancellationToken>()),
                                   Times.Once);
-    ClassicAssert.AreEqual("dependencyBlobId",
-                           taskNodes.First()
-                                    .DataDependencies.First()
-                                    .BlobId);
-    ClassicAssert.AreEqual("dependencyBlobId",
-                           result.First()
-                                 .DataDependencies.First());
+    Assert.Multiple(() =>
+                    {
+                      Assert.That("dependencyBlobId",
+                                  Is.EqualTo(result.First()
+                                                   .DataDependencies.First()),
+                                  "Expected data dependency blob ID to match.");
+                      Assert.That("dependencyBlobId",
+                                  Is.EqualTo(taskNodes.First()
+                                                      .DataDependencies.First()
+                                                      .BlobId),
+                                  "Expected data dependency blob ID in task node to match.");
+                    });
   }
 
   [Test]
-  public async Task SubmitTasksAsync_EmptyDataDependencies_DoesNotCreateBlobs()
+  public async Task SubmitTasksAsyncEmptyDataDependenciesDoesNotCreateBlobs()
   {
     // Arrange
     var client = new MockedArmoniKClient();
@@ -368,10 +389,10 @@ public class TasksServiceTests
                                       },
                       },
                     };
-    // Act
     await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                               taskNodes);
-    // Assert
+                                       taskNodes)
+                     .ConfigureAwait(false);
+
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                           It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
                                                           It.IsAny<CancellationToken>()),
@@ -379,5 +400,422 @@ public class TasksServiceTests
     Assert.That(taskNodes.First()
                          .DataDependencies,
                 Is.Empty);
+  }
+
+  [Test]
+  public async Task ListTasksAsyncWithPaginationReturnsCorrectPage()
+  {
+    var client = new MockedArmoniKClient();
+
+    var taskResponse = new ListTasksResponse
+                       {
+                         Tasks =
+                         {
+                           new TaskSummary
+                           {
+                             Id        = "taskId1",
+                             Status    = (ArmoniK.Api.gRPC.V1.TaskStatus)TaskStatus.Completed,
+                             CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                             StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
+                             EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-1)),
+                           },
+                           new TaskSummary
+                           {
+                             Id        = "taskId2",
+                             Status    = (ArmoniK.Api.gRPC.V1.TaskStatus)TaskStatus.Cancelling,
+                             CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                             StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-10)),
+                             EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
+                           },
+                         },
+                         Total = 2,
+                       };
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListTasksRequest, ListTasksResponse>(taskResponse);
+
+    var paginationOptions = new TaskPagination
+                            {
+                              Page          = 1,
+                              PageSize      = 10,
+                              SortDirection = SortDirection.Asc,
+                              Total         = 2,
+                              Filter        = new Filters(),
+                            };
+
+    var result = await client.TasksService.ListTasksAsync(paginationOptions)
+                                  .ToListAsync()
+                                  .ConfigureAwait(false);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result,
+                                  Has.Count.EqualTo(1),
+                                  "Expected one page of tasks.");
+                      Assert.That(result.Count,
+                                  Is.EqualTo(1));
+                      Assert.That(result[0].TotalTasks,
+                                  Is.EqualTo(2));
+                    });
+
+    var tasksData = result[0]
+                    .TasksData.ToList();
+    Assert.That(tasksData.Count,
+                Is.EqualTo(2));
+
+    var expectedTaskIds = new List<string>
+                          {
+                            "taskId1",
+                            "taskId2",
+                          };
+    var expectedStatuses = new List<TaskStatus>
+                           {
+                             TaskStatus.Completed,
+                             TaskStatus.Cancelling,
+                           };
+
+    for (var i = 0; i < tasksData.Count; i++)
+    {
+      Assert.That(expectedTaskIds[i],
+                  Is.EqualTo(tasksData[i].Item1));
+      Assert.That(expectedStatuses[i],
+                  Is.EqualTo(tasksData[i].Item2));
+    }
+  }
+
+  [Test]
+  public async Task GetTaskDetailedAsyncShouldReturnCorrectTaskDetails()
+  {
+    var client = new MockedArmoniKClient();
+
+    var taskResponse = new GetTaskResponse
+                       {
+                         Task = new TaskDetailed
+                                {
+                                  Id = "taskId1",
+                                  ExpectedOutputIds =
+                                  {
+                                    "outputId1",
+                                  },
+                                  DataDependencies =
+                                  {
+                                    "dependencyId1",
+                                  },
+                                  CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                                  StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
+                                  EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-1)),
+                                  SessionId = "sessionId1",
+                                },
+                       };
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<GetTaskRequest, GetTaskResponse>(taskResponse);
+
+    var result = await client.TasksService.GetTasksDetailedAsync("taskId1")
+                                  .ConfigureAwait(false);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result.ExpectedOutputs,
+                                  Has.Count.EqualTo(1),
+                                  "Expected one expected output.");
+                      Assert.That(result.ExpectedOutputs.First(),
+                                  Is.EqualTo("outputId1"),
+                                  "Expected output ID to match.");
+                      Assert.That(result.DataDependencies,
+                                  Has.Count.EqualTo(1),
+                                  "Expected one data dependency.");
+                      Assert.That(result.DataDependencies.First(),
+                                  Is.EqualTo("dependencyId1"),
+                                  "Expected data dependency ID to match.");
+                    });
+  }
+
+  [Test]
+  public async Task ListTasksDetailedAsyncReturnsCorrectTaskDetailedPage()
+  {
+    var client = new MockedArmoniKClient();
+
+    var taskResponse = new ListTasksDetailedResponse
+                       {
+                         Tasks =
+                         {
+                           new TaskDetailed
+                           {
+                             Id        = "taskId1",
+                             Status    = ArmoniK.Api.gRPC.V1.TaskStatus.Completed,
+                             CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                             StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
+                             EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-1)),
+                             ExpectedOutputIds =
+                             {
+                               "outputId1",
+                             },
+                             DataDependencies =
+                             {
+                               "dependencyId1",
+                             },
+                             SessionId = "sessionId1",
+                           },
+                           new TaskDetailed
+                           {
+                             Id        = "taskId2",
+                             Status    = ArmoniK.Api.gRPC.V1.TaskStatus.Cancelling,
+                             CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                             StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-10)),
+                             EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
+                             ExpectedOutputIds =
+                             {
+                               "outputId2",
+                             },
+                             DataDependencies =
+                             {
+                               "dependencyId2",
+                             },
+                             SessionId = "sessionId1",
+                           },
+                         },
+                         Total = 1,
+                       };
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListTasksRequest, ListTasksDetailedResponse>(taskResponse);
+
+    var paginationOptions = new TaskPagination
+                            {
+                              Page          = 1,
+                              PageSize      = 10,
+                              Filter        = new Filters(),
+                              SortDirection = SortDirection.Asc,
+                            };
+
+    var result = await client.TasksService.ListTasksDetailedAsync(new SessionInfo("sessionId1"),
+                                                          paginationOptions)
+                                  .FirstOrDefaultAsync()
+                                  .ConfigureAwait(false);
+
+    Assert.That(result,
+                Is.Not.Null,
+                "Result should not be null.");
+  }
+
+  [Test]
+  public async Task CancelTasksAsyncCancelsTasksCorrectly()
+  {
+    var client = new MockedArmoniKClient();
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CancelTasksRequest, CancelTasksResponse>(new CancelTasksResponse());
+
+    var taskIds = new List<string>
+                  {
+                    "taskId1",
+                    "taskId2",
+                  };
+
+    await client.TasksService.CancelTasksAsync(taskIds)
+                     .ConfigureAwait(false);
+
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelTasksRequest, CancelTasksResponse>>(),
+                                                         It.IsAny<string>(),
+                                                         It.IsAny<CallOptions>(),
+                                                         It.Is<CancelTasksRequest>(req => req.TaskIds.Count == 2 && req.TaskIds.Contains("taskId1") &&
+                                                                                          req.TaskIds.Contains("taskId2"))),
+                       Times.Once);
+  }
+
+  [Test]
+  public async Task CreateNewBlobsAsyncCreatesBlobsCorrectly()
+  {
+    var client = new MockedArmoniKClient();
+    var session = new SessionInfo("sessionId1");
+    var taskNodes = new List<TaskNode>
+                    {
+                      new()
+                      {
+                        Payload = new BlobInfo
+                                  {
+                                    BlobName  = "payloadId",
+                                    BlobId    = "blobId",
+                                    SessionId = "sessionId1",
+                                  },
+                        ExpectedOutputs = new List<BlobInfo>
+                                          {
+                                            new()
+                                            {
+                                              BlobName  = "output1",
+                                              BlobId    = "outputId1",
+                                              SessionId = "sessionId1",
+                                            },
+                                          },
+                        Session = session,
+                        TaskOptions = new TaskConfiguration
+                                      {
+                                        PartitionId = "subtasking",
+                                      },
+                        DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
+                                                  {
+                                                    {
+                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
+                                                    },
+                                                  },
+                      },
+                    };
+
+    var expectedBlobs = new List<BlobInfo>
+                        {
+                          new()
+                          {
+                            BlobName  = "dependencyBlob",
+                            BlobId    = "dependencyBlobId",
+                            SessionId = "sessionId1",
+                          },
+                        };
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(new SubmitTasksResponse());
+
+    var result = await client.TasksService.SubmitTasksAsync(session,
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
+
+    Assert.That(result,
+                Is.Not.Null,
+                "Result should not be null.");
+    client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
+                                                   It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                   It.IsAny<CancellationToken>()),
+                           Times.Once);
+  }
+
+  [Test]
+  public async Task SubmitTasksAsyncWithDataDependenciesReturnsCorrectResponses()
+  {
+    var client = new MockedArmoniKClient();
+    var taskResponse = new SubmitTasksResponse
+                       {
+                         TaskInfos =
+                         {
+                           new SubmitTasksResponse.Types.TaskInfo
+                           {
+                             TaskId    = "taskId1",
+                             PayloadId = "payloadId1",
+                             ExpectedOutputIds =
+                             {
+                               "outputId1",
+                             },
+                             DataDependencies =
+                             {
+                               "dependencyBlobId",
+                             },
+                           },
+                         },
+                       };
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
+
+    var expectedBlobs = new List<BlobInfo>
+                        {
+                          new()
+                          {
+                            BlobName  = "dependencyBlob",
+                            BlobId    = "dependencyBlobId",
+                            SessionId = "sessionId1",
+                          },
+                        };
+
+    client.BlobServiceMock.SetupCreateBlobMock(expectedBlobs);
+
+    var taskNodes = new List<TaskNode>
+                    {
+                      new()
+                      {
+                        Payload = new BlobInfo
+                                  {
+                                    BlobName  = "payloadId",
+                                    BlobId    = "blobId",
+                                    SessionId = "sessionId1",
+                                  },
+                        ExpectedOutputs = new List<BlobInfo>
+                                          {
+                                            new()
+                                            {
+                                              BlobName  = "output1",
+                                              BlobId    = "outputId1",
+                                              SessionId = "sessionId1",
+                                            },
+                                          },
+                        Session = new SessionInfo("sessionId1"),
+                        TaskOptions = new TaskConfiguration
+                                      {
+                                        PartitionId = "subtasking",
+                                      },
+                        DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
+                                                  {
+                                                    {
+                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
+                                                    },
+                                                  },
+                      },
+                    };
+
+    var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
+                                                    taskNodes)
+                                  .ConfigureAwait(false);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result.Count,
+                                  Is.EqualTo(1),
+                                  "Expected one task info in the response.");
+                      Assert.That(result.First()
+                                        .TaskId,
+                                  Is.EqualTo("taskId1"),
+                                  "Expected task ID to match.");
+                      Assert.That(result.First()
+                                        .PayloadId,
+                                  Is.EqualTo("payloadId1"),
+                                  "Expected payload ID to match.");
+                      Assert.That(result.First()
+                                        .ExpectedOutputs.First(),
+                                  Is.EqualTo("outputId1"),
+                                  "Expected output ID to match.");
+                    });
+  }
+
+  [Test]
+  public void GetTasksDetailedAsyncWithNonExistentTaskIdThrowsException()
+  {
+    var client = new MockedArmoniKClient();
+    client.CallInvokerMock.Setup(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<GetTaskRequest, GetTaskResponse>>(),
+                                                        It.IsAny<string>(),
+                                                        It.IsAny<CallOptions>(),
+                                                        It.IsAny<GetTaskRequest>()))
+               .Throws(new RpcException(new Status(StatusCode.NotFound,
+                                                   "Task not found")));
+
+    Assert.That(async () => await client.TasksService.GetTasksDetailedAsync("nonExistentTaskId"),
+                Throws.Exception.TypeOf<RpcException>());
+  }
+
+  [Test]
+  public void CancelTasksAsyncWithNonExistentTaskIdsThrowsException()
+  {
+    var client = new MockedArmoniKClient();
+    client.CallInvokerMock.Setup(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelTasksRequest, CancelTasksResponse>>(),
+                                                        It.IsAny<string>(),
+                                                        It.IsAny<CallOptions>(),
+                                                        It.IsAny<CancelTasksRequest>()))
+               .Throws(new RpcException(new Status(StatusCode.NotFound,
+                                                   "Task not found")));
+
+    var taskIds = new List<string>
+                  {
+                    "nonExistentTaskId1",
+                    "nonExistentTaskId2",
+                  };
+
+    Assert.That(async () => await client.TasksService.CancelTasksAsync(taskIds),
+                Throws.Exception.TypeOf<RpcException>());
   }
 }

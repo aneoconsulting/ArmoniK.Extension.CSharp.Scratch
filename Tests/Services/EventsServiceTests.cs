@@ -19,6 +19,10 @@ using ArmoniK.Api.gRPC.V1.Events;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 
+using Grpc.Core;
+
+using Moq;
+
 using NUnit.Framework;
 
 using Tests.Configuration;
@@ -29,7 +33,7 @@ namespace Tests.Services;
 public class EventsServiceTests
 {
   [Test]
-  public Task CreateSession_ReturnsNewSessionWithId()
+  public Task CreateSessionReturnsNewSessionWithId()
   {
     var client = new MockedArmoniKClient();
     var responses = new EventSubscriptionResponse
@@ -43,18 +47,31 @@ public class EventsServiceTests
                     };
 
     client.CallInvokerMock.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
-    // Act
 
-    Assert.DoesNotThrowAsync(async () => await client.EventsService.WaitForBlobsAsync(new SessionInfo("sessionId"),
-                                                                                      new[]
-                                                                                      {
-                                                                                        new BlobInfo
-                                                                                        {
-                                                                                          BlobName  = "",
-                                                                                          BlobId    = "1234",
-                                                                                          SessionId = "sessionId",
-                                                                                        },
-                                                                                      }));
+    var blobId        = "1234";
+    var sessionId     = "sessionId";
+
+    var sessionInfo = new SessionInfo(sessionId);
+    var blobInfos = new[]
+                    {
+                      new BlobInfo
+                      {
+                        BlobName  = "",
+                        BlobId    = blobId,
+                        SessionId = sessionId,
+                      },
+                    };
+    client.EventsService.WaitForBlobsAsync(sessionInfo,
+                                    blobInfos);
+
+    client.CallInvokerMock.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
+                                                       It.IsAny<string>(),
+                                                       It.IsAny<CallOptions>(),
+                                                       It.IsAny<EventSubscriptionRequest>()),
+                       Times.Once,
+                       "AsyncServerStreamingCall should be called exactly once");
+
+
     return Task.CompletedTask;
   }
 }
