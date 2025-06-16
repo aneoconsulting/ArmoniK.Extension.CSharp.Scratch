@@ -38,10 +38,12 @@ public interface ITasksService
   /// </summary>
   /// <param name="session">The session information to which the tasks belong.</param>
   /// <param name="taskNodes">The tasks to be submitted.</param>
+  /// <param name="manualDeletion">Whether the blobs should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
   Task<IEnumerable<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                 IEnumerable<TaskNode> taskNodes,
+                                                bool                  manualDeletion,
                                                 CancellationToken     cancellationToken = default);
 
   /// <summary>

@@ -93,7 +93,8 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes,
+                                                    false);
 
     // Assert
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
@@ -195,7 +196,8 @@ public class TasksServiceTests
 
     // Act
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes)
+                                                    taskNodes,
+                                                    false)
                                   .ToListAsync();
     // Assert
     ClassicAssert.AreEqual(2,
@@ -237,7 +239,8 @@ public class TasksServiceTests
 
     // Act & Assert
     Assert.ThrowsAsync<InvalidOperationException>(() => taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                                                     taskNodes));
+                                                                                     taskNodes,
+                                                                                     false));
     return Task.CompletedTask;
   }
 
@@ -324,10 +327,12 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes);
+                                                    taskNodes,
+                                                    false);
 
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                   false,
                                                    It.IsAny<CancellationToken>()),
                            Times.Once);
     ClassicAssert.AreEqual("dependencyBlobId",
@@ -405,10 +410,12 @@ public class TasksServiceTests
                     };
     // Act
     await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                       taskNodes);
+                                       taskNodes,
+                                       false);
     // Assert
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                   false,
                                                    It.IsAny<CancellationToken>()),
                            Times.Never);
     Assert.That(taskNodes.First()

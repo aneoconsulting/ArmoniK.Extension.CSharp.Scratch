@@ -147,6 +147,18 @@ public enum TaskStatus
   /// </summary>
   [OriginalName("TASK_STATUS_RETRIED")]
   Retried,
+
+  /// <summary>
+  ///   Task is waiting for its dependencies before becoming executable.
+  /// </summary>
+  [OriginalName("TASK_STATUS_PENDING")]
+  Pending,
+
+  /// <summary>
+  ///   Task is paused and will not be executed until session is resumed.
+  /// </summary>
+  [OriginalName("TASK_STATUS_PAUSED")]
+  Paused,
 }
 
 internal static class TaskStatusExt

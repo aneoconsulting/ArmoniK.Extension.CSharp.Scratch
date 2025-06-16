@@ -101,6 +101,7 @@ internal class Program
 
     var payload = await blobService.CreateBlobAsync(session,
                                                     "Payload",
+                                                    false,
                                                     Encoding.ASCII.GetBytes("Hello"));
 
     Console.WriteLine($"payloadId: {payload.BlobId}");
@@ -109,7 +110,8 @@ internal class Program
                                                        new[]
                                                        {
                                                          "Result",
-                                                       });
+                                                       },
+                                                       false);
 
     var blobInfos = await results.ToListAsync();
 

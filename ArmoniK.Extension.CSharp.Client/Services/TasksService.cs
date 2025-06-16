@@ -55,6 +55,7 @@ internal class TasksService : ITasksService
 
   public async Task<IEnumerable<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                              IEnumerable<TaskNode> taskNodes,
+                                                             bool                  manualDeletion,
                                                              CancellationToken     cancellationToken = default)
   {
     var enumerableTaskNodes = taskNodes.ToList();
@@ -66,6 +67,7 @@ internal class TasksService : ITasksService
 
     await CreateNewBlobsAsync(session,
                               enumerableTaskNodes,
+                              manualDeletion,
                               cancellationToken);
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
@@ -212,6 +214,7 @@ internal class TasksService : ITasksService
 
   private async Task CreateNewBlobsAsync(SessionInfo           session,
                                          IEnumerable<TaskNode> taskNodes,
+                                         bool                  manualDeletion,
                                          CancellationToken     cancellationToken)
   {
     var enumerableNodes = taskNodes.ToList();
@@ -226,6 +229,7 @@ internal class TasksService : ITasksService
 
       await foreach (var blob in blobService_.CreateBlobsAsync(session,
                                                                blobKeyValues,
+                                                               manualDeletion,
                                                                cancellationToken))
       {
         createdBlobDictionary[blob.BlobName] = blob;
@@ -254,6 +258,7 @@ internal class TasksService : ITasksService
 
       await foreach (var blob in blobService_.CreateBlobsAsync(session,
                                                                payloadBlobKeyValues,
+                                                               manualDeletion,
                                                                cancellationToken))
       {
         payloadBlobDictionary[blob.BlobName] = blob;

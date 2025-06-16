@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Threading.Tasks;
 
 using ArmoniK.Api.Client.Options;
@@ -43,23 +42,20 @@ public class ClientServiceConnector
                                                                    ILoggerFactory loggerFactory = null)
   {
     var options = new GrpcClient
-    {
-      AllowUnsafeConnection = !properties.ConfSslValidation,
-      CaCert = properties.CaCertFilePem,
-      CertP12 = properties.ClientP12File,
-      CertPem = properties.ClientCertFilePem,
-      KeyPem = properties.ClientKeyFilePem,
-      Endpoint = properties.ControlPlaneUri.ToString(),
-      OverrideTargetName = properties.TargetNameOverride,
-      BackoffMultiplier = properties.RetryBackoffMultiplier,
-      InitialBackOff = properties.RetryInitialBackoff,
-      
-   
-    };
+                  {
+                    AllowUnsafeConnection = !properties.ConfSslValidation,
+                    CaCert                = properties.CaCertFilePem,
+                    CertP12               = properties.ClientP12File,
+                    CertPem               = properties.ClientCertFilePem,
+                    KeyPem                = properties.ClientKeyFilePem,
+                    Endpoint              = properties.ControlPlaneUri.ToString(),
+                    OverrideTargetName    = properties.TargetNameOverride,
+                    BackoffMultiplier     = properties.RetryBackoffMultiplier,
+                    InitialBackOff        = properties.RetryInitialBackoff,
+                  };
 
-    return new ObjectPool<ChannelBase>(
-      ct => new ValueTask<ChannelBase>(GrpcChannelFactory.CreateChannel(options,
-                                                                        loggerFactory?.CreateLogger(typeof(ClientServiceConnector)))),
+    return new ObjectPool<ChannelBase>(ct => new ValueTask<ChannelBase>(GrpcChannelFactory.CreateChannel(options,
+                                                                                                         loggerFactory?.CreateLogger(typeof(ClientServiceConnector)))),
 
 #if NET5_0_OR_GREATER
       async (channel, ct) =>
@@ -80,8 +76,9 @@ public class ClientServiceConnector
         }
       }
 #else
-      (_, _) => new ValueTask<bool>(true)
+                                       (_,
+                                        _) => new ValueTask<bool>(true)
 #endif
-    );
+                                      );
   }
 }

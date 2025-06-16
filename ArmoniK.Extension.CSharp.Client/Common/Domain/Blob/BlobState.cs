@@ -39,6 +39,31 @@ public record BlobState : BlobInfo
   ///   Current status of the blob.
   /// </summary>
   public BlobStatus Status { get; init; }
+
+  /// <summary>
+  ///   The ID of the Task that as submitted this result.
+  /// </summary>
+  public string CreatedBy { get; init; }
+
+  /// <summary>
+  ///   The owner task ID.
+  /// </summary>
+  public string OwnerId { get; init; }
+
+  /// <summary>
+  ///   ID of the data in the underlying object storage.
+  /// </summary>
+  public byte[] OpaqueId { get; init; }
+
+  /// <summary>
+  ///   The size of the blob Data.
+  /// </summary>
+  public int Size { get; init; }
+
+  /// <summary>
+  ///   Whether the user is responsible for the deletion of the data in the underlying object storage.
+  /// </summary>
+  public bool ManualDeletion { get; init; }
 }
 
 /// <summary>
