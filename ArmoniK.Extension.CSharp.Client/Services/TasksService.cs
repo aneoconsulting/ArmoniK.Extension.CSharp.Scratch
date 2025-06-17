@@ -55,7 +55,7 @@ internal class TasksService : ITasksService
 
   public async Task<IEnumerable<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                              IEnumerable<TaskNode> taskNodes,
-                                                             bool                  manualDeletion,
+                                                             bool                  manualDeletion    = false,
                                                              CancellationToken     cancellationToken = default)
   {
     var enumerableTaskNodes = taskNodes.ToList();
@@ -195,21 +195,31 @@ internal class TasksService : ITasksService
                  };
   }
 
-  public async Task CancelTasksAsync(IEnumerable<string> taskIds,
-                                     CancellationToken   cancellationToken = default)
+  public async Task<IEnumerable<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
+                                                             CancellationToken   cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
 
     var tasksClient = new Tasks.TasksClient(channel);
 
-    await tasksClient.CancelTasksAsync(new CancelTasksRequest
-                                       {
-                                         TaskIds =
-                                         {
-                                           taskIds,
-                                         },
-                                       });
+    var response = await tasksClient.CancelTasksAsync(new CancelTasksRequest
+                                                      {
+                                                        TaskIds =
+                                                        {
+                                                          taskIds,
+                                                        },
+                                                      });
+    return response.Tasks.Select(taskSummary => new TaskState
+                                                {
+                                                  TaskId    = taskSummary.Id,
+                                                  Status    = taskSummary.Status.ToInternalStatus(),
+                                                  CreateAt  = taskSummary.CreatedAt.ToDateTime(),
+                                                  StartedAt = taskSummary.StartedAt.ToDateTime(),
+                                                  EndedAt   = taskSummary.EndedAt.ToDateTime(),
+                                                  SessionId = taskSummary.SessionId,
+                                                  PayloadId = taskSummary.PayloadId,
+                                                });
   }
 
   private async Task CreateNewBlobsAsync(SessionInfo           session,

@@ -93,8 +93,7 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes,
-                                                    false);
+                                                    taskNodes);
 
     // Assert
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
@@ -196,8 +195,7 @@ public class TasksServiceTests
 
     // Act
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes,
-                                                    false)
+                                                    taskNodes)
                                   .ToListAsync();
     // Assert
     ClassicAssert.AreEqual(2,
@@ -239,8 +237,7 @@ public class TasksServiceTests
 
     // Act & Assert
     Assert.ThrowsAsync<InvalidOperationException>(() => taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                                                     taskNodes,
-                                                                                     false));
+                                                                                     taskNodes));
     return Task.CompletedTask;
   }
 
@@ -327,8 +324,7 @@ public class TasksServiceTests
                     };
 
     var result = await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                    taskNodes,
-                                                    false);
+                                                    taskNodes);
 
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
@@ -410,8 +406,7 @@ public class TasksServiceTests
                     };
     // Act
     await taskService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                       taskNodes,
-                                       false);
+                                       taskNodes);
     // Assert
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),

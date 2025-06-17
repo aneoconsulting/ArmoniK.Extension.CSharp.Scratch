@@ -55,7 +55,7 @@ internal class BlobService : IBlobService
 
   public async IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                session,
                                                                    IEnumerable<string>                        names,
-                                                                   bool                                       manualDeletion,
+                                                                   bool                                       manualDeletion    = false,
                                                                    [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
@@ -167,8 +167,8 @@ internal class BlobService : IBlobService
 
   public async Task<BlobInfo> CreateBlobAsync(SessionInfo          session,
                                               string               name,
-                                              bool                 manualDeletion,
                                               ReadOnlyMemory<byte> content,
+                                              bool                 manualDeletion    = false,
                                               CancellationToken    cancellationToken = default)
   {
     if (serviceConfiguration_ is null)
@@ -223,15 +223,15 @@ internal class BlobService : IBlobService
 
   public async IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                             session,
                                                            IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>> blobKeyValuePairs,
-                                                           bool                                                    manualDeletion,
+                                                           bool                                                    manualDeletion    = false,
                                                            [EnumeratorCancellation] CancellationToken              cancellationToken = default)
   {
     var tasks = blobKeyValuePairs.Select(blobKeyValuePair => Task.Run(async () =>
                                                                       {
                                                                         var blobInfo = await CreateBlobAsync(session,
                                                                                                              blobKeyValuePair.Key,
-                                                                                                             manualDeletion,
                                                                                                              blobKeyValuePair.Value,
+                                                                                                             manualDeletion,
                                                                                                              cancellationToken);
                                                                         return blobInfo;
                                                                       },
@@ -286,9 +286,9 @@ internal class BlobService : IBlobService
     }
   }
 
-  public async Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                   session,
-                                                                IEnumerable<(BlobInfo blob, byte[] opaqueId)> blobDescs,
-                                                                CancellationToken                             cancellationToken = default)
+  public async Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
+                                                                IEnumerable<KeyValuePair<BlobInfo, byte[]>> blobDescs,
+                                                                CancellationToken                           cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
@@ -301,8 +301,8 @@ internal class BlobService : IBlobService
     {
       request.Results.Add(new ResultOpaqueId
                           {
-                            ResultId = blobDesc.blob.BlobId,
-                            OpaqueId = ByteString.CopyFrom(blobDesc.opaqueId),
+                            ResultId = blobDesc.Key.BlobId,
+                            OpaqueId = ByteString.CopyFrom(blobDesc.Value),
                           });
     }
 

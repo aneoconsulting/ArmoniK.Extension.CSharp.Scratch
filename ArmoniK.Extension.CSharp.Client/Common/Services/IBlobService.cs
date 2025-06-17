@@ -43,7 +43,7 @@ public interface IBlobService
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
   IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo         session,
                                                       IEnumerable<string> names,
-                                                      bool                manualDeletion,
+                                                      bool                manualDeletion    = false,
                                                       CancellationToken   cancellationToken = default);
 
   /// <summary>
@@ -51,14 +51,14 @@ public interface IBlobService
   /// </summary>
   /// <param name="session">The session information in which the blob is created.</param>
   /// <param name="name">The name of the blob to create.</param>
-  /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
   /// <param name="content">The content of the blob to create.</param>
+  /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the created blob information.</returns>
   Task<BlobInfo> CreateBlobAsync(SessionInfo          session,
                                  string               name,
-                                 bool                 manualDeletion,
                                  ReadOnlyMemory<byte> content,
+                                 bool                 manualDeletion    = false,
                                  CancellationToken    cancellationToken = default);
 
   /// <summary>
@@ -71,7 +71,7 @@ public interface IBlobService
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
   IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                             session,
                                               IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>> blobKeyValuePairs,
-                                              bool                                                    manualDeletion,
+                                              bool                                                    manualDeletion    = false,
                                               CancellationToken                                       cancellationToken = default);
 
   /// <summary>
@@ -129,9 +129,9 @@ public interface IBlobService
   /// <param name="blobDescs">The BlobInfo associated with its OpaqueId.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns></returns>
-  Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                   session,
-                                                   IEnumerable<(BlobInfo blob, byte[] opaqueId)> blobDescs,
-                                                   CancellationToken                             cancellationToken = default);
+  Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
+                                                   IEnumerable<KeyValuePair<BlobInfo, byte[]>> blobDescs,
+                                                   CancellationToken                           cancellationToken = default);
 }
 
 /// <summary>
@@ -151,7 +151,7 @@ public static class BlobServiceExt
   public static IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(this IBlobService blobService,
                                                                     SessionInfo       session,
                                                                     int               quantity,
-                                                                    bool              manualDeletion,
+                                                                    bool              manualDeletion    = false,
                                                                     CancellationToken cancellationToken = default)
     => blobService.CreateBlobsMetadataAsync(session,
                                             Enumerable.Range(0,

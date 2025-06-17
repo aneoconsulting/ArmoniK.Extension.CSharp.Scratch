@@ -62,13 +62,13 @@ public static class ArmoniKServicesExt
                                                      SessionInfo          session,
                                                      DynamicLibrary       dynamicLibrary,
                                                      ReadOnlyMemory<byte> content,
-                                                     bool                 manualDeletion,
-                                                     CancellationToken    cancellationToken)
+                                                     bool                 manualDeletion    = false,
+                                                     CancellationToken    cancellationToken = default)
   {
     var blobInfo = await blobService.CreateBlobAsync(session,
                                                      dynamicLibrary.ToString(),
-                                                     manualDeletion,
                                                      content,
+                                                     manualDeletion,
                                                      cancellationToken);
     return new DllBlob(dynamicLibrary)
            {
@@ -90,8 +90,8 @@ public static class ArmoniKServicesExt
                                                                            SessionInfo              session,
                                                                            IEnumerable<TaskNodeExt> taskNodes,
                                                                            DllBlob                  dllBlob,
-                                                                           bool                     manualDeletion,
-                                                                           CancellationToken        cancellationToken)
+                                                                           bool                     manualDeletion    = false,
+                                                                           CancellationToken        cancellationToken = default)
   {
     taskNodes = taskNodes.Select(x =>
                                  {

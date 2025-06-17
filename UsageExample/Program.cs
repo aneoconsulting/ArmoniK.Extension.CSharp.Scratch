@@ -101,7 +101,6 @@ internal class Program
 
     var payload = await blobService.CreateBlobAsync(session,
                                                     "Payload",
-                                                    false,
                                                     Encoding.ASCII.GetBytes("Hello"));
 
     Console.WriteLine($"payloadId: {payload.BlobId}");
@@ -110,8 +109,7 @@ internal class Program
                                                        new[]
                                                        {
                                                          "Result",
-                                                       },
-                                                       false);
+                                                       });
 
     var blobInfos = await results.ToListAsync();
 
@@ -121,8 +119,7 @@ internal class Program
 
     var dllBlob = await blobService.SendDllBlobAsync(session,
                                                      dynamicLib,
-                                                     content,
-                                                     default);
+                                                     content);
 
     Console.WriteLine($"resultId: {result.BlobId}");
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
@@ -147,8 +144,7 @@ internal class Program
                                                               DynamicLibrary = taskLibraryDefinition,
                                                             },
                                                           },
-                                                          dllBlob,
-                                                          default);
+                                                          dllBlob);
 
     Console.WriteLine($"taskId: {task.Single().TaskId}");
 
