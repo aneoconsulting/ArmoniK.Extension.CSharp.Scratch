@@ -38,14 +38,14 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
-internal class BlobService : IBlobService
+public class BlobService : IBlobService
 {
   private readonly ObjectPool<ChannelBase>             channelPool_;
   private readonly ILogger<BlobService>                logger_;
   private          ResultsServiceConfigurationResponse serviceConfiguration_;
 
   /// <summary>
-  ///   Creates an instance of <see cref="IBlobService" /> using the specified GRPC channel and an optional logger factory.
+  ///   Creates an instance of <see cref="BlobService" /> using the specified GRPC channel and an optional logger factory.
   /// </summary>
   /// <param name="channel">
   ///   An object pool that manages GRPC channels, providing efficient handling and reuse of channel
@@ -55,7 +55,6 @@ internal class BlobService : IBlobService
   ///   An optional factory for creating loggers, which can be used to enable logging within the
   ///   blob service. If null, logging will be disabled.
   /// </param>
-  /// <returns>An instance of <see cref="IBlobService" /> configured with the provided parameters.</returns>
   public BlobService(ObjectPool<ChannelBase> channel,
                      ILoggerFactory          loggerFactory)
   {

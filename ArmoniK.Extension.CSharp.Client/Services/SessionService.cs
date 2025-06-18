@@ -31,7 +31,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
-internal class SessionService : ISessionService
+public class SessionService : ISessionService
 {
   private readonly ObjectPool<ChannelBase> channel_;
   private readonly ILogger<SessionService> logger_;
@@ -39,7 +39,7 @@ internal class SessionService : ISessionService
   private readonly Properties properties_;
 
   /// <summary>
-  ///   Creates an instance of <see cref="ISessionService" /> using the specified GRPC channel, application properties, and
+  ///   Creates an instance of <see cref="SessionService" /> using the specified GRPC channel, application properties, and
   ///   an optional logger factory.
   /// </summary>
   /// <param name="channel">
@@ -51,7 +51,6 @@ internal class SessionService : ISessionService
   ///   An optional factory for creating loggers, which can be used to enable logging within the
   ///   session service. If null, logging will be disabled.
   /// </param>
-  /// <returns>An instance of <see cref="ISessionService" /> configured with the provided parameters.</returns>
   public SessionService(ObjectPool<ChannelBase> channel,
                         Properties              properties,
                         ILoggerFactory          loggerFactory)

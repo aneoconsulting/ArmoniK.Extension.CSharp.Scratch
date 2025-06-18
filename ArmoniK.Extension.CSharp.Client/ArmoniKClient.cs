@@ -37,7 +37,7 @@ namespace ArmoniK.Extension.CSharp.Client;
 ///   Provides a client for interacting with the ArmoniK services, including blob, session, task, event, health check,
 ///   partition, and version services.
 /// </summary>
-public class ArmoniKClient : IArmoniKClient
+public class ArmoniKClient
 {
   private readonly ILogger                 logger_;
   private readonly ServiceProvider         serviceProvider_;
@@ -50,26 +50,23 @@ public class ArmoniKClient : IArmoniKClient
   /// <param name="properties">The properties for configuring the client.</param>
   /// <param name="loggerFactory">The factory for creating loggers.</param>
   /// <param name="taskConfiguration">The default task configuration</param>
-  /// <param name="servicesConfiguration">The default task configuration</param>
   /// <exception cref="ArgumentNullException">Thrown when properties or loggerFactory is null.</exception>
-  public ArmoniKClient(Properties             properties,
-                       ILoggerFactory         loggerFactory,
-                       TaskConfiguration      taskConfiguration,
-                       IServicesConfiguration servicesConfiguration = null)
+  public ArmoniKClient(Properties        properties,
+                       ILoggerFactory    loggerFactory,
+                       TaskConfiguration taskConfiguration)
   {
     Properties    = properties    ?? throw new ArgumentNullException(nameof(properties));
     LoggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
     logger_       = loggerFactory.CreateLogger<ArmoniKClient>();
 
     var services = new ServiceCollection();
-    servicesConfiguration ??= new ServicesConfiguration(this);
-    services.AddSingleton(servicesConfiguration.BlobServiceBuilder);
-    services.AddSingleton(servicesConfiguration.EventsServiceBuilder);
-    services.AddSingleton(servicesConfiguration.HealthCheckServiceBuilder);
-    services.AddSingleton(servicesConfiguration.PartitionsServiceBuilder);
-    services.AddSingleton(servicesConfiguration.SessionServiceBuilder);
-    services.AddSingleton(servicesConfiguration.TaskServiceBuilder);
-    services.AddSingleton(servicesConfiguration.VersionsServiceBuilder);
+    services.AddSingleton(BuildBlobService)
+            .AddSingleton(BuildEventsService)
+            .AddSingleton(BuildHealthCheckService)
+            .AddSingleton(BuildPartitionsService)
+            .AddSingleton(BuildSessionsService)
+            .AddSingleton(BuildTasksService)
+            .AddSingleton(BuildVersionsService);
     serviceProvider_ = services.BuildServiceProvider();
   }
 
@@ -131,6 +128,36 @@ public class ArmoniKClient : IArmoniKClient
   /// </summary>
   public IHealthCheckService HealthCheckService
     => serviceProvider_.GetRequiredService<IHealthCheckService>();
+
+  private IBlobService BuildBlobService(IServiceProvider provider)
+    => new BlobService(ChannelPool,
+                       LoggerFactory);
+
+  private IEventsService BuildEventsService(IServiceProvider provider)
+    => new EventsService(ChannelPool,
+                         LoggerFactory);
+
+  private IHealthCheckService BuildHealthCheckService(IServiceProvider provider)
+    => new HealthCheckService(ChannelPool,
+                              LoggerFactory);
+
+  private IPartitionsService BuildPartitionsService(IServiceProvider provider)
+    => new PartitionsService(ChannelPool,
+                             LoggerFactory);
+
+  private ISessionService BuildSessionsService(IServiceProvider provider)
+    => new SessionService(ChannelPool,
+                          Properties,
+                          LoggerFactory);
+
+  private ITasksService BuildTasksService(IServiceProvider provider)
+    => new TasksService(ChannelPool,
+                        BlobService,
+                        LoggerFactory);
+
+  private IVersionsService BuildVersionsService(IServiceProvider provider)
+    => new VersionsService(ChannelPool,
+                           LoggerFactory);
 
   /// <summary>
   ///   Gets a blob handler for the specified blob information.

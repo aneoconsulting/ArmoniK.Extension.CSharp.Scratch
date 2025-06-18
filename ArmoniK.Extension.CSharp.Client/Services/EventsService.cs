@@ -32,14 +32,14 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
-internal class EventsService : IEventsService
+public class EventsService : IEventsService
 {
   private readonly ObjectPool<ChannelBase> channel_;
 
   private readonly ILogger<EventsService> logger_;
 
   /// <summary>
-  ///   Creates an instance of <see cref="IEventsService" /> using the specified GRPC channel and an optional logger
+  ///   Creates an instance of <see cref="EventsService" /> using the specified GRPC channel and an optional logger
   ///   factory.
   /// </summary>
   /// <param name="channel">
@@ -50,7 +50,6 @@ internal class EventsService : IEventsService
   ///   An optional factory for creating loggers, which can be used to enable logging within the
   ///   events service. If null, logging will be disabled.
   /// </param>
-  /// <returns>An instance of <see cref="IEventsService" /> configured with the provided parameters.</returns>
   public EventsService(ObjectPool<ChannelBase> channel,
                        ILoggerFactory          loggerFactory)
   {

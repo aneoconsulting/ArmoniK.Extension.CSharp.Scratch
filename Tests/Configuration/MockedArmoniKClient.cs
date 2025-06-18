@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
@@ -32,7 +31,7 @@ using Moq;
 
 namespace Tests.Configuration;
 
-internal sealed class MockedArmoniKClient : IArmoniKClient
+internal sealed class MockedArmoniKClient
 {
   private readonly ServiceProvider     serviceProvider_;
   private          Mock<IBlobService>? blobServiceMock_;
@@ -59,15 +58,14 @@ internal sealed class MockedArmoniKClient : IArmoniKClient
                    .Returns(CallInvokerMock.Object);
     ChannelPool = new ObjectPool<ChannelBase>(() => mockChannelBase.Object);
 
-    var services              = new ServiceCollection();
-    var servicesConfiguration = new ServicesConfiguration(this);
-    services.AddSingleton<IBlobService>(servicesConfiguration.BlobServiceBuilder);
-    services.AddSingleton<IEventsService>(servicesConfiguration.EventsServiceBuilder);
-    services.AddSingleton<IHealthCheckService>(servicesConfiguration.HealthCheckServiceBuilder);
-    services.AddSingleton<IPartitionsService>(servicesConfiguration.PartitionsServiceBuilder);
-    services.AddSingleton<ISessionService>(servicesConfiguration.SessionServiceBuilder);
-    services.AddSingleton<ITasksService>(servicesConfiguration.TaskServiceBuilder);
-    services.AddSingleton<IVersionsService>(servicesConfiguration.VersionsServiceBuilder);
+    var services = new ServiceCollection();
+    services.AddSingleton(BuildBlobService)
+            .AddSingleton(BuildEventsService)
+            .AddSingleton(BuildHealthCheckService)
+            .AddSingleton(BuildPartitionsService)
+            .AddSingleton(BuildSessionsService)
+            .AddSingleton(BuildTasksService)
+            .AddSingleton(BuildVersionsService);
     serviceProvider_ = services.BuildServiceProvider();
   }
 
@@ -105,4 +103,34 @@ internal sealed class MockedArmoniKClient : IArmoniKClient
 
   public IHealthCheckService HealthCheckService
     => serviceProvider_.GetRequiredService<IHealthCheckService>();
+
+  private IBlobService BuildBlobService(IServiceProvider provider)
+    => new BlobService(ChannelPool,
+                       LoggerFactory);
+
+  private IEventsService BuildEventsService(IServiceProvider provider)
+    => new EventsService(ChannelPool,
+                         LoggerFactory);
+
+  private IHealthCheckService BuildHealthCheckService(IServiceProvider provider)
+    => new HealthCheckService(ChannelPool,
+                              LoggerFactory);
+
+  private IPartitionsService BuildPartitionsService(IServiceProvider provider)
+    => new PartitionsService(ChannelPool,
+                             LoggerFactory);
+
+  private ISessionService BuildSessionsService(IServiceProvider provider)
+    => new SessionService(ChannelPool,
+                          Properties,
+                          LoggerFactory);
+
+  private ITasksService BuildTasksService(IServiceProvider provider)
+    => new TasksService(ChannelPool,
+                        BlobService,
+                        LoggerFactory);
+
+  private IVersionsService BuildVersionsService(IServiceProvider provider)
+    => new VersionsService(ChannelPool,
+                           LoggerFactory);
 }
