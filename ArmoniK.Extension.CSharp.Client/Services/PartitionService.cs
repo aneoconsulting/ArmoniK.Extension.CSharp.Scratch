@@ -52,16 +52,7 @@ internal class PartitionsService : IPartitionsService
                                                                Id = partitionId,
                                                              },
                                                              cancellationToken: cancellationToken);
-    return new Partition
-           {
-             Id                   = partition.Partition.Id,
-             ParentPartitionIds   = partition.Partition.ParentPartitionIds,
-             PodConfiguration     = partition.Partition.PodConfiguration,
-             PodMax               = partition.Partition.PodMax,
-             PodReserved          = partition.Partition.PodReserved,
-             PreemptionPercentage = partition.Partition.PreemptionPercentage,
-             Priority             = partition.Partition.Priority,
-           };
+    return partition.Partition.ToPartition();
   }
 
   public async IAsyncEnumerable<(int, Partition)> ListPartitionsAsync(PartitionPagination                        partitionPagination,
@@ -81,20 +72,9 @@ internal class PartitionsService : IPartitionsService
                                                                          },
                                                                 });
 
-    foreach (var partition in partitions.Partitions)
+    foreach (var partitionRaw in partitions.Partitions)
     {
-      yield return (partitions.Total, new Partition
-                                      {
-                                        Id                   = partition.Id,
-                                        ParentPartitionIds   = partition.ParentPartitionIds,
-                                        PodConfiguration     = partition.PodConfiguration,
-                                        PodMax               = partition.PodMax,
-                                        PodReserved          = partition.PodReserved,
-                                        PreemptionPercentage = partition.PreemptionPercentage,
-                                        Priority             = partition.Priority,
-                                      });
+      yield return (partitions.Total, partitionRaw.ToPartition());
     }
-
-    ;
   }
 }

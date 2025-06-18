@@ -16,6 +16,8 @@
 
 using System;
 
+using ArmoniK.Api.gRPC.V1.Tasks;
+
 using Google.Protobuf.Reflection;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
@@ -201,5 +203,34 @@ internal static class TaskStatusExt
          _ => throw new ArgumentOutOfRangeException(nameof(status),
                                                     status,
                                                     null),
+       };
+}
+
+internal static class TaskStateExt
+{
+  public static TaskState ToTaskState(this TaskDetailed taskDetailed)
+    => new()
+       {
+         DataDependencies = taskDetailed.DataDependencies,
+         ExpectedOutputs  = taskDetailed.ExpectedOutputIds,
+         TaskId           = taskDetailed.Id,
+         Status           = taskDetailed.Status.ToInternalStatus(),
+         CreateAt         = taskDetailed.CreatedAt.ToDateTime(),
+         StartedAt        = taskDetailed.StartedAt.ToDateTime(),
+         EndedAt          = taskDetailed.EndedAt.ToDateTime(),
+         SessionId        = taskDetailed.SessionId,
+         PayloadId        = taskDetailed.PayloadId,
+       };
+
+  public static TaskState ToTaskState(this TaskSummary taskSummary)
+    => new()
+       {
+         TaskId    = taskSummary.Id,
+         Status    = taskSummary.Status.ToInternalStatus(),
+         CreateAt  = taskSummary.CreatedAt.ToDateTime(),
+         StartedAt = taskSummary.StartedAt.ToDateTime(),
+         EndedAt   = taskSummary.EndedAt.ToDateTime(),
+         SessionId = taskSummary.SessionId,
+         PayloadId = taskSummary.PayloadId,
        };
 }

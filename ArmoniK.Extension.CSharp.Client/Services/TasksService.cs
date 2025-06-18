@@ -144,17 +144,7 @@ internal class TasksService : ITasksService
                                                },
                                                cancellationToken: cancellationToken);
 
-    return new TaskState
-           {
-             DataDependencies = tasks.Task.DataDependencies,
-             ExpectedOutputs  = tasks.Task.ExpectedOutputIds,
-             TaskId           = tasks.Task.Id,
-             Status           = tasks.Task.Status.ToInternalStatus(),
-             CreateAt         = tasks.Task.CreatedAt.ToDateTime(),
-             StartedAt        = tasks.Task.StartedAt.ToDateTime(),
-             EndedAt          = tasks.Task.EndedAt.ToDateTime(),
-             SessionId        = tasks.Task.SessionId,
-           };
+    return tasks.Task.ToTaskState();
   }
 
   public async IAsyncEnumerable<TaskDetailedPage> ListTasksDetailedAsync(SessionInfo                                session,
@@ -180,18 +170,8 @@ internal class TasksService : ITasksService
 
     yield return new TaskDetailedPage
                  {
-                   TaskDetails = tasks.Tasks.Select(task => new TaskState
-                                                            {
-                                                              DataDependencies = task.DataDependencies,
-                                                              ExpectedOutputs  = task.ExpectedOutputIds,
-                                                              TaskId           = task.Id,
-                                                              Status           = task.Status.ToInternalStatus(),
-                                                              CreateAt         = task.CreatedAt.ToDateTime(),
-                                                              StartedAt        = task.StartedAt.ToDateTime(),
-                                                              EndedAt          = task.EndedAt.ToDateTime(),
-                                                              SessionId        = task.SessionId,
-                                                            }),
-                   TotalTasks = tasks.Total,
+                   TaskDetails = tasks.Tasks.Select(task => task.ToTaskState()),
+                   TotalTasks  = tasks.Total,
                  };
   }
 
@@ -210,16 +190,7 @@ internal class TasksService : ITasksService
                                                           taskIds,
                                                         },
                                                       });
-    return response.Tasks.Select(taskSummary => new TaskState
-                                                {
-                                                  TaskId    = taskSummary.Id,
-                                                  Status    = taskSummary.Status.ToInternalStatus(),
-                                                  CreateAt  = taskSummary.CreatedAt.ToDateTime(),
-                                                  StartedAt = taskSummary.StartedAt.ToDateTime(),
-                                                  EndedAt   = taskSummary.EndedAt.ToDateTime(),
-                                                  SessionId = taskSummary.SessionId,
-                                                  PayloadId = taskSummary.PayloadId,
-                                                });
+    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState());
   }
 
   private async Task CreateNewBlobsAsync(SessionInfo           session,

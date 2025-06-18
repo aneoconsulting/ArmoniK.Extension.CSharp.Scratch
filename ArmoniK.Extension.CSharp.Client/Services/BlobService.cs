@@ -154,15 +154,7 @@ internal class BlobService : IBlobService
                                                       {
                                                         ResultId = blobInfo.BlobId,
                                                       });
-    return new BlobState
-           {
-             CreateAt    = blobDetails.Result.CreatedAt.ToDateTime(),
-             CompletedAt = blobDetails.Result.CompletedAt.ToDateTime(),
-             Status      = blobDetails.Result.Status.ToInternalStatus(),
-             BlobId      = blobDetails.Result.ResultId,
-             SessionId   = blobDetails.Result.SessionId,
-             BlobName    = blobDetails.Result.Name,
-           };
+    return blobDetails.Result.ToBlobState();
   }
 
   public async Task<BlobInfo> CreateBlobAsync(SessionInfo          session,
@@ -268,20 +260,12 @@ internal class BlobService : IBlobService
                                                                   PageSize = blobPagination.PageSize,
                                                                 },
                                                                 cancellationToken: cancellationToken);
-    foreach (var x in listResultsResponse.Results)
+    foreach (var resultRaw in listResultsResponse.Results)
     {
       yield return new BlobPage
                    {
-                     TotalPages = listResultsResponse.Total,
-                     BlobDetails = new BlobState
-                                   {
-                                     CreateAt    = x.CreatedAt.ToDateTime(),
-                                     CompletedAt = x.CompletedAt?.ToDateTime(),
-                                     Status      = x.Status.ToInternalStatus(),
-                                     BlobId      = x.ResultId,
-                                     BlobName    = x.Name,
-                                     SessionId   = x.SessionId,
-                                   },
+                     TotalPages  = listResultsResponse.Total,
+                     BlobDetails = resultRaw.ToBlobState(),
                    };
     }
   }
