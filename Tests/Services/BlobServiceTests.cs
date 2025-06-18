@@ -16,8 +16,10 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 
 using Grpc.Core;
@@ -270,5 +272,63 @@ public class BlobServiceTests
                            result.SessionId);
     ClassicAssert.AreEqual(name,
                            result.BlobName);
+  }
+
+  [Test]
+  public async Task CreateBlobAsync_ImportBlobData()
+  {
+    var mockCallInvoker = new Mock<CallInvoker>();
+
+    var sessionInfo = new SessionInfo("session1");
+    var blobInfo = new BlobInfo
+                   {
+                     BlobId    = "blob1",
+                     BlobName  = "myBlob",
+                     SessionId = sessionInfo.SessionId,
+                   };
+    var opaqueId = new byte[]
+                   {
+                     1,
+                     2,
+                     3,
+                   };
+    var blobDescs = new List<KeyValuePair<BlobInfo, byte[]>>
+                    {
+                      new(blobInfo,
+                          opaqueId),
+                    };
+
+    var expectedResponse = new ImportResultsDataResponse
+                           {
+                             Results =
+                             {
+                               new ResultRaw
+                               {
+                                 Name      = "myBlob",
+                                 ResultId  = "blob1",
+                                 Status    = ResultStatus.Completed,
+                                 SessionId = sessionInfo.SessionId,
+                                 OpaqueId  = ByteString.CopyFrom(opaqueId),
+                                 CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                               },
+                             },
+                           };
+    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<ImportResultsDataRequest, ImportResultsDataResponse>(expectedResponse);
+
+    var blobService = MockHelper.GetBlobServiceMock(mockCallInvoker);
+    var result = await blobService.ImportBlobDataAsync(sessionInfo,
+                                                       blobDescs);
+
+    var blobState = result.Single();
+    ClassicAssert.AreEqual("session1",
+                           blobState.SessionId);
+    ClassicAssert.AreEqual("blob1",
+                           blobState.BlobId);
+    ClassicAssert.AreEqual(BlobStatus.Completed,
+                           blobState.Status);
+    ClassicAssert.AreEqual("myBlob",
+                           blobState.BlobName);
+    ClassicAssert.AreEqual(opaqueId,
+                           blobState.OpaqueId);
   }
 }

@@ -17,6 +17,7 @@
 using System;
 
 using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Api.gRPC.V1.Results;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
@@ -131,5 +132,24 @@ internal static class BlobStatusExt
          _ => throw new ArgumentOutOfRangeException(nameof(status),
                                                     status,
                                                     null),
+       };
+}
+
+internal static class BlobStateExt
+{
+  public static BlobState ToBlobState(this ResultRaw resultRaw)
+    => new()
+       {
+         SessionId      = resultRaw.SessionId,
+         BlobId         = resultRaw.ResultId,
+         BlobName       = resultRaw.Name,
+         CreatedBy      = resultRaw.CreatedBy,
+         OwnerId        = resultRaw.OwnerTaskId,
+         OpaqueId       = resultRaw.OpaqueId?.ToByteArray(),
+         Size           = (int)resultRaw.Size,
+         ManualDeletion = resultRaw.ManualDeletion,
+         Status         = resultRaw.Status.ToInternalStatus(),
+         CompletedAt    = resultRaw.CompletedAt?.ToDateTime(),
+         CreateAt       = resultRaw.CreatedAt.ToDateTime(),
        };
 }

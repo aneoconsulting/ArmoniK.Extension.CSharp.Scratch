@@ -308,17 +308,7 @@ internal class BlobService : IBlobService
 
     var response = await blobClient.ImportResultsDataAsync(request)
                                    .ConfigureAwait(false);
-    return response.Results.Select(blob => new BlobState
-                                           {
-                                             SessionId      = blob.SessionId,
-                                             BlobId         = blob.ResultId,
-                                             BlobName       = blob.Name,
-                                             CreatedBy      = blob.CreatedBy,
-                                             OwnerId        = blob.OwnerTaskId,
-                                             OpaqueId       = blob.OpaqueId.ToByteArray(),
-                                             Size           = (int)blob.Size,
-                                             ManualDeletion = blob.ManualDeletion,
-                                           });
+    return response.Results.Select(resultRaw => resultRaw.ToBlobState());
   }
 
   private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)
