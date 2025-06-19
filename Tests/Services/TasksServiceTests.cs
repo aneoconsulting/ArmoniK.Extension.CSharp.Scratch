@@ -718,6 +718,7 @@ public class TasksServiceTests
                 "Result should not be null.");
     mockBlobService.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                    It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                   false,
                                                    It.IsAny<CancellationToken>()),
                            Times.Once);
   }

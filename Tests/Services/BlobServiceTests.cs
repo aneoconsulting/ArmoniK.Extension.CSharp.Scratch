@@ -713,6 +713,7 @@ public class BlobServiceTests
                           opaqueId),
                     };
 
+    var now = DateTime.UtcNow;
     var expectedResponse = new ImportResultsDataResponse
                            {
                              Results =
@@ -724,7 +725,7 @@ public class BlobServiceTests
                                  Status    = ResultStatus.Completed,
                                  SessionId = sessionInfo.SessionId,
                                  OpaqueId  = ByteString.CopyFrom(opaqueId),
-                                 CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
+                                 CreatedAt = Timestamp.FromDateTime(now),
                                },
                              },
                            };
@@ -735,15 +736,15 @@ public class BlobServiceTests
                                                        blobDescs);
 
     var blobState = result.Single();
-    ClassicAssert.AreEqual("session1",
-                           blobState.SessionId);
-    ClassicAssert.AreEqual("blob1",
-                           blobState.BlobId);
-    ClassicAssert.AreEqual(BlobStatus.Completed,
-                           blobState.Status);
-    ClassicAssert.AreEqual("myBlob",
-                           blobState.BlobName);
-    ClassicAssert.AreEqual(opaqueId,
-                           blobState.OpaqueId);
+    Assert.That(blobState,
+                Is.EqualTo(new BlobState
+                           {
+                             SessionId = sessionInfo.SessionId,
+                             BlobId    = "blob1",
+                             Status    = BlobStatus.Completed,
+                             BlobName  = "myBlob",
+                             OpaqueId  = opaqueId,
+                             CreateAt  = now,
+                           }));
   }
 }

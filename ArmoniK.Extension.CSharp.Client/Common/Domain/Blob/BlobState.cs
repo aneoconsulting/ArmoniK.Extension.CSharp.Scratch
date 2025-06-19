@@ -15,16 +15,20 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
+
+using JetBrains.Annotations;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 /// <summary>
 ///   Represents the state of a blob.
 /// </summary>
-public record BlobState : BlobInfo
+public sealed record BlobState : BlobInfo, IEquatable<BlobState>
 {
   /// <summary>
   ///   Datetime when the blob was set to status completed.
@@ -44,17 +48,17 @@ public record BlobState : BlobInfo
   /// <summary>
   ///   The ID of the Task that as submitted this result.
   /// </summary>
-  public string CreatedBy { get; init; }
+  public string CreatedBy { get; init; } = string.Empty;
 
   /// <summary>
   ///   The owner task ID.
   /// </summary>
-  public string OwnerId { get; init; }
+  public string OwnerId { get; init; } = string.Empty;
 
   /// <summary>
   ///   ID of the data in the underlying object storage.
   /// </summary>
-  public byte[] OpaqueId { get; init; }
+  public byte[] OpaqueId { get; init; } = [];
 
   /// <summary>
   ///   The size of the blob Data.
@@ -65,6 +69,69 @@ public record BlobState : BlobInfo
   ///   Whether the user is responsible for the deletion of the data in the underlying object storage.
   /// </summary>
   public bool ManualDeletion { get; init; }
+
+  /// <summary>
+  ///   Custom Equals method
+  /// </summary>
+  /// <param name="other">the BlobState to compare the instance to</param>
+  /// <returns>true when the 2 instance have the same value, false otherwise</returns>
+  public bool Equals([CanBeNull] BlobState other)
+  {
+    if (other == null)
+    {
+      return false;
+    }
+
+    if (!base.Equals(other))
+    {
+      return false;
+    }
+
+    // instead of default Equals method, OpaqueId is compared with SequenceEqual
+    if (!OpaqueId.SequenceEqual(other.OpaqueId))
+    {
+      return false;
+    }
+
+    return EqualityComparer<bool>.Default.Equals(ManualDeletion,
+                                                 other.ManualDeletion) && EqualityComparer<int>.Default.Equals(Size,
+                                                                                                               other
+                                                                                                                 .Size) &&
+           EqualityComparer<string>.Default.Equals(OwnerId,
+                                                   other.OwnerId) && EqualityComparer<string>.Default.Equals(CreatedBy,
+                                                                                                             other.CreatedBy) &&
+           EqualityComparer<BlobStatus>.Default.Equals(Status,
+                                                       other.Status) && CreateAt.Equals(other.CreateAt) && EqualityComparer<DateTime?>.Default.Equals(CompletedAt,
+                                                                                                                                                      other.CompletedAt);
+  }
+
+  /// <summary>
+  ///   Custom GetHashCode method
+  /// </summary>
+  /// <returns>The hash code consistent with the Equals method</returns>
+  public override int GetHashCode()
+  {
+    var hash = 17;
+    hash = hash * 23 + base.GetHashCode();
+    hash = hash * 23 + Status.GetHashCode();
+    hash = hash * 23 + CreatedBy.GetHashCode();
+    hash = hash * 23 + CreateAt.GetHashCode();
+    if (CompletedAt != null)
+    {
+      hash = hash * 23 + CompletedAt.GetHashCode();
+    }
+
+    hash = hash * 23 + OwnerId.GetHashCode();
+    // instead of default GetHashCode method, OpaqueId hash code is computed on the elements of the array
+    foreach (var _ in OpaqueId)
+    {
+      hash = hash * 23 + _.GetHashCode();
+    }
+
+    hash = hash * 23 + ManualDeletion.GetHashCode();
+    hash = hash * 23 + Size.GetHashCode();
+    return hash;
+  }
 }
 
 /// <summary>

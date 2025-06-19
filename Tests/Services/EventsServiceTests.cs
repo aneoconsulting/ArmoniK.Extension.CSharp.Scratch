@@ -32,7 +32,7 @@ namespace Tests.Services;
 public class EventsServiceTests
 {
   [Test]
-  public Task CreateSessionReturnsNewSessionWithId()
+  public async Task CreateSessionReturnsNewSessionWithId()
   {
     var responses = new EventSubscriptionResponse
                     {
@@ -61,9 +61,8 @@ public class EventsServiceTests
                         SessionId = sessionId,
                       },
                     };
-    eventsService.WaitForBlobsAsync(sessionInfo,
-                                    blobInfos);
-
+    await eventsService.WaitForBlobsAsync(sessionInfo,
+                                          blobInfos);
 
     mockInvoker.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
                                                        It.IsAny<string>(),
@@ -71,8 +70,5 @@ public class EventsServiceTests
                                                        It.IsAny<EventSubscriptionRequest>()),
                        Times.Once,
                        "AsyncServerStreamingCall should be called exactly once");
-
-
-    return Task.CompletedTask;
   }
 }
