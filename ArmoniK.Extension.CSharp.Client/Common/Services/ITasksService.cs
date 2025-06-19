@@ -121,9 +121,11 @@ public static class TasksServiceExt
     var                        firstPage = true;
     IAsyncEnumerable<TaskPage> res;
     while (await (res = taskService.ListTasksAsync(taskPagination,
-                                                   cancellationToken)).AnyAsync(cancellationToken))
+                                                   cancellationToken)).AnyAsync(cancellationToken)
+                                                                      .ConfigureAwait(false))
     {
-      await foreach (var taskPage in res.WithCancellation(cancellationToken))
+      await foreach (var taskPage in res.WithCancellation(cancellationToken)
+                                        .ConfigureAwait(false))
       {
         if (firstPage)
         {

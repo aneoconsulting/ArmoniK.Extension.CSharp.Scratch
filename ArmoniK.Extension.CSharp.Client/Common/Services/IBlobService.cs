@@ -210,9 +210,11 @@ public static class BlobServiceExt
     IAsyncEnumerable<BlobPage> res;
 
     while (await (res = blobService.ListBlobsAsync(blobPagination,
-                                                   cancellationToken)).AnyAsync(cancellationToken))
+                                                   cancellationToken)).AnyAsync(cancellationToken)
+                                                                      .ConfigureAwait(false))
     {
-      await foreach (var blobPage in res.WithCancellation(cancellationToken))
+      await foreach (var blobPage in res.WithCancellation(cancellationToken)
+                                        .ConfigureAwait(false))
       {
         if (firstPage)
         {

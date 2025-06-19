@@ -51,10 +51,12 @@ internal class PartitionsService : IPartitionsService
                                                              {
                                                                Id = partitionId,
                                                              },
-                                                             cancellationToken: cancellationToken);
+                                                             cancellationToken: cancellationToken)
+                                          .ConfigureAwait(false);
     return partition.Partition.ToPartition();
   }
 
+  /// <inheritdoc />
   public async IAsyncEnumerable<(int, Partition)> ListPartitionsAsync(PartitionPagination                        partitionPagination,
                                                                       [EnumeratorCancellation] CancellationToken cancellationToken)
   {
@@ -70,7 +72,8 @@ internal class PartitionsService : IPartitionsService
                                                                          {
                                                                            Direction = (SortDirection)partitionPagination.SortDirection,
                                                                          },
-                                                                });
+                                                                })
+                                           .ConfigureAwait(false);
 
     foreach (var partitionRaw in partitions.Partitions)
     {

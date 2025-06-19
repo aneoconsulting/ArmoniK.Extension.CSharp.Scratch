@@ -70,12 +70,14 @@ public class ServiceRequestContext
     }
 
     var contextName = await libraryLoader_.LoadLibraryAsync(taskHandler,
-                                                            cancellationToken);
+                                                            cancellationToken)
+                                          .ConfigureAwait(false);
 
     var result = await libraryWorker_.ExecuteAsync(taskHandler,
                                                    libraryLoader_,
                                                    contextName,
-                                                   cancellationToken);
+                                                   cancellationToken)
+                                     .ConfigureAwait(false);
     return result;
   }
 }

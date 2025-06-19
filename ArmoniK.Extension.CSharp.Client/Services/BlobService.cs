@@ -77,7 +77,8 @@ internal class BlobService : IBlobService
                                                                                 resultsCreate,
                                                                               },
                                                                             },
-                                                                            cancellationToken: cancellationToken);
+                                                                            cancellationToken: cancellationToken)
+                                                .ConfigureAwait(false);
 
     var asyncBlobInfos = blobsCreationResponse.Results.Select(b => new BlobInfo
                                                                    {
@@ -87,7 +88,8 @@ internal class BlobService : IBlobService
                                                                    })
                                               .ToAsyncEnumerable();
 
-    await foreach (var blobInfo in asyncBlobInfos.WithCancellation(cancellationToken))
+    await foreach (var blobInfo in asyncBlobInfos.WithCancellation(cancellationToken)
+                                                 .ConfigureAwait(false))
     {
       yield return blobInfo;
     }
@@ -103,7 +105,8 @@ internal class BlobService : IBlobService
       var blobClient = new Results.ResultsClient(channel);
       return await blobClient.DownloadResultData(blobInfo.SessionId,
                                                  blobInfo.BlobId,
-                                                 cancellationToken);
+                                                 cancellationToken)
+                             .ConfigureAwait(false);
     }
     catch (Exception e)
     {
@@ -124,7 +127,8 @@ internal class BlobService : IBlobService
                                                  SessionId = blobInfo.SessionId,
                                                },
                                                cancellationToken: cancellationToken);
-    while (await stream.ResponseStream.MoveNext(cancellationToken))
+    while (await stream.ResponseStream.MoveNext(cancellationToken)
+                       .ConfigureAwait(false))
     {
       yield return stream.ResponseStream.Current.DataChunk.ToByteArray();
     }
@@ -141,7 +145,8 @@ internal class BlobService : IBlobService
     await UploadBlobAsync(blobInfo,
                           blobContent,
                           blobClient,
-                          cancellationToken);
+                          cancellationToken)
+      .ConfigureAwait(false);
   }
 
   public async Task<BlobState> GetBlobStateAsync(BlobInfo          blobInfo,
@@ -153,7 +158,8 @@ internal class BlobService : IBlobService
     var blobDetails = await blobClient.GetResultAsync(new GetResultRequest
                                                       {
                                                         ResultId = blobInfo.BlobId,
-                                                      });
+                                                      })
+                                      .ConfigureAwait(false);
     return blobDetails.Result.ToBlobState();
   }
 
@@ -165,7 +171,8 @@ internal class BlobService : IBlobService
   {
     if (serviceConfiguration_ is null)
     {
-      await LoadBlobServiceConfigurationAsync(cancellationToken);
+      await LoadBlobServiceConfigurationAsync(cancellationToken)
+        .ConfigureAwait(false);
     }
 
     await using var channel = await channelPool_.GetAsync(cancellationToken)
@@ -181,11 +188,13 @@ internal class BlobService : IBlobService
                                               },
                                               manualDeletion,
                                               cancellationToken);
-      var createdBlobs = await blobInfo.ToListAsync(cancellationToken);
+      var createdBlobs = await blobInfo.ToListAsync(cancellationToken)
+                                       .ConfigureAwait(false);
       await UploadBlobAsync(createdBlobs.First(),
                             content,
                             blobClient,
-                            cancellationToken);
+                            cancellationToken)
+        .ConfigureAwait(false);
       return createdBlobs.First();
     }
 
@@ -202,7 +211,8 @@ internal class BlobService : IBlobService
                                                                        },
                                                                      },
                                                                    },
-                                                                   cancellationToken: cancellationToken);
+                                                                   cancellationToken: cancellationToken)
+                                               .ConfigureAwait(false);
 
     return new BlobInfo
            {
@@ -224,13 +234,15 @@ internal class BlobService : IBlobService
                                                                                                              blobKeyValuePair.Key,
                                                                                                              blobKeyValuePair.Value,
                                                                                                              manualDeletion,
-                                                                                                             cancellationToken);
+                                                                                                             cancellationToken)
+                                                                                         .ConfigureAwait(false);
                                                                         return blobInfo;
                                                                       },
                                                                       cancellationToken))
                                  .ToList();
 
-    var blobCreationResponse = await Task.WhenAll(tasks);
+    var blobCreationResponse = await Task.WhenAll(tasks)
+                                         .ConfigureAwait(false);
 
     foreach (var blob in blobCreationResponse)
     {
@@ -259,7 +271,8 @@ internal class BlobService : IBlobService
                                                                   Page     = blobPagination.Page,
                                                                   PageSize = blobPagination.PageSize,
                                                                 },
-                                                                cancellationToken: cancellationToken);
+                                                                cancellationToken: cancellationToken)
+                                              .ConfigureAwait(false);
     foreach (var resultRaw in listResultsResponse.Results)
     {
       yield return new BlobPage
@@ -300,7 +313,8 @@ internal class BlobService : IBlobService
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
     var blobClient = new Results.ResultsClient(channel);
-    serviceConfiguration_ = await blobClient.GetServiceConfigurationAsync(new Empty());
+    serviceConfiguration_ = await blobClient.GetServiceConfigurationAsync(new Empty())
+                                            .ConfigureAwait(false);
   }
 
   private async Task UploadBlobAsync(BlobInfo              blob,
@@ -312,7 +326,8 @@ internal class BlobService : IBlobService
     {
       await blobClient.UploadResultData(blob.SessionId,
                                         blob.BlobId,
-                                        blobContent.ToArray());
+                                        blobContent.ToArray())
+                      .ConfigureAwait(false);
     }
     catch (Exception e)
     {

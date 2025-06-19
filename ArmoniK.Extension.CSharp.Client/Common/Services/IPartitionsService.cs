@@ -78,9 +78,11 @@ public static class PartitionsServiceExt
     var                                firstPage = true;
     IAsyncEnumerable<(int, Partition)> res;
     while (await (res = partitionService.ListPartitionsAsync(partitionPagination,
-                                                             cancellationToken)).AnyAsync(cancellationToken))
+                                                             cancellationToken)).AnyAsync(cancellationToken)
+                                                                                .ConfigureAwait(false))
     {
-      await foreach (var (count, partition) in res.WithCancellation(cancellationToken))
+      await foreach (var (count, partition) in res.WithCancellation(cancellationToken)
+                                                  .ConfigureAwait(false))
       {
         if (firstPage)
         {

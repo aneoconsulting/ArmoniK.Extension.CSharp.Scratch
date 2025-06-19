@@ -26,7 +26,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace Tests;
 
@@ -64,28 +63,21 @@ public class ArmoniKClientTests
 
   [Test]
   public void Constructor_ThrowsArgumentNullException_IfPropertiesIsNull()
-  {
-    // Act 
-    var exception = Assert.Throws<ArgumentNullException>(() => new ArmoniKClient(null,
-                                                                                 loggerFactoryMock_.Object,
-                                                                                 defaultTaskOptions_));
-
-    // Assert
-    ClassicAssert.AreEqual("properties",
-                           exception?.ParamName);
-  }
+    // Act & Assert
+    => Assert.That(() => new ArmoniKClient(null,
+                                           loggerFactoryMock_.Object,
+                                           defaultTaskOptions_),
+                   Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
+                         .EqualTo("properties"));
 
   [Test]
   public void Constructor_ThrowsArgumentNullException_IfLoggerFactoryIsNull()
-  {
-    // Act  
-    var exception = Assert.Throws<ArgumentNullException>(() => new ArmoniKClient(defaultProperties_,
-                                                                                 null,
-                                                                                 defaultTaskOptions_));
-    // Assert
-    ClassicAssert.AreEqual("loggerFactory",
-                           exception?.ParamName);
-  }
+    // Act & Assert
+    => Assert.That(() => new ArmoniKClient(defaultProperties_,
+                                           null,
+                                           defaultTaskOptions_),
+                   Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
+                         .EqualTo("loggerFactory"));
 
   [Test]
   public async Task GetBlobService_ShouldReturnInstance()

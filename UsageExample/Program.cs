@@ -89,7 +89,8 @@ internal class Program
                                                                  new[]
                                                                  {
                                                                    dynamicLib,
-                                                                 });
+                                                                 })
+                                      .ConfigureAwait(false);
 
     Console.WriteLine($"sessionId: {session.SessionId}");
 
@@ -101,7 +102,8 @@ internal class Program
 
     var payload = await blobService.CreateBlobAsync(session,
                                                     "Payload",
-                                                    Encoding.ASCII.GetBytes("Hello"));
+                                                    Encoding.ASCII.GetBytes("Hello"))
+                                   .ConfigureAwait(false);
 
     Console.WriteLine($"payloadId: {payload.BlobId}");
 
@@ -111,15 +113,18 @@ internal class Program
                                                          "Result",
                                                        });
 
-    var blobInfos = await results.ToListAsync();
+    var blobInfos = await results.ToListAsync()
+                                 .ConfigureAwait(false);
 
     var result = blobInfos[0];
 
-    var content = File.ReadAllBytes(filePath);
+    var content = await File.ReadAllBytesAsync(filePath)
+                            .ConfigureAwait(false);
 
     var dllBlob = await blobService.SendDllBlobAsync(session,
                                                      dynamicLib,
-                                                     content);
+                                                     content)
+                                   .ConfigureAwait(false);
 
     Console.WriteLine($"resultId: {result.BlobId}");
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
@@ -144,15 +149,18 @@ internal class Program
                                                               DynamicLibrary = taskLibraryDefinition,
                                                             },
                                                           },
-                                                          dllBlob);
+                                                          dllBlob)
+                                 .ConfigureAwait(false);
 
     Console.WriteLine($"taskId: {task.Single().TaskId}");
 
     await eventsService.WaitForBlobsAsync(session,
-                                          new List<BlobInfo>([result]));
+                                          new List<BlobInfo>([result]))
+                       .ConfigureAwait(false);
 
     var download = await blobService.DownloadBlobAsync(result,
-                                                       CancellationToken.None);
+                                                       CancellationToken.None)
+                                    .ConfigureAwait(false);
     var stringArray = Encoding.ASCII.GetString(download)
                               .Split(new[]
                                      {
@@ -184,6 +192,7 @@ internal class Program
                            filePath);
 
     // Parse the command line parameters and call the function that represents the application
-    return await rootCommand.InvokeAsync(args);
+    return await rootCommand.InvokeAsync(args)
+                            .ConfigureAwait(false);
   }
 }

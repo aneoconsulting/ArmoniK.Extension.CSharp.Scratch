@@ -47,7 +47,8 @@ internal class HealthCheckService : IHealthCheckService
                                                 .ConfigureAwait(false);
     var healthClient = new HealthChecksService.HealthChecksServiceClient(channel);
 
-    var healthResponse = await healthClient.CheckHealthAsync(new CheckHealthRequest());
+    var healthResponse = await healthClient.CheckHealthAsync(new CheckHealthRequest())
+                                           .ConfigureAwait(false);
 
     foreach (var health in healthResponse.Services)
     {

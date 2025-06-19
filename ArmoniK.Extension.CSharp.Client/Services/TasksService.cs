@@ -68,7 +68,8 @@ internal class TasksService : ITasksService
     await CreateNewBlobsAsync(session,
                               enumerableTaskNodes,
                               manualDeletion,
-                              cancellationToken);
+                              cancellationToken)
+      .ConfigureAwait(false);
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
     var tasksClient = new Tasks.TasksClient(channel);
@@ -96,7 +97,8 @@ internal class TasksService : ITasksService
                              };
 
     var taskSubmissionResponse = await tasksClient.SubmitTasksAsync(submitTasksRequest,
-                                                                    cancellationToken: cancellationToken);
+                                                                    cancellationToken: cancellationToken)
+                                                  .ConfigureAwait(false);
 
     return taskSubmissionResponse.TaskInfos.Select(x => new TaskInfos(x,
                                                                       session.SessionId));
@@ -120,7 +122,8 @@ internal class TasksService : ITasksService
                                                             Direction = paginationOptions.SortDirection.ToGrpc(),
                                                           },
                                                  },
-                                                 cancellationToken: cancellationToken);
+                                                 cancellationToken: cancellationToken)
+                                 .ConfigureAwait(false);
     yield return new TaskPage
                  {
                    TotalTasks = tasks.Total,
@@ -142,7 +145,8 @@ internal class TasksService : ITasksService
                                                {
                                                  TaskId = taskId,
                                                },
-                                               cancellationToken: cancellationToken);
+                                               cancellationToken: cancellationToken)
+                                 .ConfigureAwait(false);
 
     return tasks.Task.ToTaskState();
   }
@@ -166,7 +170,8 @@ internal class TasksService : ITasksService
                                                                     Direction = paginationOptions.SortDirection.ToGrpc(),
                                                                   },
                                                          },
-                                                         cancellationToken: cancellationToken);
+                                                         cancellationToken: cancellationToken)
+                                 .ConfigureAwait(false);
 
     yield return new TaskDetailedPage
                  {
@@ -189,7 +194,8 @@ internal class TasksService : ITasksService
                                                         {
                                                           taskIds,
                                                         },
-                                                      });
+                                                      })
+                                    .ConfigureAwait(false);
     return response.Tasks.Select(taskSummary => taskSummary.ToTaskState());
   }
 
@@ -211,7 +217,8 @@ internal class TasksService : ITasksService
       await foreach (var blob in blobService_.CreateBlobsAsync(session,
                                                                blobKeyValues,
                                                                manualDeletion,
-                                                               cancellationToken))
+                                                               cancellationToken)
+                                             .ConfigureAwait(false))
       {
         createdBlobDictionary[blob.BlobName] = blob;
       }
@@ -240,7 +247,8 @@ internal class TasksService : ITasksService
       await foreach (var blob in blobService_.CreateBlobsAsync(session,
                                                                payloadBlobKeyValues,
                                                                manualDeletion,
-                                                               cancellationToken))
+                                                               cancellationToken)
+                                             .ConfigureAwait(false))
       {
         payloadBlobDictionary[blob.BlobName] = blob;
       }
