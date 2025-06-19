@@ -16,6 +16,8 @@
 
 using System.Collections.Generic;
 
+using ArmoniK.Api.gRPC.V1.Partitions;
+
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Partition;
 
 /// <summary>
@@ -58,4 +60,19 @@ public record Partition
   ///   Priority of the partition, which may influence scheduling decisions.
   /// </summary>
   public long Priority { get; init; }
+}
+
+internal static class PartitionExt
+{
+  public static Partition ToPartition(this PartitionRaw partitionRaw)
+    => new()
+       {
+         Id                   = partitionRaw.Id,
+         ParentPartitionIds   = partitionRaw.ParentPartitionIds,
+         PodConfiguration     = partitionRaw.PodConfiguration,
+         PodMax               = partitionRaw.PodMax,
+         PodReserved          = partitionRaw.PodReserved,
+         PreemptionPercentage = partitionRaw.PreemptionPercentage,
+         Priority             = partitionRaw.Priority,
+       };
 }
