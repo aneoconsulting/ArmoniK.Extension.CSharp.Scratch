@@ -25,6 +25,7 @@ using Moq;
 
 using NUnit.Framework;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 namespace Tests.Services;
@@ -34,6 +35,7 @@ public class EventsServiceTests
   [Test]
   public Task CreateSessionReturnsNewSessionWithId()
   {
+    var client = new MockedArmoniKClient();
     var responses = new EventSubscriptionResponse
                     {
                       SessionId = "1234",
@@ -44,12 +46,10 @@ public class EventsServiceTests
                                   },
                     };
 
-    var mockInvoker = new Mock<CallInvoker>();
-    var callInvoker = mockInvoker.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
+    client.CallInvokerMock.SetupAsyncServerStreamingCallInvokerMock<EventSubscriptionRequest, EventSubscriptionResponse>(responses);
 
-    var eventsService = MockHelper.GetEventsServiceMock(callInvoker);
-    var blobId        = "1234";
-    var sessionId     = "sessionId";
+    var blobId    = "1234";
+    var sessionId = "sessionId";
 
     var sessionInfo = new SessionInfo(sessionId);
     var blobInfos = new[]
@@ -61,16 +61,15 @@ public class EventsServiceTests
                         SessionId = sessionId,
                       },
                     };
-    eventsService.WaitForBlobsAsync(sessionInfo,
-                                    blobInfos);
+    client.EventsService.WaitForBlobsAsync(sessionInfo,
+                                           blobInfos);
 
-
-    mockInvoker.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
-                                                       It.IsAny<string>(),
-                                                       It.IsAny<CallOptions>(),
-                                                       It.IsAny<EventSubscriptionRequest>()),
-                       Times.Once,
-                       "AsyncServerStreamingCall should be called exactly once");
+    client.CallInvokerMock.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
+                                                                  It.IsAny<string>(),
+                                                                  It.IsAny<CallOptions>(),
+                                                                  It.IsAny<EventSubscriptionRequest>()),
+                                  Times.Once,
+                                  "AsyncServerStreamingCall should be called exactly once");
 
 
     return Task.CompletedTask;

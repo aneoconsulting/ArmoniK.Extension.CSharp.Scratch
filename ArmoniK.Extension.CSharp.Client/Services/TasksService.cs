@@ -38,12 +38,22 @@ using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
-internal class TasksService : ITasksService
+public class TasksService : ITasksService
 {
   private readonly IBlobService            blobService_;
   private readonly ObjectPool<ChannelBase> channelPool_;
   private readonly ILogger<TasksService>   logger_;
 
+  /// <summary>
+  ///   Creates an instance of <see cref="TasksService" /> using the specified GRPC channel, blob service, and an optional
+  ///   logger factory.
+  /// </summary>
+  /// <param name="channel">An object pool that manages GRPC channels. This provides efficient handling of channel resources.</param>
+  /// <param name="blobService">The blob service to be used for blob manipulation operations within the task service.</param>
+  /// <param name="loggerFactory">
+  ///   An optional logger factory to enable logging within the task service. If null, logging will
+  ///   be disabled.
+  /// </param>
   public TasksService(ObjectPool<ChannelBase> channel,
                       IBlobService            blobService,
                       ILoggerFactory          loggerFactory)

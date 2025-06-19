@@ -22,12 +22,13 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Factory;
 using ArmoniK.Extension.CSharp.Client.Handlers;
+using ArmoniK.Extension.CSharp.Client.Services;
 using ArmoniK.Utils;
 
 using Grpc.Core;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client;
@@ -38,19 +39,9 @@ namespace ArmoniK.Extension.CSharp.Client;
 /// </summary>
 public class ArmoniKClient
 {
-  private readonly ILoggerFactory loggerFactory_;
-  private readonly ILogger        logger_;
-  private readonly Properties     properties_;
-
-
-  private IBlobService            blobService_;
-  private ObjectPool<ChannelBase> channelPool_;
-  private IEventsService          eventsService_;
-  private IHealthCheckService     healthCheckService_;
-  private IPartitionsService      partitionsService_;
-  private ISessionService         sessionService_;
-  private ITasksService           tasksService_;
-  private IVersionsService        versionsService_;
+  private readonly ILogger                 logger_;
+  private readonly ServiceProvider         serviceProvider_;
+  private          ObjectPool<ChannelBase> channelPool_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="ArmoniKClient" /> class with the specified properties and logger
@@ -64,131 +55,109 @@ public class ArmoniKClient
                        ILoggerFactory    loggerFactory,
                        TaskConfiguration taskConfiguration)
   {
-    properties_    = properties    ?? throw new ArgumentNullException(nameof(properties));
-    loggerFactory_ = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-    logger_        = loggerFactory.CreateLogger<ArmoniKClient>();
+    Properties    = properties    ?? throw new ArgumentNullException(nameof(properties));
+    LoggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+    logger_       = loggerFactory.CreateLogger<ArmoniKClient>();
+
+    var services = new ServiceCollection();
+    services.AddSingleton(BuildBlobService)
+            .AddSingleton(BuildEventsService)
+            .AddSingleton(BuildHealthCheckService)
+            .AddSingleton(BuildPartitionsService)
+            .AddSingleton(BuildSessionsService)
+            .AddSingleton(BuildTasksService)
+            .AddSingleton(BuildVersionsService);
+    serviceProvider_ = services.BuildServiceProvider();
   }
+
+  /// <summary>
+  ///   The properties
+  /// </summary>
+  public Properties Properties { get; }
+
+  /// <summary>
+  ///   The logger factory
+  /// </summary>
+  public ILoggerFactory LoggerFactory { get; }
 
   /// <summary>
   ///   Gets the channel pool used for managing GRPC channels.
   /// </summary>
   public ObjectPool<ChannelBase> ChannelPool
-    => channelPool_ ??= ClientServiceConnector.ControlPlaneConnectionPool(properties_,
-                                                                          loggerFactory_);
+    => channelPool_ ??= ClientServiceConnector.ControlPlaneConnectionPool(Properties,
+                                                                          LoggerFactory);
 
   /// <summary>
-  ///   Gets the blob service.
+  ///   Gets the blob service
   /// </summary>
-  /// <returns>A task representing the asynchronous operation. The task result contains the blob service instance.</returns>
-  public Task<IBlobService> GetBlobService()
-  {
-    if (blobService_ is not null)
-    {
-      return Task.FromResult(blobService_);
-    }
-
-    blobService_ = BlobServiceFactory.CreateBlobService(ChannelPool,
-                                                        loggerFactory_);
-    return Task.FromResult(blobService_);
-  }
-
-  /// <summary>
-  ///   Gets the session service.
-  /// </summary>
-  /// <returns>A task representing the asynchronous operation. The task result contains the session service instance.</returns>
-  public Task<ISessionService> GetSessionService()
-  {
-    if (sessionService_ is not null)
-    {
-      return Task.FromResult(sessionService_);
-    }
-
-    sessionService_ = SessionServiceFactory.CreateSessionService(ChannelPool,
-                                                                 properties_,
-                                                                 loggerFactory_);
-    return Task.FromResult(sessionService_);
-  }
+  public IBlobService BlobService
+    => serviceProvider_.GetRequiredService<IBlobService>();
 
   /// <summary>
   ///   Gets the tasks service.
   /// </summary>
-  /// <returns>A task representing the asynchronous operation. The task result contains the tasks service instance.</returns>
-  public async Task<ITasksService> GetTasksServiceAsync()
-  {
-    if (tasksService_ is not null)
-    {
-      return tasksService_;
-    }
+  public ITasksService TasksService
+    => serviceProvider_.GetRequiredService<ITasksService>();
 
-    tasksService_ = TasksServiceFactory.CreateTaskService(ChannelPool,
-                                                          await GetBlobService(),
-                                                          loggerFactory_);
-    return tasksService_;
-  }
+  /// <summary>
+  ///   Gets the session service.
+  /// </summary>
+  public ISessionService SessionService
+    => serviceProvider_.GetRequiredService<ISessionService>();
 
   /// <summary>
   ///   Gets the events service.
   /// </summary>
-  /// <returns>A task representing the asynchronous operation. The task result contains the events service instance.</returns>
-  public Task<IEventsService> GetEventsService()
-  {
-    if (eventsService_ is not null)
-    {
-      return Task.FromResult(eventsService_);
-    }
-
-    eventsService_ = EventsServiceFactory.CreateEventsService(ChannelPool,
-                                                              loggerFactory_);
-    return Task.FromResult(eventsService_);
-  }
+  public IEventsService EventsService
+    => serviceProvider_.GetRequiredService<IEventsService>();
 
   /// <summary>
   ///   Gets the version service.
   /// </summary>
-  /// <returns>A task representing the asynchronous operation. The task result contains the version service instance.</returns>
-  public Task<IVersionsService> GetVersionService()
-  {
-    if (versionsService_ is not null)
-    {
-      return Task.FromResult(versionsService_);
-    }
-
-    versionsService_ = VersionsServiceFactory.CreateVersionsService(ChannelPool,
-                                                                    loggerFactory_);
-    return Task.FromResult(versionsService_);
-  }
+  public IVersionsService VersionService
+    => serviceProvider_.GetRequiredService<IVersionsService>();
 
   /// <summary>
   ///   Gets the partitions service.
   /// </summary>
-  /// <returns>A task representing the asynchronous operation. The task result contains the partitions service instance.</returns>
-  public Task<IPartitionsService> GetPartitionsService()
-  {
-    if (partitionsService_ is not null)
-    {
-      return Task.FromResult(partitionsService_);
-    }
-
-    partitionsService_ = PartitionsServiceFactory.CreatePartitionsService(ChannelPool,
-                                                                          loggerFactory_);
-    return Task.FromResult(partitionsService_);
-  }
+  public IPartitionsService PartitionsService
+    => serviceProvider_.GetRequiredService<IPartitionsService>();
 
   /// <summary>
   ///   Gets the health check service.
   /// </summary>
-  /// <returns>A task representing the asynchronous operation. The task result contains the health check service instance.</returns>
-  public Task<IHealthCheckService> GetHealthCheckService()
-  {
-    if (healthCheckService_ is not null)
-    {
-      return Task.FromResult(healthCheckService_);
-    }
+  public IHealthCheckService HealthCheckService
+    => serviceProvider_.GetRequiredService<IHealthCheckService>();
 
-    healthCheckService_ = HealthCheckServiceFactory.CreateHealthCheckService(ChannelPool,
-                                                                             loggerFactory_);
-    return Task.FromResult(healthCheckService_);
-  }
+  private IBlobService BuildBlobService(IServiceProvider provider)
+    => new BlobService(ChannelPool,
+                       LoggerFactory);
+
+  private IEventsService BuildEventsService(IServiceProvider provider)
+    => new EventsService(ChannelPool,
+                         LoggerFactory);
+
+  private IHealthCheckService BuildHealthCheckService(IServiceProvider provider)
+    => new HealthCheckService(ChannelPool,
+                              LoggerFactory);
+
+  private IPartitionsService BuildPartitionsService(IServiceProvider provider)
+    => new PartitionsService(ChannelPool,
+                             LoggerFactory);
+
+  private ISessionService BuildSessionsService(IServiceProvider provider)
+    => new SessionService(ChannelPool,
+                          Properties,
+                          LoggerFactory);
+
+  private ITasksService BuildTasksService(IServiceProvider provider)
+    => new TasksService(ChannelPool,
+                        BlobService,
+                        LoggerFactory);
+
+  private IVersionsService BuildVersionsService(IServiceProvider provider)
+    => new VersionsService(ChannelPool,
+                           LoggerFactory);
 
   /// <summary>
   ///   Gets a blob handler for the specified blob information.
