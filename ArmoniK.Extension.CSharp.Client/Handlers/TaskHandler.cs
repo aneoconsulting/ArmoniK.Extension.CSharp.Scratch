@@ -58,10 +58,7 @@ public class TaskHandler
   ///   the result.
   /// </returns>
   public async Task<TaskState> GetTaskDetailsAsync(CancellationToken cancellationToken)
-  {
-    var taskClient = await ArmoniKClient.GetTasksServiceAsync();
-    return await taskClient.GetTasksDetailedAsync(taskInfos_.TaskId,
-                                                  cancellationToken)
-                           .ConfigureAwait(false);
-  }
+    => await ArmoniKClient.TasksService.GetTasksDetailedAsync(taskInfos_.TaskId,
+                                                              cancellationToken)
+                          .ConfigureAwait(false);
 }

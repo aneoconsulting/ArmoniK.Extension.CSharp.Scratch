@@ -28,12 +28,21 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
-internal class VersionsService : IVersionsService
+public class VersionsService : IVersionsService
 {
   private readonly ObjectPool<ChannelBase> channel_;
 
   private readonly ILogger<VersionsService> logger_;
 
+  /// <summary>
+  ///   Creates an instance of <see cref="VersionsService" /> using the specified GRPC channel, and an optional
+  ///   logger factory.
+  /// </summary>
+  /// <param name="channel">An object pool that manages GRPC channels. This provides efficient handling of channel resources.</param>
+  /// <param name="loggerFactory">
+  ///   An optional logger factory to enable logging within the task service. If null, logging will
+  ///   be disabled.
+  /// </param>
   public VersionsService(ObjectPool<ChannelBase> channel,
                          ILoggerFactory          loggerFactory)
   {

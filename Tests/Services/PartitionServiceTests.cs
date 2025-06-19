@@ -23,6 +23,7 @@ using Moq;
 
 using NUnit.Framework;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 namespace Tests.Services;
@@ -32,8 +33,8 @@ public class PartitionServiceTests
   [Test]
   public async Task GetPartitionAsyncShouldReturnPartition()
   {
+    var client      = new MockedArmoniKClient();
     var partitionId = "partitionId";
-    var mockInvoker = new Mock<CallInvoker>();
     var grpcPartition = new PartitionRaw
                         {
                           Id = partitionId,
@@ -61,12 +62,11 @@ public class PartitionServiceTests
                         {
                           Partition = grpcPartition,
                         };
-    var callInvoker       = mockInvoker.SetupAsyncUnaryCallInvokerMock<GetPartitionRequest, GetPartitionResponse>(responseAsync);
-    var partitionsService = callInvoker.GetPartitionsServiceMock();
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<GetPartitionRequest, GetPartitionResponse>(responseAsync);
 
-    var result = await partitionsService.GetPartitionAsync(partitionId,
-                                                           CancellationToken.None)
-                                        .ConfigureAwait(false);
+    var result = await client.PartitionsService.GetPartitionAsync(partitionId,
+                                                                  CancellationToken.None)
+                             .ConfigureAwait(false);
 
     Assert.Multiple(() =>
                     {
@@ -84,32 +84,30 @@ public class PartitionServiceTests
                                   Contains.Item("parentId"));
                       Assert.That(result.ParentPartitionIds,
                                   Contains.Item("parentId2"));
-                      mockInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<GetPartitionRequest, GetPartitionResponse>>(),
-                                                               It.IsAny<string>(),
-                                                               It.IsAny<CallOptions>(),
-                                                               It.Is<GetPartitionRequest>(r => r.Id == partitionId)),
-                                         Times.Once,
-                                         "AsyncUnaryCall should be called exactly once");
+                      client.CallInvokerMock.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<GetPartitionRequest, GetPartitionResponse>>(),
+                                                                          It.IsAny<string>(),
+                                                                          It.IsAny<CallOptions>(),
+                                                                          It.Is<GetPartitionRequest>(r => r.Id == partitionId)),
+                                                    Times.Once,
+                                                    "AsyncUnaryCall should be called exactly once");
                     });
   }
 
   [Test]
   public void GetPartitionShouldThrowExceptionWhenPartitionNotFound()
   {
-    var partitionId     = "nonExistentPartitionId";
-    var mockCallInvoker = new Mock<CallInvoker>();
+    var client      = new MockedArmoniKClient();
+    var partitionId = "nonExistentPartitionId";
     var rpcException = new RpcException(new Status(StatusCode.NotFound,
                                                    "Partition not found"));
-    mockCallInvoker.Setup(m => m.AsyncUnaryCall(It.IsAny<Method<GetPartitionRequest, GetPartitionResponse>>(),
-                                                It.IsAny<string>(),
-                                                It.IsAny<CallOptions>(),
-                                                It.IsAny<GetPartitionRequest>()))
-                   .Throws(rpcException);
+    client.CallInvokerMock.Setup(m => m.AsyncUnaryCall(It.IsAny<Method<GetPartitionRequest, GetPartitionResponse>>(),
+                                                       It.IsAny<string>(),
+                                                       It.IsAny<CallOptions>(),
+                                                       It.IsAny<GetPartitionRequest>()))
+          .Throws(rpcException);
 
-    var partitionsService = mockCallInvoker.GetPartitionsServiceMock();
-
-    Assert.That(async () => await partitionsService.GetPartitionAsync(partitionId,
-                                                                      CancellationToken.None),
+    Assert.That(async () => await client.PartitionsService.GetPartitionAsync(partitionId,
+                                                                             CancellationToken.None),
                 Throws.InstanceOf<RpcException>()
                       .With.Property("StatusCode")
                       .EqualTo(StatusCode.NotFound)
@@ -119,7 +117,7 @@ public class PartitionServiceTests
   [Test]
   public async Task ListPartitionsAsyncShouldReturnPartitions()
   {
-    var mockInvoker = new Mock<CallInvoker>();
+    var client = new MockedArmoniKClient();
 
     var grpcPartition1 = new PartitionRaw
                          {
@@ -183,12 +181,10 @@ public class PartitionServiceTests
                      Total = expectedPartitions.Count,
                    };
 
-    mockInvoker.SetupAsyncUnaryCallInvokerMock<ListPartitionsRequest, ListPartitionsResponse>(response);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListPartitionsRequest, ListPartitionsResponse>(response);
 
-    var partitionsService = mockInvoker.GetPartitionsServiceMock();
-
-    var result = partitionsService.ListPartitionsAsync(new PartitionPagination(),
-                                                       CancellationToken.None);
+    var result = client.PartitionsService.ListPartitionsAsync(new PartitionPagination(),
+                                                              CancellationToken.None);
 
     var receivedPartitions = new List<Partition>();
     var totalCount         = 0;
@@ -224,12 +220,12 @@ public class PartitionServiceTests
                       Assert.That(receivedPartitions[1].Priority,
                                   Is.EqualTo(3));
 
-                      mockInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<ListPartitionsRequest, ListPartitionsResponse>>(),
-                                                               It.IsAny<string>(),
-                                                               It.IsAny<CallOptions>(),
-                                                               It.IsAny<ListPartitionsRequest>()),
-                                         Times.Once,
-                                         "AsyncUnaryCall should be called exactly once");
+                      client.CallInvokerMock.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<ListPartitionsRequest, ListPartitionsResponse>>(),
+                                                                          It.IsAny<string>(),
+                                                                          It.IsAny<CallOptions>(),
+                                                                          It.IsAny<ListPartitionsRequest>()),
+                                                    Times.Once,
+                                                    "AsyncUnaryCall should be called exactly once");
                     });
   }
 }

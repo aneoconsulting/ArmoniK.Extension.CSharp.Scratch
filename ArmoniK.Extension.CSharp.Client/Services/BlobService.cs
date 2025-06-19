@@ -40,12 +40,23 @@ using static ArmoniK.Api.gRPC.V1.Results.ImportResultsDataRequest.Types;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
-internal class BlobService : IBlobService
+public class BlobService : IBlobService
 {
   private readonly ObjectPool<ChannelBase>             channelPool_;
   private readonly ILogger<BlobService>                logger_;
   private          ResultsServiceConfigurationResponse serviceConfiguration_;
 
+  /// <summary>
+  ///   Creates an instance of <see cref="BlobService" /> using the specified GRPC channel and an optional logger factory.
+  /// </summary>
+  /// <param name="channel">
+  ///   An object pool that manages GRPC channels, providing efficient handling and reuse of channel
+  ///   resources.
+  /// </param>
+  /// <param name="loggerFactory">
+  ///   An optional factory for creating loggers, which can be used to enable logging within the
+  ///   blob service. If null, logging will be disabled.
+  /// </param>
   public BlobService(ObjectPool<ChannelBase> channel,
                      ILoggerFactory          loggerFactory)
   {

@@ -22,6 +22,7 @@ using Moq;
 
 using NUnit.Framework;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 namespace Tests.Services;
@@ -31,7 +32,7 @@ public class HealthChecksServiceTests
   [Test]
   public async Task GetHealthReturnsHealthObject()
   {
-    var mockInvoker = new Mock<CallInvoker>();
+    var client = new MockedArmoniKClient();
 
     var serviceHealth = new CheckHealthResponse.Types.ServiceHealth
                         {
@@ -43,13 +44,11 @@ public class HealthChecksServiceTests
     var healthResponse = new CheckHealthResponse();
     healthResponse.Services.Add(serviceHealth);
 
-    mockInvoker.SetupAsyncUnaryCallInvokerMock<CheckHealthRequest, CheckHealthResponse>(healthResponse);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CheckHealthRequest, CheckHealthResponse>(healthResponse);
 
-    var healthServiceMock = mockInvoker.GetHealthCheckServiceMock();
-
-    var results = await healthServiceMock.GetHealthAsync(CancellationToken.None)
-                                         .ToListAsync()
-                                         .ConfigureAwait(false);
+    var results = await client.HealthCheckService.GetHealthAsync(CancellationToken.None)
+                              .ToListAsync()
+                              .ConfigureAwait(false);
 
     Assert.Multiple(() =>
                     {
@@ -69,12 +68,12 @@ public class HealthChecksServiceTests
                                                ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
                                              }));
 
-                      mockInvoker.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<CheckHealthRequest, CheckHealthResponse>>(),
-                                                               It.IsAny<string>(),
-                                                               It.IsAny<CallOptions>(),
-                                                               It.IsAny<CheckHealthRequest>()),
-                                         Times.Once,
-                                         "AsyncUnaryCall should be called exactly once");
+                      client.CallInvokerMock.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<CheckHealthRequest, CheckHealthResponse>>(),
+                                                                          It.IsAny<string>(),
+                                                                          It.IsAny<CallOptions>(),
+                                                                          It.IsAny<CheckHealthRequest>()),
+                                                    Times.Once,
+                                                    "AsyncUnaryCall should be called exactly once");
                     });
   }
 }

@@ -15,65 +15,36 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Sessions;
-using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 using Grpc.Core;
-
-using Microsoft.Extensions.Configuration;
 
 using Moq;
 
 using NUnit.Framework;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 namespace Tests.Services;
 
 public class SessionServiceTests
 {
-  private readonly List<string> defaultPartitionsIds_ = new()
-                                                        {
-                                                          "subtasking",
-                                                        };
-
-  private readonly Properties        defaultProperties_;
-  private readonly TaskConfiguration defaultTaskConfiguration_;
-
-  public SessionServiceTests()
-  {
-    var configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                                                  .AddJsonFile("appsettings.tests.json",
-                                                               false)
-                                                  .AddEnvironmentVariables()
-                                                  .Build();
-
-    defaultTaskConfiguration_ = new TaskConfiguration(2,
-                                                      1,
-                                                      defaultPartitionsIds_[0],
-                                                      TimeSpan.FromHours(1));
-    defaultProperties_ = new Properties(configuration);
-  }
+  private readonly List<string> defaultPartitionsIds_ = ["subtasking"];
 
   [Test]
   public async Task CreateSessionReturnsNewSessionWithId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-
+    var client = new MockedArmoniKClient();
     var createSessionReply = new CreateSessionReply
                              {
                                SessionId = "12345",
                              };
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
-
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
-    var result = await sessionService.CreateSessionAsync(defaultTaskConfiguration_,
-                                                         defaultPartitionsIds_)
-                                     .ConfigureAwait(false);
+    var result = await client.SessionService.CreateSessionAsync(client.TaskOptions,
+                                                                defaultPartitionsIds_)
+                             .ConfigureAwait(false);
     Assert.That(result.SessionId,
                 Is.EqualTo("12345"));
   }
@@ -91,141 +62,119 @@ public class SessionServiceTests
   [Test]
   public async Task CloseSessionCallsGrpcWithCorrectSessionId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-    var sessionId       = "12345";
+    var client    = new MockedArmoniKClient();
+    var sessionId = "12345";
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CloseSessionRequest, CloseSessionResponse>(new CloseSessionResponse());
-
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CloseSessionRequest, CloseSessionResponse>(new CloseSessionResponse());
 
     var sessionInfo = new SessionInfo(sessionId);
 
-    await sessionService.CloseSessionAsync(sessionInfo)
-                        .ConfigureAwait(false);
+    await client.SessionService.CloseSessionAsync(sessionInfo)
+                .ConfigureAwait(false);
 
-    mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CloseSessionRequest, CloseSessionResponse>>(),
-                                                             It.IsAny<string>(),
-                                                             It.IsAny<CallOptions>(),
-                                                             It.Is<CloseSessionRequest>(req => req.SessionId == sessionId)),
-                           Times.Once);
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CloseSessionRequest, CloseSessionResponse>>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<CloseSessionRequest>(req => req.SessionId == sessionId)),
+                                  Times.Once);
   }
 
   [Test]
   public async Task PauseSessionCallGrpcWithCorrectSessionId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-    var sessionId       = "12345";
+    var client    = new MockedArmoniKClient();
+    var sessionId = "12345";
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<PauseSessionRequest, PauseSessionResponse>(new PauseSessionResponse());
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<PauseSessionRequest, PauseSessionResponse>(new PauseSessionResponse());
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.PauseSessionAsync(sessionInfo)
-                        .ConfigureAwait(false);
-    mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<PauseSessionRequest, PauseSessionResponse>>(),
-                                                             It.IsAny<string>(),
-                                                             It.IsAny<CallOptions>(),
-                                                             It.Is<PauseSessionRequest>(req => req.SessionId == sessionId)),
-                           Times.Once);
+    await client.SessionService.PauseSessionAsync(sessionInfo)
+                .ConfigureAwait(false);
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<PauseSessionRequest, PauseSessionResponse>>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<PauseSessionRequest>(req => req.SessionId == sessionId)),
+                                  Times.Once);
   }
 
   [Test]
   public async Task ResumeSessionCallGrpcWithCorrectSessionId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-    var sessionId       = "12345";
+    var client    = new MockedArmoniKClient();
+    var sessionId = "12345";
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<ResumeSessionRequest, ResumeSessionResponse>(new ResumeSessionResponse());
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ResumeSessionRequest, ResumeSessionResponse>(new ResumeSessionResponse());
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.ResumeSessionAsync(sessionInfo)
-                        .ConfigureAwait(false);
-    mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<ResumeSessionRequest, ResumeSessionResponse>>(),
-                                                             It.IsAny<string>(),
-                                                             It.IsAny<CallOptions>(),
-                                                             It.Is<ResumeSessionRequest>(req => req.SessionId == sessionId)),
-                           Times.Once);
+    await client.SessionService.ResumeSessionAsync(sessionInfo)
+                .ConfigureAwait(false);
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<ResumeSessionRequest, ResumeSessionResponse>>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<ResumeSessionRequest>(req => req.SessionId == sessionId)),
+                                  Times.Once);
   }
 
   [Test]
   public async Task StopSubmissionCallGrpcWithCorrectSessionId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-    var sessionId       = "12345";
+    var client    = new MockedArmoniKClient();
+    var sessionId = "12345";
 
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<StopSubmissionRequest, StopSubmissionResponse>(new StopSubmissionResponse());
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<StopSubmissionRequest, StopSubmissionResponse>(new StopSubmissionResponse());
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.StopSubmissionAsync(sessionInfo)
-                        .ConfigureAwait(false);
-    mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<StopSubmissionRequest, StopSubmissionResponse>>(),
-                                                             It.IsAny<string>(),
-                                                             It.IsAny<CallOptions>(),
-                                                             It.Is<StopSubmissionRequest>(req => req.SessionId == sessionId)),
-                           Times.Once);
+    await client.SessionService.StopSubmissionAsync(sessionInfo)
+                .ConfigureAwait(false);
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<StopSubmissionRequest, StopSubmissionResponse>>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<StopSubmissionRequest>(req => req.SessionId == sessionId)),
+                                  Times.Once);
   }
 
   [Test]
   public async Task PurgeSessionCallGrpcWithCorrectSessionId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-    var sessionId       = "12345";
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<PurgeSessionRequest, PurgeSessionResponse>(new PurgeSessionResponse());
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
+    var client    = new MockedArmoniKClient();
+    var sessionId = "12345";
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<PurgeSessionRequest, PurgeSessionResponse>(new PurgeSessionResponse());
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.PurgeSessionAsync(sessionInfo)
-                        .ConfigureAwait(false);
-    mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<PurgeSessionRequest, PurgeSessionResponse>>(),
-                                                             It.IsAny<string>(),
-                                                             It.IsAny<CallOptions>(),
-                                                             It.Is<PurgeSessionRequest>(req => req.SessionId == sessionId)),
-                           Times.Once);
+    await client.SessionService.PurgeSessionAsync(sessionInfo)
+                .ConfigureAwait(false);
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<PurgeSessionRequest, PurgeSessionResponse>>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<PurgeSessionRequest>(req => req.SessionId == sessionId)),
+                                  Times.Once);
   }
 
   [Test]
   public async Task DeleteSessionCallGrpcWithCorrectSessionId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-    var sessionId       = "12345";
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<DeleteSessionRequest, DeleteSessionResponse>(new DeleteSessionResponse());
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
+    var client    = new MockedArmoniKClient();
+    var sessionId = "12345";
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<DeleteSessionRequest, DeleteSessionResponse>(new DeleteSessionResponse());
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.DeleteSessionAsync(sessionInfo)
-                        .ConfigureAwait(false);
-    mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<DeleteSessionRequest, DeleteSessionResponse>>(),
-                                                             It.IsAny<string>(),
-                                                             It.IsAny<CallOptions>(),
-                                                             It.Is<DeleteSessionRequest>(req => req.SessionId == sessionId)),
-                           Times.Once);
+    await client.SessionService.DeleteSessionAsync(sessionInfo)
+                .ConfigureAwait(false);
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<DeleteSessionRequest, DeleteSessionResponse>>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<DeleteSessionRequest>(req => req.SessionId == sessionId)),
+                                  Times.Once);
   }
 
   [Test]
   public async Task CancelSessionCallGrpcWithCorrectSessionId()
   {
-    var mockCallInvoker = new Mock<CallInvoker>();
-    var sessionId       = "12345";
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<CancelSessionRequest, CancelSessionResponse>(new CancelSessionResponse());
-    var sessionService = MockHelper.GetSessionServiceMock(defaultProperties_,
-                                                          defaultTaskConfiguration_,
-                                                          mockCallInvoker);
+    var client    = new MockedArmoniKClient();
+    var sessionId = "12345";
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CancelSessionRequest, CancelSessionResponse>(new CancelSessionResponse());
     var sessionInfo = new SessionInfo(sessionId);
-    await sessionService.CancelSessionAsync(sessionInfo)
-                        .ConfigureAwait(false);
-    mockCallInvoker.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelSessionRequest, CancelSessionResponse>>(),
-                                                             It.IsAny<string>(),
-                                                             It.IsAny<CallOptions>(),
-                                                             It.Is<CancelSessionRequest>(req => req.SessionId == sessionId)),
-                           Times.Once);
+    await client.SessionService.CancelSessionAsync(sessionInfo)
+                .ConfigureAwait(false);
+    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelSessionRequest, CancelSessionResponse>>(),
+                                                                    It.IsAny<string>(),
+                                                                    It.IsAny<CallOptions>(),
+                                                                    It.Is<CancelSessionRequest>(req => req.SessionId == sessionId)),
+                                  Times.Once);
   }
 }

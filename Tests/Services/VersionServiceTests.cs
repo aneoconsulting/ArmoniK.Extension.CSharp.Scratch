@@ -16,12 +16,9 @@
 
 using ArmoniK.Api.gRPC.V1.Versions;
 
-using Grpc.Core;
-
-using Moq;
-
 using NUnit.Framework;
 
+using Tests.Configuration;
 using Tests.Helpers;
 
 namespace Tests.Services;
@@ -31,18 +28,16 @@ public class VersionServiceTests
   [Test]
   public async Task GetVersionAsyncShouldReturnVersion()
   {
+    var client = new MockedArmoniKClient();
     var response = new ListVersionsResponse
                    {
                      Api  = "1.0.0",
                      Core = "1.0.0",
                    };
 
-    var mockCallInvoker = new Mock<CallInvoker>();
-    mockCallInvoker.SetupAsyncUnaryCallInvokerMock<ListVersionsRequest, ListVersionsResponse>(response);
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListVersionsRequest, ListVersionsResponse>(response);
 
-
-    var versionsService = mockCallInvoker.GetVersionsServiceMock();
-    var result          = await versionsService.GetVersionsAsync(CancellationToken.None);
+    var result = await client.VersionService.GetVersionsAsync(CancellationToken.None);
     Assert.Multiple(() =>
                     {
                       Assert.That(result,
