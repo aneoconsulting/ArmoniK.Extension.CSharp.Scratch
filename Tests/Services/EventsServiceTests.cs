@@ -62,7 +62,8 @@ public class EventsServiceTests
                       },
                     };
     await eventsService.WaitForBlobsAsync(sessionInfo,
-                                          blobInfos);
+                                          blobInfos)
+                       .ConfigureAwait(false);
 
     mockInvoker.Verify(x => x.AsyncServerStreamingCall(It.IsAny<Method<EventSubscriptionRequest, EventSubscriptionResponse>>(),
                                                        It.IsAny<string>(),

@@ -55,6 +55,8 @@ internal class EventsService : IEventsService
     await eventsClient.WaitForResultsAsync(session.SessionId,
                                            blobInfos.Select(x => x.BlobId)
                                                     .ToList(),
+                                           100,
+                                           1,
                                            cancellationToken)
                       .ConfigureAwait(false);
   }
