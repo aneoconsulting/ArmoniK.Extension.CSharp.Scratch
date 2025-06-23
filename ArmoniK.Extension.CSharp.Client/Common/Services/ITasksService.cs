@@ -107,7 +107,7 @@ public static class TasksServiceExt
                                     {
                                       Or =
                                       {
-                                        taskIds.Select(id => TaskIdFilter(id)),
+                                        taskIds.Select(TaskIdFilter),
                                       },
                                     },
                            Page          = 0,

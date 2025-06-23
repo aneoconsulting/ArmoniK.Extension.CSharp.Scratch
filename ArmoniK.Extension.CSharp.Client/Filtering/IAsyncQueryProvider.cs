@@ -14,14 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Api.gRPC.V1.Partitions;
-using ArmoniK.Extension.CSharp.Client.Common.Generic;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
 
-namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Partition;
+namespace ArmoniK.Extension.CSharp.Client.Filtering;
 
-/// <summary>
-///   Provides pagination capabilities for partition listings, including sorting and filtering functionalities.
-/// </summary>
-public record PartitionPagination : Pagination<Filters, PartitionRawEnumField>
+public interface IAsyncQueryProvider<T> : IQueryProvider
 {
+  IAsyncEnumerable<T> ExecuteAsync(Expression        expression,
+                                   CancellationToken token);
 }

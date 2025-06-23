@@ -59,7 +59,7 @@ public class PaginationTests
   [Test]
   public void CreatePaginationTest()
   {
-    var pagination = new Pagination<string>
+    var pagination = new Pagination<string, int>
                      {
                        Page          = 1,
                        PageSize      = 10,
