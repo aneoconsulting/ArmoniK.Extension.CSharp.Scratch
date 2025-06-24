@@ -70,7 +70,13 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
                        Page          = -1,
                        PageSize      = 50,
                        SortDirection = SortDirection.Asc,
-                       SortField     = ResultRawEnumField.ResultId,
+                       SortField = new ResultField
+                                   {
+                                     ResultRawField = new ResultRawField
+                                                      {
+                                                        Field = ResultRawEnumField.ResultId,
+                                                      },
+                                   },
                      };
     var      total = 0;
     BlobPage page;

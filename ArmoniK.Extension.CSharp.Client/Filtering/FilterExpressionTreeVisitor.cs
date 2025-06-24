@@ -26,9 +26,8 @@ namespace ArmoniK.Extension.CSharp.Client.Filtering;
 
 internal abstract class FilterExpressionTreeVisitor
 {
-  protected readonly Stack<Expression> ExpressionStack     = new();
-  protected readonly Stack<Type>       ExpressionTypeStack = new();
-  protected readonly Stack<object>     FilterStack         = new();
+  protected readonly Stack<Type>   ExpressionTypeStack = new();
+  protected readonly Stack<object> FilterStack         = new();
 
   public FilterExpressionTreeVisitor(Expression tree)
     => Tree = tree;
@@ -104,6 +103,6 @@ internal abstract class FilterExpressionTreeVisitor
 
   protected abstract void OnConstant(ConstantExpression           constant);
   protected abstract void OnPropertyMemberAccess(MemberExpression member);
-  protected abstract void OnFieldAccess(MemberExpression          member);
+  protected abstract bool OnFieldAccess(MemberExpression          member);
   protected abstract void OnBinaryOperator(ExpressionType         expressionType);
 }

@@ -174,4 +174,26 @@ public class BaseBlobFilterTests
                         Value    = value.ToTimestamp(),
                       },
        };
+
+  protected FiltersAnd BuildAnd(params FilterField[] filters)
+  {
+    var filterAnd = new FiltersAnd();
+    foreach (var filter in filters)
+    {
+      filterAnd.And.Add(filter);
+    }
+
+    return filterAnd;
+  }
+
+  protected Filters BuildOr(params FiltersAnd[] filtersAnd)
+  {
+    var filterOr = new Filters();
+    foreach (var filterAnd in filtersAnd)
+    {
+      filterOr.Or.Add(filterAnd);
+    }
+
+    return filterOr;
+  }
 }

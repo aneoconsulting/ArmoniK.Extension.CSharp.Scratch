@@ -22,7 +22,7 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 /// <summary>
 ///   Provides pagination capabilities for listing blobs, including sorting and filtering functionalities.
 /// </summary>
-public record BlobPagination : Pagination<Filters, ResultRawEnumField>
+public record BlobPagination : Pagination<Filters, ResultField>
 {
 }
 

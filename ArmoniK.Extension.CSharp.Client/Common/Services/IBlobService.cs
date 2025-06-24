@@ -194,7 +194,13 @@ public static class BlobServiceExt
                            Page          = 0,
                            PageSize      = pageSize,
                            SortDirection = SortDirection.Asc,
-                           SortField     = ResultRawEnumField.ResultId,
+                           SortField = new ResultField
+                                       {
+                                         ResultRawField = new ResultRawField
+                                                          {
+                                                            Field = ResultRawEnumField.ResultId,
+                                                          },
+                                       },
                          };
 
     var total = 0;

@@ -284,6 +284,7 @@ public class BlobService : IBlobService
                                                                   Sort = new ListResultsRequest.Types.Sort
                                                                          {
                                                                            Direction = blobPagination.SortDirection.ToGrpc(),
+                                                                           Field     = blobPagination.SortField,
                                                                          },
                                                                   Filters  = blobPagination.Filter,
                                                                   Page     = blobPagination.Page,
