@@ -163,8 +163,17 @@ public enum TaskStatus
   Paused,
 }
 
+/// <summary>
+///   Class of extensions methods to convert instances of Api.gRPC.V1.TaskStatus and TaskStatus
+/// </summary>
 public static class TaskStatusExt
 {
+  /// <summary>
+  ///   Convert a TaskStatus into an Api.gRPC.V1.TaskStatus
+  /// </summary>
+  /// <param name="status">The TaskStatus value</param>
+  /// <returns>The Api.gRPC.V1.TaskStatus value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">For an unknown TaskStatus</exception>
   public static Api.gRPC.V1.TaskStatus ToGrpcStatus(this TaskStatus status)
     => status switch
        {
@@ -185,6 +194,12 @@ public static class TaskStatusExt
                                                     null),
        };
 
+  /// <summary>
+  ///   Convert an Api.gRPC.V1.TaskStatus into a TaskStatus
+  /// </summary>
+  /// <param name="status">The Api.gRPC.V1.TaskStatus value</param>
+  /// <returns>The TaskStatus value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">For an unknown Api.gRPC.V1.TaskStatus</exception>
   public static TaskStatus ToInternalStatus(this Api.gRPC.V1.TaskStatus status)
     => status switch
        {
@@ -206,8 +221,16 @@ public static class TaskStatusExt
        };
 }
 
-internal static class TaskStateExt
+/// <summary>
+///   Class of extensions methods to convert Protobuf instances into TaskState instances
+/// </summary>
+public static class TaskStateExt
 {
+  /// <summary>
+  ///   Convert a TaskDetailed instance into a TaskState
+  /// </summary>
+  /// <param name="taskDetailed">The TaskDetailed instance</param>
+  /// <returns>The TaskState instance</returns>
   public static TaskState ToTaskState(this TaskDetailed taskDetailed)
     => new()
        {
@@ -222,6 +245,11 @@ internal static class TaskStateExt
          PayloadId        = taskDetailed.PayloadId,
        };
 
+  /// <summary>
+  ///   Convert a TaskSummary instance into a TaskState
+  /// </summary>
+  /// <param name="taskSummary">The TaskSummary instance</param>
+  /// <returns>The TaskState instance</returns>
   public static TaskState ToTaskState(this TaskSummary taskSummary)
     => new()
        {

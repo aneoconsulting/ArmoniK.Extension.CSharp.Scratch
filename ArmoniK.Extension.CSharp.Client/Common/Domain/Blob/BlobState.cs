@@ -46,11 +46,6 @@ public sealed record BlobState : BlobInfo, IEquatable<BlobState>
   public BlobStatus Status { get; init; }
 
   /// <summary>
-  ///   The ID of the Task that as submitted this result.
-  /// </summary>
-  public string CreatedBy { get; init; } = string.Empty;
-
-  /// <summary>
   ///   The owner task ID.
   /// </summary>
   public string OwnerId { get; init; } = string.Empty;
@@ -70,11 +65,7 @@ public sealed record BlobState : BlobInfo, IEquatable<BlobState>
   /// </summary>
   public bool ManualDeletion { get; init; }
 
-  /// <summary>
-  ///   Custom Equals method
-  /// </summary>
-  /// <param name="other">the BlobState to compare the instance to</param>
-  /// <returns>true when the 2 instance have the same value, false otherwise</returns>
+  /// <inheritdoc />
   public bool Equals([CanBeNull] BlobState other)
   {
     if (other == null)
@@ -98,39 +89,26 @@ public sealed record BlobState : BlobInfo, IEquatable<BlobState>
                                                                                                                other
                                                                                                                  .Size) &&
            EqualityComparer<string>.Default.Equals(OwnerId,
-                                                   other.OwnerId) && EqualityComparer<string>.Default.Equals(CreatedBy,
-                                                                                                             other.CreatedBy) &&
-           EqualityComparer<BlobStatus>.Default.Equals(Status,
-                                                       other.Status) && CreateAt.Equals(other.CreateAt) && EqualityComparer<DateTime?>.Default.Equals(CompletedAt,
-                                                                                                                                                      other.CompletedAt);
+                                                   other.OwnerId) && EqualityComparer<BlobStatus>.Default.Equals(Status,
+                                                                                                                 other.Status) && CreateAt.Equals(other.CreateAt) &&
+           EqualityComparer<DateTime?>.Default.Equals(CompletedAt,
+                                                      other.CompletedAt);
   }
 
-  /// <summary>
-  ///   Custom GetHashCode method
-  /// </summary>
-  /// <returns>The hash code consistent with the Equals method</returns>
+  /// <inheritdoc />
   public override int GetHashCode()
   {
-    var hash = 17;
-    hash = hash * 23 + base.GetHashCode();
-    hash = hash * 23 + Status.GetHashCode();
-    hash = hash * 23 + CreatedBy.GetHashCode();
-    hash = hash * 23 + CreateAt.GetHashCode();
-    if (CompletedAt != null)
-    {
-      hash = hash * 23 + CompletedAt.GetHashCode();
-    }
+    var hash = new HashCode();
 
-    hash = hash * 23 + OwnerId.GetHashCode();
-    // instead of default GetHashCode method, OpaqueId hash code is computed on the elements of the array
-    foreach (var _ in OpaqueId)
-    {
-      hash = hash * 23 + _.GetHashCode();
-    }
-
-    hash = hash * 23 + ManualDeletion.GetHashCode();
-    hash = hash * 23 + Size.GetHashCode();
-    return hash;
+    hash.Add(base.GetHashCode());
+    hash.Add(Status);
+    hash.Add(CreateAt);
+    hash.Add(CompletedAt);
+    hash.Add(OwnerId);
+    hash.Add(OpaqueId);
+    hash.Add(ManualDeletion);
+    hash.Add(Size);
+    return hash.ToHashCode();
   }
 }
 
@@ -171,8 +149,17 @@ public enum BlobStatus
   Notfound = 127, // 0x0000007F
 }
 
+/// <summary>
+///   Class of extensions methods to convert BlobStatus and ResultStatus
+/// </summary>
 public static class BlobStatusExt
 {
+  /// <summary>
+  ///   Convert a BlobStatus into a ResultStatus
+  /// </summary>
+  /// <param name="status">The BlobStatus value</param>
+  /// <returns>The ResultStatus value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">For an unknown BlobStatus</exception>
   public static ResultStatus ToGrpcStatus(this BlobStatus status)
     => status switch
        {
@@ -187,6 +174,12 @@ public static class BlobStatusExt
                                                     null),
        };
 
+  /// <summary>
+  ///   Convert a ResultStatus into a BlobStatus
+  /// </summary>
+  /// <param name="status">The ResultStatus value</param>
+  /// <returns>The BlobStatus value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">For an unknown ResultStatus</exception>
   public static BlobStatus ToInternalStatus(this ResultStatus status)
     => status switch
        {
@@ -202,8 +195,16 @@ public static class BlobStatusExt
        };
 }
 
-internal static class BlobStateExt
+/// <summary>
+///   Class of extensions methods to convert Protobuf instances and BlobState instances
+/// </summary>
+public static class BlobStateExt
 {
+  /// <summary>
+  ///   Convert a ResultRaw instance into a BlobState instance
+  /// </summary>
+  /// <param name="resultRaw">The ResultRaw instance</param>
+  /// <returns>The BlobState instance</returns>
   public static BlobState ToBlobState(this ResultRaw resultRaw)
     => new()
        {

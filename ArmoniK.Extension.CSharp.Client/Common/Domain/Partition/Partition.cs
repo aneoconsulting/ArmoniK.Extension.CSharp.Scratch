@@ -62,8 +62,16 @@ public record Partition
   public long Priority { get; init; }
 }
 
-internal static class PartitionExt
+/// <summary>
+///   Class of extensions methods to convert Protobuf instances and Partition instances
+/// </summary>
+public static class PartitionExt
 {
+  /// <summary>
+  ///   Convert a PartitionRaw instance into a Partition instance
+  /// </summary>
+  /// <param name="partitionRaw">The PartitionRaw instance</param>
+  /// <returns>The Partition instance</returns>
   public static Partition ToPartition(this PartitionRaw partitionRaw)
     => new()
        {

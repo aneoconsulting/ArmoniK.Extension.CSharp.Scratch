@@ -62,8 +62,8 @@ public static class ArmoniKServicesExt
                                                      SessionInfo          session,
                                                      DynamicLibrary       dynamicLibrary,
                                                      ReadOnlyMemory<byte> content,
-                                                     bool                 manualDeletion    = false,
-                                                     CancellationToken    cancellationToken = default)
+                                                     bool                 manualDeletion,
+                                                     CancellationToken    cancellationToken)
   {
     var blobInfo = await blobService.CreateBlobAsync(session,
                                                      dynamicLibrary.ToString(),
@@ -90,8 +90,8 @@ public static class ArmoniKServicesExt
                                                                            SessionInfo              session,
                                                                            IEnumerable<TaskNodeExt> taskNodes,
                                                                            DllBlob                  dllBlob,
-                                                                           bool                     manualDeletion    = false,
-                                                                           CancellationToken        cancellationToken = default)
+                                                                           bool                     manualDeletion,
+                                                                           CancellationToken        cancellationToken)
   {
     taskNodes = taskNodes.Select(x =>
                                  {

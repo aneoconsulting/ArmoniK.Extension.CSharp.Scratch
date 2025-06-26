@@ -35,4 +35,9 @@ public record BlobInfo
   ///   Blob unique identifier.
   /// </summary>
   public string BlobId { get; init; }
+
+  /// <summary>
+  ///   The ID of the Task that as submitted this result.
+  /// </summary>
+  public string CreatedBy { get; init; } = string.Empty;
 }
