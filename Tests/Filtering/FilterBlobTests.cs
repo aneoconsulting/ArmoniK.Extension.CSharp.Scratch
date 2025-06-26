@@ -165,6 +165,90 @@ public class FilterBlobTests : BaseBlobFilterTests
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
+  [Test]
+  public void BlobIdFilterWithStartWith()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "StartsWith",
+                                                    "blob")));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId.StartsWith("blob"));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobIdFilterWithEndsWith()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "EndsWith",
+                                                    "blob")));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId.EndsWith("blob"));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobIdFilterWithContains()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "Contains",
+                                                    "blob")));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId.Contains("blob"));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobIdFilterWithNotContains()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "NotContains",
+                                                    "blob")));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => !blobState.BlobId.Contains("blob"));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
   ///////////////////////////////////// logical OR and logical AND tests ////////////////////////////////////////
 
   // <or expression> || <or expression>

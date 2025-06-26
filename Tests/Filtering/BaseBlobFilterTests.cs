@@ -57,6 +57,18 @@ public class BaseBlobFilterTests
                                                                                         {
                                                                                           "!=", FilterStringOperator.NotEqual
                                                                                         },
+                                                                                        {
+                                                                                          "Contains", FilterStringOperator.Contains
+                                                                                        },
+                                                                                        {
+                                                                                          "NotContains", FilterStringOperator.NotContains
+                                                                                        },
+                                                                                        {
+                                                                                          "StartsWith", FilterStringOperator.StartsWith
+                                                                                        },
+                                                                                        {
+                                                                                          "EndsWith", FilterStringOperator.EndsWith
+                                                                                        },
                                                                                       };
 
   private static readonly Dictionary<string, FilterNumberOperator> op2EnumIntOp_ = new()

@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -65,16 +66,57 @@ internal abstract class FilterExpressionTreeVisitor
     }
   }
 
-  private void Visit(Expression node)
+  private void Visit(Expression node,
+                     bool       notOp = false)
   {
     if (node is MethodCallExpression call)
     {
-      var typeName = call.Method.DeclaringType?.FullName ?? "";
-      if (call.Method.Name == "Where" && typeName == "System.Linq.Queryable")
+      var memberAccess = call.Object as MemberExpression;
+      var typeName     = call.Method.DeclaringType?.FullName ?? "";
+      if (call.Method.Name == nameof(Queryable.Where) && typeName == "System.Linq.Queryable")
       {
         var expression = (UnaryExpression)call.Arguments[1];
         var lambda     = (LambdaExpression)expression.Operand;
         Visit(lambda.Body);
+      }
+      else if (call.Method.Name == nameof(string.StartsWith) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+      {
+        if (call.Arguments.Count != 1)
+        {
+          throw new InvalidExpressionException("Invalid blob filter: StartsWith method overload not supported.");
+        }
+
+        Visit(call.Object);
+        Visit(call.Arguments[0]);
+        OnMethodOperator(call.Method);
+      }
+      else if (call.Method.Name == nameof(string.EndsWith) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+      {
+        if (call.Arguments.Count != 1)
+        {
+          throw new InvalidExpressionException("Invalid blob filter: EndsWith method overload not supported.");
+        }
+
+        Visit(call.Object);
+        Visit(call.Arguments[0]);
+        OnMethodOperator(call.Method);
+      }
+      else if (call.Method.Name == nameof(string.Contains) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+      {
+        if (call.Arguments.Count != 1)
+        {
+          throw new InvalidExpressionException("Invalid blob filter: Contains method overload not supported.");
+        }
+
+        Visit(call.Object);
+        Visit(call.Arguments[0]);
+        OnMethodOperator(call.Method,
+                         notOp);
+      }
+      else
+      {
+        // execute the method
+        EvaluateExpression(call);
       }
     }
     else if (node is ConstantExpression constant)
@@ -95,9 +137,47 @@ internal abstract class FilterExpressionTreeVisitor
     }
     else if (node is BinaryExpression binary)
     {
-      Visit(binary.Left);
-      Visit(binary.Right);
-      OnBinaryOperator(binary.NodeType);
+      if (LeftMostExpressionIsLambdaParameter(binary.Left) || LeftMostExpressionIsLambdaParameter(binary.Right))
+      {
+        Visit(binary.Left);
+        Visit(binary.Right);
+        OnBinaryOperator(binary.NodeType);
+      }
+      else
+      {
+        EvaluateExpression(binary);
+      }
+    }
+    else if (node is UnaryExpression unary)
+    {
+      if (unary.NodeType == ExpressionType.Not && LeftMostExpressionIsLambdaParameter(unary.Operand))
+      {
+        Visit(unary.Operand,
+              !notOp);
+      }
+      else
+      {
+        EvaluateExpression(unary);
+      }
+    }
+  }
+
+  private void EvaluateExpression(Expression expr)
+  {
+    Expression<Func<object>> lambda = null;
+    try
+    {
+      var objectExpr = Expression.Convert(expr,
+                                          typeof(object));
+      lambda = Expression.Lambda<Func<object>>(objectExpr);
+      var result = lambda.Compile()();
+      ExpressionTypeStack.Push(result.GetType());
+      FilterStack.Push(result);
+    }
+    catch (Exception ex)
+    {
+      throw new InvalidExpressionException("Invalid blob filter: could not evaluate method call " + lambda,
+                                           ex);
     }
   }
 
@@ -105,4 +185,9 @@ internal abstract class FilterExpressionTreeVisitor
   protected abstract void OnPropertyMemberAccess(MemberExpression member);
   protected abstract bool OnFieldAccess(MemberExpression          member);
   protected abstract void OnBinaryOperator(ExpressionType         expressionType);
+
+  protected abstract void OnMethodOperator(MethodInfo method,
+                                           bool       notOp = false);
+
+  protected abstract bool LeftMostExpressionIsLambdaParameter(Expression expression);
 }

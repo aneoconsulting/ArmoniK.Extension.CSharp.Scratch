@@ -125,6 +125,30 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
     return null;
   }
 
+  protected override bool LeftMostExpressionIsLambdaParameter(Expression expression)
+  {
+    if (expression is BinaryExpression binary)
+    {
+      while (binary != null)
+      {
+        expression = binary.Left;
+        binary     = expression as BinaryExpression;
+      }
+    }
+
+    if (expression is MemberExpression member)
+    {
+      return memberName2Type_.ContainsKey(member.Member.Name);
+    }
+
+    if (expression is MethodCallExpression call)
+    {
+      return LeftMostExpressionIsLambdaParameter(call.Object);
+    }
+
+    return expression.NodeType == ExpressionType.Parameter;
+  }
+
   protected override void OnPropertyMemberAccess(MemberExpression member)
   {
     Type memberType;
@@ -496,8 +520,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
 
   private void HandleStringExpression(ExpressionType type)
   {
-    var filterField = new FilterField();
-    var filter      = new FilterString();
+    var filter = new FilterString();
     switch (type)
     {
       case ExpressionType.Equal:
@@ -510,10 +533,16 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
         throw new InvalidOperationException($"Invalid Blob filter: operator '{type}' is not supported on operands of type string.");
     }
 
-    var fieldCount = 0;
-    var constCount = 0;
-    var rhsFilter  = FilterStack.Pop();
-    var lhsFilter  = FilterStack.Pop();
+    PushStringFilter(filter);
+  }
+
+  private void PushStringFilter(FilterString filter)
+  {
+    var filterField = new FilterField();
+    var fieldCount  = 0;
+    var constCount  = 0;
+    var rhsFilter   = FilterStack.Pop();
+    var lhsFilter   = FilterStack.Pop();
     if (lhsFilter is ResultRawEnumField lhsFilterField)
     {
       // Left hand side is the property
@@ -792,5 +821,34 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
     }
 
     FilterStack.Push(filterField);
+  }
+
+  protected override void OnMethodOperator(MethodInfo method,
+                                           bool       notOp = false)
+  {
+    var filter = new FilterString();
+    switch (method.Name)
+    {
+      case nameof(string.StartsWith):
+        filter.Operator = FilterStringOperator.StartsWith;
+        PushStringFilter(filter);
+        break;
+      case nameof(string.EndsWith):
+        filter.Operator = FilterStringOperator.EndsWith;
+        PushStringFilter(filter);
+        break;
+      case nameof(string.Contains):
+        if (notOp)
+        {
+          filter.Operator = FilterStringOperator.NotContains;
+        }
+        else
+        {
+          filter.Operator = FilterStringOperator.Contains;
+        }
+
+        PushStringFilter(filter);
+        break;
+    }
   }
 }
