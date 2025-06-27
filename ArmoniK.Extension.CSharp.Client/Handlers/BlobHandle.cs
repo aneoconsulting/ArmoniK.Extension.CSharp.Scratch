@@ -28,12 +28,17 @@ namespace ArmoniK.Extension.CSharp.Client.Handlers;
 ///   Provides methods for handling operations related to blobs, such as retrieving state, downloading, and uploading
 ///   blob data.
 /// </summary>
-public class BlobHandle : BlobInfo
+public class BlobHandle
 {
   /// <summary>
   ///   The ArmoniK client used for performing blob operations.
   /// </summary>
   public readonly ArmoniKClient ArmoniKClient;
+
+  /// <summary>
+  ///   The blob containing name, session ID, and blob ID.
+  /// </summary>
+  public readonly BlobInfo BlobInfo;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="BlobHandle" /> class with specified blob information and an ArmoniK
@@ -43,13 +48,11 @@ public class BlobHandle : BlobInfo
   /// <param name="armoniKClient">The ArmoniK client used for performing blob operations.</param>
   public BlobHandle(BlobInfo      blobInfo,
                     ArmoniKClient armoniKClient)
-    : this(blobInfo.SessionId,
-           blobInfo.BlobName,
-           blobInfo.BlobId,
-           armoniKClient) // Calls the constructor above
-  {
-  }
 
+  {
+    BlobInfo      = blobInfo;
+    ArmoniKClient = armoniKClient;
+  }
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="BlobHandle" /> class with specified blob details and an ArmoniK
@@ -59,17 +62,20 @@ public class BlobHandle : BlobInfo
   /// <param name="blobId">The identifier of the blob.</param>
   /// <param name="sessionId">The session identifier associated with the blob.</param>
   /// <param name="armoniKClient">The ArmoniK client used for performing blob operations.</param>
-  public BlobHandle(string        sessionId,
-                    string        blobName,
+  public BlobHandle(string        blobName,
                     string        blobId,
+                    string        sessionId,
                     ArmoniKClient armoniKClient)
-    // Assuming BlobInfo has a constructor that takes these parameters
   {
-    BlobName      = blobName;
-    BlobId        = blobId;
-    SessionId     = sessionId;
+    BlobInfo = new BlobInfo
+               {
+                 BlobId    = blobId,
+                 BlobName  = blobName,
+                 SessionId = sessionId,
+               };
     ArmoniKClient = armoniKClient;
   }
+
 
   /// <summary>
   ///   Asynchronously retrieves the state of the blob.
@@ -77,7 +83,7 @@ public class BlobHandle : BlobInfo
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the blob state.</returns>
   public async Task<BlobState> GetBlobStateAsync(CancellationToken cancellationToken = default)
-    => await ArmoniKClient.BlobService.GetBlobStateAsync(this,
+    => await ArmoniKClient.BlobService.GetBlobStateAsync(BlobInfo,
                                                          cancellationToken)
                           .ConfigureAwait(false);
 
@@ -88,7 +94,7 @@ public class BlobHandle : BlobInfo
   /// <returns>An asynchronous enumerable of byte arrays representing the blob data chunks.</returns>
   public async IAsyncEnumerable<byte[]> DownloadBlobDataAsync([EnumeratorCancellation] CancellationToken cancellationToken)
   {
-    await foreach (var chunk in ArmoniKClient.BlobService.DownloadBlobWithChunksAsync(this,
+    await foreach (var chunk in ArmoniKClient.BlobService.DownloadBlobWithChunksAsync(BlobInfo,
                                                                                       cancellationToken)
                                              .ConfigureAwait(false))
     {
@@ -105,7 +111,7 @@ public class BlobHandle : BlobInfo
   public async Task UploadBlobDataAsync(ReadOnlyMemory<byte> blobContent,
                                         CancellationToken    cancellationToken)
     // Upload the blob chunk
-    => await ArmoniKClient.BlobService.UploadBlobAsync(this,
+    => await ArmoniKClient.BlobService.UploadBlobAsync(BlobInfo,
                                                        blobContent,
                                                        cancellationToken)
                           .ConfigureAwait(false);
