@@ -21,8 +21,6 @@ using System.Linq;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
 
-using JetBrains.Annotations;
-
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 /// <summary>
@@ -66,7 +64,7 @@ public sealed record BlobState : BlobInfo, IEquatable<BlobState>
   public bool ManualDeletion { get; init; }
 
   /// <inheritdoc />
-  public bool Equals([CanBeNull] BlobState other)
+  public bool Equals(BlobState? other)
   {
     if (other == null)
     {
