@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
@@ -103,6 +104,14 @@ internal sealed class MockedArmoniKClient
 
   public IHealthCheckService HealthCheckService
     => serviceProvider_.GetRequiredService<IHealthCheckService>();
+
+  /// <summary>
+  ///   Implicit conversion to ArmoniKClient for compatibility with handlers.
+  /// </summary>
+  public static implicit operator ArmoniKClient(MockedArmoniKClient mockedClient)
+    => new(mockedClient.Properties,
+           mockedClient.LoggerFactory,
+           mockedClient.TaskOptions);
 
   private IBlobService BuildBlobService(IServiceProvider provider)
     => new BlobService(ChannelPool,
