@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Data;
 using System.Linq.Expressions;
 
 using ArmoniK.Api.gRPC.V1;
@@ -187,6 +188,72 @@ public class FilterBlobTests : BaseBlobFilterTests
   }
 
   [Test]
+  public void BlobIdFilterWithStartWithChar()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "StartsWith",
+                                                    "b")));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId.StartsWith('b'));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  private static string Foo()
+    => "blob";
+
+  [Test]
+  public void BlobIdFilterWithMethodCall()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob")));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId == Foo());
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobIdFilterWithExpression()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1")));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId == Foo() + "1");
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
   public void BlobIdFilterWithEndsWith()
   {
     var client = new MockedArmoniKClient();
@@ -247,6 +314,18 @@ public class FilterBlobTests : BaseBlobFilterTests
     var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.BlobPagination,
                 Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobFilterFailure()
+  {
+    var client = new MockedArmoniKClient();
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId == blobState.BlobName);
+
+    // Execute the query
+    Assert.Throws<InvalidExpressionException>(() => query.ToList());
   }
 
   ///////////////////////////////////// logical OR and logical AND tests ////////////////////////////////////////

@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -26,14 +27,21 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 
+using Microsoft.Extensions.Logging;
+
 namespace ArmoniK.Extension.CSharp.Client.Filtering;
 
 public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
 {
-  private readonly IBlobService blobService_;
+  private readonly IBlobService          blobService_;
+  private readonly ILogger<IBlobService> logger_;
 
-  public BlobQueryProvider(IBlobService blobService)
-    => blobService_ = blobService;
+  public BlobQueryProvider(IBlobService          blobService,
+                           ILogger<IBlobService> logger)
+  {
+    blobService_ = blobService;
+    logger_      = logger;
+  }
 
   public BlobPagination BlobPagination { get; private set; }
 
@@ -46,7 +54,8 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
 
   public object Execute(Expression expression)
     => ExecuteAsync(expression)
-      .ToListAsync();
+       .ToListAsync()
+       .Result;
 
   public TResult Execute<TResult>(Expression expression)
     => (TResult)Execute(expression);
@@ -60,8 +69,12 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
     {
       visitor.Visit();
     }
-    catch (Exception e)
+    catch (Exception ex)
     {
+      logger_.LogError(ex,
+                       "Invalid blob filter: " + expression);
+      throw new InvalidExpressionException("Invalid blob filter: " + expression,
+                                           ex);
     }
 
     BlobPagination = new BlobPagination

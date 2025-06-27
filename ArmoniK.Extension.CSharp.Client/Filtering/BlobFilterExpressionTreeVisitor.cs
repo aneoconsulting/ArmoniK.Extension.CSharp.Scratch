@@ -23,13 +23,14 @@ using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 
 using Type = System.Type;
 
 namespace ArmoniK.Extension.CSharp.Client.Filtering;
 
-internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
+internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>
 {
   private static readonly Dictionary<string, Type> memberName2Type_ = new()
                                                                       {
@@ -80,445 +81,38 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
   {
   }
 
-  protected override void OnConstant(ConstantExpression constant)
+  protected override Filters CreateFilterOr(params FiltersAnd[] filters)
   {
-    ExpressionTypeStack.Push(constant.Type);
-    FilterStack.Push(constant.Value);
+    var orFilter = new Filters();
+    orFilter.Or.Add(filters);
+    return orFilter;
   }
 
-  private static object GetValueFromExpression(Expression expression)
+  protected override FiltersAnd CreateFilterAnd(params FilterField[] filters)
   {
-    switch (expression)
-    {
-      case MemberExpression memberExpr:
-        object instance = null;
-
-        if (memberExpr.Expression is ConstantExpression constant)
-        {
-          instance = constant.Value;
-        }
-        else if (memberExpr.Expression != null)
-        {
-          instance = GetValueFromExpression(memberExpr.Expression);
-          if (instance == null)
-          {
-            return null;
-          }
-        }
-
-        if (memberExpr.Member is PropertyInfo propInfo)
-        {
-          return propInfo.GetValue(instance);
-        }
-
-        if (memberExpr.Member is FieldInfo fieldInfo)
-        {
-          return fieldInfo.GetValue(instance);
-        }
-
-        break;
-
-      case ConstantExpression constExpr:
-        return constExpr.Value;
-    }
-
-    return null;
+    var andFilter = new FiltersAnd();
+    andFilter.And.Add(filters);
+    return andFilter;
   }
 
-  protected override bool LeftMostExpressionIsLambdaParameter(Expression expression)
-  {
-    if (expression is BinaryExpression binary)
-    {
-      while (binary != null)
-      {
-        expression = binary.Left;
-        binary     = expression as BinaryExpression;
-      }
-    }
+  protected override RepeatedField<FiltersAnd> GetRepeatedFilterAnd(Filters or)
+    => or.Or;
 
-    if (expression is MemberExpression member)
-    {
-      return memberName2Type_.ContainsKey(member.Member.Name);
-    }
+  protected override RepeatedField<FilterField> GetRepeatedFilterField(FiltersAnd and)
+    => and.And;
 
-    if (expression is MethodCallExpression call)
-    {
-      return LeftMostExpressionIsLambdaParameter(call.Object);
-    }
+  protected override bool TryGetEnumFieldFromName(string                 name,
+                                                  out ResultRawEnumField enumField)
+    => memberName2EnumField_.TryGetValue(name,
+                                         out enumField);
 
-    return expression.NodeType == ExpressionType.Parameter;
-  }
+  protected override bool TryGetFieldTypeFromName(string   name,
+                                                  out Type type)
+    => memberName2Type_.TryGetValue(name,
+                                    out type);
 
-  protected override void OnPropertyMemberAccess(MemberExpression member)
-  {
-    Type memberType;
 
-    var val = GetValueFromExpression(member);
-    if (val != null)
-    {
-      ExpressionTypeStack.Push(val.GetType());
-      FilterStack.Push(val);
-    }
-    else
-    {
-      if (memberName2Type_.TryGetValue(member.Member.Name,
-                                       out memberType))
-      {
-        ExpressionTypeStack.Push(memberType);
-        FilterStack.Push(memberName2EnumField_[member.Member.Name]);
-      }
-      else
-      {
-        // Illegal Expression
-        throw new InvalidOperationException("Invalid Blob filter expression on member " + member.Member.Name);
-      }
-    }
-  }
-
-  protected override bool OnFieldAccess(MemberExpression member)
-  {
-    if (member.Expression is ConstantExpression constant)
-    {
-      var closure = constant.Value;
-      var capturedValue = closure.GetType()
-                                 .GetField(member.Member.Name)
-                                 .GetValue(closure);
-      ExpressionTypeStack.Push(capturedValue.GetType());
-      FilterStack.Push(capturedValue);
-      return true;
-    }
-
-    return false;
-  }
-
-  protected override void OnBinaryOperator(ExpressionType expressionType)
-  {
-    var rhsType = ExpressionTypeStack.Pop();
-    var lhsType = ExpressionTypeStack.Pop();
-
-    if (rhsType == typeof(bool))
-    {
-      HandleBoolExpression(expressionType);
-    }
-    else if (rhsType == typeof(string))
-    {
-      HandleStringExpression(expressionType);
-    }
-    else if (rhsType == typeof(int))
-    {
-      HandleIntegerExpression(expressionType);
-    }
-    else if (rhsType == typeof(DateTime))
-    {
-      HandleDateTimeExpression(expressionType);
-    }
-    else if (rhsType == typeof(BlobStatus))
-    {
-      HandleBlobStatusExpression(expressionType);
-    }
-    else
-    {
-      throw new InvalidOperationException($"Invalid Blob filter: operands of expressionType {rhsType.Name} are not supported.");
-    }
-
-    ExpressionTypeStack.Push(typeof(bool));
-  }
-
-  private void HandleBoolExpression(ExpressionType type)
-  {
-    var rhsFilter = FilterStack.Pop();
-    var lhsFilter = FilterStack.Pop();
-    switch (type)
-    {
-      case ExpressionType.OrElse:
-        if (lhsFilter is Filters lhsOrFilter)
-        {
-          if (rhsFilter is Filters rhsOrFilter)
-          {
-            // <or expression> || <or expression>
-            foreach (var rhsAndFilter in rhsOrFilter.Or)
-            {
-              lhsOrFilter.Or.Add(rhsAndFilter);
-            }
-
-            FilterStack.Push(lhsOrFilter);
-          }
-          else if (rhsFilter is FiltersAnd rhsAndFilter)
-          {
-            // <or expression> || <and expression>
-            lhsOrFilter.Or.Add(rhsAndFilter);
-            FilterStack.Push(lhsOrFilter);
-          }
-          else if (rhsFilter is FilterField rhsFilterField)
-          {
-            // <or expression> || <filter field>
-            var andFilter = new FiltersAnd
-                            {
-                              And =
-                              {
-                                rhsFilterField,
-                              },
-                            };
-            lhsOrFilter.Or.Add(andFilter);
-            FilterStack.Push(lhsOrFilter);
-          }
-          else
-          {
-            throw new InvalidOperationException("Invalid Blob filter: internal error (FilterField expected on OR expression).");
-          }
-        }
-        else if (lhsFilter is FiltersAnd lhsAndFilter)
-        {
-          if (rhsFilter is Filters rhsOrFilter)
-          {
-            // <and expression> || <or expression>
-            var orFilter = new Filters
-                           {
-                             Or =
-                             {
-                               lhsAndFilter,
-                             },
-                           };
-            foreach (var rhsAndFilter in rhsOrFilter.Or)
-            {
-              orFilter.Or.Add(rhsAndFilter);
-            }
-
-            FilterStack.Push(orFilter);
-          }
-          else if (rhsFilter is FiltersAnd rhsAndFilter)
-          {
-            // <and expression> || <and expression>
-            var orFilter = new Filters
-                           {
-                             Or =
-                             {
-                               lhsAndFilter,
-                               rhsAndFilter,
-                             },
-                           };
-            FilterStack.Push(orFilter);
-          }
-          else if (rhsFilter is FilterField rhsFilterField)
-          {
-            // <and expression> || <filter field>
-            var andRhsFilter = new FiltersAnd
-                               {
-                                 And =
-                                 {
-                                   rhsFilterField,
-                                 },
-                               };
-            var orFilter = new Filters
-                           {
-                             Or =
-                             {
-                               lhsAndFilter,
-                               andRhsFilter,
-                             },
-                           };
-            FilterStack.Push(orFilter);
-          }
-          else
-          {
-            throw new InvalidOperationException("Invalid Blob filter: internal error (FilterField expected on OR expression).");
-          }
-        }
-        else if (lhsFilter is FilterField lhsFilterField)
-        {
-          if (rhsFilter is Filters rhsOrFilter)
-          {
-            // <filter field> || <or expression>
-            var andFilter = new FiltersAnd
-                            {
-                              And =
-                              {
-                                lhsFilterField,
-                              },
-                            };
-            var orFilter = new Filters
-                           {
-                             Or =
-                             {
-                               andFilter,
-                             },
-                           };
-            foreach (var rhsAndFilter in rhsOrFilter.Or)
-            {
-              orFilter.Or.Add(rhsAndFilter);
-            }
-
-            FilterStack.Push(orFilter);
-          }
-          else if (rhsFilter is FiltersAnd rhsAndFilter)
-          {
-            // <filter field> || <and expression>
-            var orFilter = new Filters
-                           {
-                             Or =
-                             {
-                               new FiltersAnd
-                               {
-                                 And =
-                                 {
-                                   lhsFilterField,
-                                 },
-                               },
-                               rhsAndFilter,
-                             },
-                           };
-            FilterStack.Push(orFilter);
-          }
-          else if (rhsFilter is FilterField rhsFilterField)
-          {
-            // <filter field> || <filter field>
-            var orFilter = new Filters
-                           {
-                             Or =
-                             {
-                               new FiltersAnd
-                               {
-                                 And =
-                                 {
-                                   lhsFilterField,
-                                 },
-                               },
-                               new FiltersAnd
-                               {
-                                 And =
-                                 {
-                                   rhsFilterField,
-                                 },
-                               },
-                             },
-                           };
-            FilterStack.Push(orFilter);
-          }
-          else
-          {
-            throw new InvalidOperationException("Invalid Blob filter: internal error (FilterField expected on OR expression).");
-          }
-        }
-
-        break;
-      case ExpressionType.AndAlso:
-        if (lhsFilter is Filters lhsOrFilter2)
-        {
-          if (rhsFilter is Filters rhsOrFilter)
-          {
-            // <or expression> && <or expression>
-            var orFilter = new Filters();
-            foreach (var lhsAndFilter in lhsOrFilter2.Or)
-            {
-              foreach (var rhsAndFilter in rhsOrFilter.Or)
-              {
-                var andFilter = new FiltersAnd();
-                andFilter.And.Add(lhsAndFilter.And);
-                andFilter.And.Add(rhsAndFilter.And);
-                orFilter.Or.Add(andFilter);
-              }
-            }
-
-            FilterStack.Push(orFilter);
-          }
-          else if (rhsFilter is FiltersAnd rhsAndFilter)
-          {
-            // <or expression> && <and expression>
-            var orFilter = new Filters();
-            foreach (var lhsAnd in lhsOrFilter2.Or)
-            {
-              var andFilter = new FiltersAnd();
-              andFilter.And.Add(lhsAnd.And);
-              foreach (var rhsAnd in rhsAndFilter.And)
-              {
-                andFilter.And.Add(rhsAnd);
-              }
-
-              orFilter.Or.Add(andFilter);
-            }
-
-            FilterStack.Push(orFilter);
-          }
-          else if (rhsFilter is FilterField rhsFilterField)
-          {
-            // <or expression> && <filter field>
-            foreach (var and in lhsOrFilter2.Or)
-            {
-              and.And.Add(rhsFilterField);
-            }
-
-            FilterStack.Push(lhsOrFilter2);
-          }
-          else
-          {
-            throw new InvalidOperationException("Invalid Blob filter: internal error (FilterField expected on AND expression).");
-          }
-        }
-        else if (lhsFilter is FiltersAnd lhsAndFilter)
-        {
-          if (rhsFilter is Filters rhsOrFilter)
-          {
-            // <and expression> && <or expression>
-            var orFilter = new Filters();
-            foreach (var rhsAndFilter in rhsOrFilter.Or)
-            {
-              var andFilter = new FiltersAnd();
-              andFilter.And.Add(lhsAndFilter.And);
-              andFilter.And.Add(rhsAndFilter.And);
-              orFilter.Or.Add(andFilter);
-            }
-
-            FilterStack.Push(orFilter);
-          }
-          else if (rhsFilter is FiltersAnd rhsAndFilter)
-          {
-            // <and expression> && <and expression>
-            foreach (var rhsFilterField in rhsAndFilter.And)
-            {
-              lhsAndFilter.And.Add(rhsFilterField);
-            }
-
-            FilterStack.Push(lhsAndFilter);
-          }
-          else if (rhsFilter is FilterField rhsFilterField)
-          {
-            // <and expression> && <filter field>
-            lhsAndFilter.And.Add(rhsFilterField);
-            FilterStack.Push(lhsAndFilter);
-          }
-          else
-          {
-            throw new InvalidOperationException("Invalid Blob filter: internal error (FilterField expected on AND expression).");
-          }
-        }
-        else if (lhsFilter is FilterField lhsFilterField)
-        {
-          if (rhsFilter is FilterField rhsFilterField)
-          {
-            // <filter field> && <filter field>
-            var andFilter = new FiltersAnd
-                            {
-                              And =
-                              {
-                                lhsFilterField,
-                                rhsFilterField,
-                              },
-                            };
-            FilterStack.Push(andFilter);
-          }
-          else
-          {
-            throw new InvalidOperationException("Invalid Blob filter: internal error (FilterField expected on AND expression).");
-          }
-        }
-
-        break;
-      default:
-        throw new InvalidOperationException($"Invalid Blob filter: operator '{type}' is not supported on operands of type bool.");
-    }
-  }
-
-  private void HandleStringExpression(ExpressionType type)
+  protected override void HandleStringExpression(ExpressionType type)
   {
     var filter = new FilterString();
     switch (type)
@@ -533,10 +127,10 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
         throw new InvalidOperationException($"Invalid Blob filter: operator '{type}' is not supported on operands of type string.");
     }
 
-    PushStringFilter(filter);
+    PushFilter(filter);
   }
 
-  private void PushStringFilter(FilterString filter)
+  private void PushFilter(FilterString filter)
   {
     var filterField = new FilterField();
     var fieldCount  = 0;
@@ -562,6 +156,13 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
       filter.Value             = str;
       constCount++;
     }
+    else if (lhsFilter is char car)
+    {
+      // Left hand side is a constant
+      filterField.FilterString = filter;
+      filter.Value             = car.ToString();
+      constCount++;
+    }
 
     if (rhsFilter is ResultRawEnumField rhsFilterField)
     {
@@ -582,6 +183,13 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
       filter.Value             = str;
       constCount++;
     }
+    else if (rhsFilter is char car)
+    {
+      // Right hand side is a constant
+      filterField.FilterString = filter;
+      filter.Value             = car.ToString();
+      constCount++;
+    }
 
     if (fieldCount != 1 || constCount != 1)
     {
@@ -592,7 +200,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
     FilterStack.Push(filterField);
   }
 
-  private void HandleIntegerExpression(ExpressionType type)
+  protected override void HandleIntegerExpression(ExpressionType type)
   {
     var filterField = new FilterField();
     var filter      = new FilterNumber();
@@ -673,7 +281,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
     FilterStack.Push(filterField);
   }
 
-  private void HandleDateTimeExpression(ExpressionType type)
+  protected override void HandleDateTimeExpression(ExpressionType type)
   {
     var filterField = new FilterField();
     var filter      = new FilterDate();
@@ -754,7 +362,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
     FilterStack.Push(filterField);
   }
 
-  private void HandleBlobStatusExpression(ExpressionType type)
+  protected override void HandleBlobStatusExpression(ExpressionType type)
   {
     var filterField = new FilterField();
     var filter      = new FilterStatus();
@@ -831,11 +439,11 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
     {
       case nameof(string.StartsWith):
         filter.Operator = FilterStringOperator.StartsWith;
-        PushStringFilter(filter);
+        PushFilter(filter);
         break;
       case nameof(string.EndsWith):
         filter.Operator = FilterStringOperator.EndsWith;
-        PushStringFilter(filter);
+        PushFilter(filter);
         break;
       case nameof(string.Contains):
         if (notOp)
@@ -847,7 +455,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor
           filter.Operator = FilterStringOperator.Contains;
         }
 
-        PushStringFilter(filter);
+        PushFilter(filter);
         break;
     }
   }
