@@ -21,8 +21,18 @@ using System.Threading;
 
 namespace ArmoniK.Extension.CSharp.Client.Filtering;
 
-public interface IAsyncQueryProvider<T> : IQueryProvider
+/// <summary>
+///   Interface for asynchronous query provider
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public interface IAsyncQueryProvider<out T> : IQueryProvider
 {
+  /// <summary>
+  ///   Execute a request with a specific filtering expression
+  /// </summary>
+  /// <param name="expression">The filtering expression tree</param>
+  /// <param name="cancellationToken">The cancellation token</param>
+  /// <returns>An asynchronous enumeration of instances compliant with the filter expression</returns>
   IAsyncEnumerable<T> ExecuteAsync(Expression        expression,
-                                   CancellationToken token);
+                                   CancellationToken cancellationToken);
 }

@@ -167,6 +167,159 @@ public class FilterBlobTests : BaseBlobFilterTests
   }
 
   [Test]
+  public void BlobStatusFilterWithStatus()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Completed)));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.Status == BlobStatus.Completed);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobStatusFilterWithStatusClosure()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterStatus("Status",
+                                                    "!=",
+                                                    BlobStatus.Completed)));
+
+    // Build the query that get all blobs from session "session1"
+    var status = BlobStatus.Completed;
+    var query  = client.BlobService.BlobCollection.Where(blobState => blobState.Status != status);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void CreateAtFilterEquals()
+  {
+    var client = new MockedArmoniKClient();
+
+    var date = DateTime.Now;
+    var filter = BuildOr(BuildAnd(BuildFilterDateTime("CreateAt",
+                                                      "==",
+                                                      date)));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.CreateAt == date);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void CreateAtFilterGreater()
+  {
+    var client = new MockedArmoniKClient();
+
+    var date = DateTime.Now;
+    var filter = BuildOr(BuildAnd(BuildFilterDateTime("CreateAt",
+                                                      ">",
+                                                      date)));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.CreateAt > date);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void CreateAtFilterGreaterOrEqual()
+  {
+    var client = new MockedArmoniKClient();
+
+    var date = DateTime.Now;
+    var filter = BuildOr(BuildAnd(BuildFilterDateTime("CreateAt",
+                                                      ">=",
+                                                      date)));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.CreateAt >= date);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void CreateAtFilterLessThan()
+  {
+    var client = new MockedArmoniKClient();
+
+    var date = DateTime.Now;
+    var filter = BuildOr(BuildAnd(BuildFilterDateTime("CreateAt",
+                                                      "<",
+                                                      date)));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.CreateAt < date);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void CreateAtFilterLessThanOrEqual()
+  {
+    var client = new MockedArmoniKClient();
+
+    var date = DateTime.Now;
+    var filter = BuildOr(BuildAnd(BuildFilterDateTime("CreateAt",
+                                                      "<=",
+                                                      date)));
+
+    // Build the query that get all blobs from session "session1"
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.CreateAt <= date);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
   public void BlobIdFilterWithStartWith()
   {
     var client = new MockedArmoniKClient();

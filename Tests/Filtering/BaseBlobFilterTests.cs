@@ -183,7 +183,8 @@ public class BaseBlobFilterTests
          FilterDate = new FilterDate
                       {
                         Operator = op2EnumDateOp_[op],
-                        Value    = value.ToTimestamp(),
+                        Value = value.ToUniversalTime()
+                                     .ToTimestamp(),
                       },
        };
 

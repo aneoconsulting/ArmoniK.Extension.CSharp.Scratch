@@ -162,7 +162,13 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     }
     else if (node is UnaryExpression unary)
     {
-      if (unary.NodeType == ExpressionType.Not && LeftMostExpressionIsLambdaParameter(unary.Operand))
+      if (unary.NodeType == ExpressionType.Convert)
+      {
+        Visit(unary.Operand);
+        ExpressionTypeStack.Pop();
+        ExpressionTypeStack.Push(unary.Operand.Type);
+      }
+      else if (unary.NodeType == ExpressionType.Not && LeftMostExpressionIsLambdaParameter(unary.Operand))
       {
         Visit(unary.Operand,
               !notOp);
@@ -295,6 +301,10 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     {
       HandleStringExpression(expressionType);
     }
+    else if (rhsType == typeof(BlobStatus) || lhsType == typeof(BlobStatus))
+    {
+      HandleBlobStatusExpression(expressionType);
+    }
     else if (rhsType == typeof(int))
     {
       HandleIntegerExpression(expressionType);
@@ -302,10 +312,6 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     else if (rhsType == typeof(DateTime))
     {
       HandleDateTimeExpression(expressionType);
-    }
-    else if (rhsType == typeof(BlobStatus))
-    {
-      HandleBlobStatusExpression(expressionType);
     }
     else
     {
@@ -320,6 +326,11 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     if (expression == null)
     {
       return false;
+    }
+
+    if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+    {
+      expression = unary.Operand;
     }
 
     if (expression is BinaryExpression binary)

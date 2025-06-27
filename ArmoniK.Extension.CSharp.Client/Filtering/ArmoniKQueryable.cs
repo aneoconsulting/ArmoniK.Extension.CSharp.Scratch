@@ -23,35 +23,57 @@ using System.Threading;
 
 namespace ArmoniK.Extension.CSharp.Client.Filtering;
 
+/// <summary>
+///   Class that define a query object
+/// </summary>
+/// <typeparam name="TElement"></typeparam>
 public class ArmoniKQueryable<TElement> : IQueryable<TElement>
 {
+  /// <summary>
+  ///   Create the query object
+  /// </summary>
+  /// <param name="provider">The query provider</param>
+  /// <exception cref="ArgumentNullException">When provider is null</exception>
   public ArmoniKQueryable(IAsyncQueryProvider<TElement> provider)
   {
     Provider   = provider ?? throw new ArgumentNullException(nameof(provider));
     Expression = Expression.Constant(this);
   }
 
+  /// <summary>
+  ///   Create the query object
+  /// </summary>
+  /// <param name="provider">The query provider</param>
+  /// <param name="tree">The filtering tree</param>
+  /// <exception cref="ArgumentNullException">When provider or tree is null</exception>
   public ArmoniKQueryable(IQueryProvider provider,
                           Expression     tree)
   {
     Provider   = provider ?? throw new ArgumentNullException(nameof(provider));
-    Expression = tree;
+    Expression = tree     ?? throw new ArgumentNullException(nameof(tree));
   }
 
   /// <inheritdoc />
   public Type ElementType
     => typeof(TElement);
 
+  /// <inheritdoc />
   public Expression Expression { get; }
 
+  /// <inheritdoc />
   public IQueryProvider Provider { get; }
 
+  /// <inheritdoc />
   public IEnumerator<TElement> GetEnumerator()
     => ((IEnumerable<TElement>)Provider.Execute(Expression)).GetEnumerator();
 
   IEnumerator IEnumerable.GetEnumerator()
     => GetEnumerator();
 
+  /// <summary>
+  ///   Makes the query object asynchronously queryable
+  /// </summary>
+  /// <returns>The object asynchronously queryable</returns>
   public IAsyncEnumerable<TElement> AsAsyncEnumerable()
     => new ArmoniKQueryableAsync(this);
 

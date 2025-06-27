@@ -124,7 +124,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
         filter.Operator = FilterStringOperator.NotEqual;
         break;
       default:
-        throw new InvalidOperationException($"Invalid Blob filter: operator '{type}' is not supported on operands of type string.");
+        throw new InvalidOperationException($"Operator '{type}' is not supported on operands of type string.");
     }
 
     PushFilter(filter);
@@ -194,7 +194,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
     if (fieldCount != 1 || constCount != 1)
     {
       // Invalid expression
-      throw new InvalidOperationException("Invalid Blob filter: a filter expression is expected to be of the form <property> <operator> <expression>.");
+      throw new InvalidOperationException("Invalid filter expression.");
     }
 
     FilterStack.Push(filterField);
@@ -225,7 +225,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
         filter.Operator = FilterNumberOperator.GreaterThanOrEqual;
         break;
       default:
-        throw new InvalidOperationException($"Invalid Blob filter: operator '{type}' is not supported on operands of type int.");
+        throw new InvalidOperationException($"Operator '{type}' is not supported on operands of type integer.");
     }
 
     var fieldCount = 0;
@@ -275,7 +275,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
     if (fieldCount != 1 || constCount != 1)
     {
       // Invalid expression
-      throw new InvalidOperationException("Invalid Blob filter: a filter expression is expected to be of the form <property> <operator> <expression>.");
+      throw new InvalidOperationException("Invalid filter expression.");
     }
 
     FilterStack.Push(filterField);
@@ -306,7 +306,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
         filter.Operator = FilterDateOperator.AfterOrEqual;
         break;
       default:
-        throw new InvalidOperationException($"Invalid Blob filter: operator '{type}' is not supported on operands of type DateTime.");
+        throw new InvalidOperationException($"Operator '{type}' is not supported on operands of type DateTime.");
     }
 
     var fieldCount = 0;
@@ -329,7 +329,8 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
     {
       // Left hand side is a constant
       filterField.FilterDate = filter;
-      filter.Value           = date.ToTimestamp();
+      filter.Value = date.ToUniversalTime()
+                         .ToTimestamp();
       constCount++;
     }
 
@@ -349,14 +350,15 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
     {
       // Right hand side is a constant
       filterField.FilterDate = filter;
-      filter.Value           = date.ToTimestamp();
+      filter.Value = date.ToUniversalTime()
+                         .ToTimestamp();
       constCount++;
     }
 
     if (fieldCount != 1 || constCount != 1)
     {
       // Invalid expression
-      throw new InvalidOperationException("Invalid Blob filter: a filter expression is expected to be of the form <property> <operator> <expression>.");
+      throw new InvalidOperationException("Invalid filter expression.");
     }
 
     FilterStack.Push(filterField);
@@ -375,7 +377,7 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
         filter.Operator = FilterStatusOperator.NotEqual;
         break;
       default:
-        throw new InvalidOperationException($"Invalid Blob filter: operator '{type}' is not supported on operands of type BlobStatus.");
+        throw new InvalidOperationException($"Operator '{type}' is not supported on operands of type BlobStatus.");
     }
 
     var fieldCount = 0;
@@ -401,6 +403,13 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
       filter.Value             = status.ToGrpcStatus();
       constCount++;
     }
+    else if (lhsFilter is int statusInt)
+    {
+      // Left hand side is a constant
+      filterField.FilterStatus = filter;
+      filter.Value             = ((BlobStatus)statusInt).ToGrpcStatus();
+      constCount++;
+    }
 
     if (rhsFilter is ResultRawEnumField rhsFilterField)
     {
@@ -421,11 +430,18 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
       filter.Value             = status.ToGrpcStatus();
       constCount++;
     }
+    else if (rhsFilter is int statusInt)
+    {
+      // Right hand side is a constant
+      filterField.FilterStatus = filter;
+      filter.Value             = ((BlobStatus)statusInt).ToGrpcStatus();
+      constCount++;
+    }
 
     if (fieldCount != 1 || constCount != 1)
     {
       // Invalid expression
-      throw new InvalidOperationException("Invalid Blob filter: a filter expression is expected to be of the form <property> <operator> <expression>.");
+      throw new InvalidOperationException("Invalid filter expression.");
     }
 
     FilterStack.Push(filterField);
