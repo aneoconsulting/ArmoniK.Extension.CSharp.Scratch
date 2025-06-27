@@ -35,6 +35,7 @@ using Tests.Configuration;
 using Tests.Helpers;
 
 using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
+using V1_TaskStatus = ArmoniK.Api.gRPC.V1.TaskStatus;
 
 namespace Tests.Services;
 
@@ -318,6 +319,7 @@ public class TasksServiceTests
 
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                           It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                          false,
                                                           It.IsAny<CancellationToken>()),
                                   Times.Once);
     Assert.Multiple(() =>
@@ -394,6 +396,7 @@ public class TasksServiceTests
 
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                           It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                          false,
                                                           It.IsAny<CancellationToken>()),
                                   Times.Never);
     Assert.That(taskNodes.First()
@@ -413,7 +416,7 @@ public class TasksServiceTests
                            new TaskSummary
                            {
                              Id        = "taskId1",
-                             Status    = (ArmoniK.Api.gRPC.V1.TaskStatus)TaskStatus.Completed,
+                             Status    = (V1_TaskStatus)TaskStatus.Completed,
                              CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
                              StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
                              EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-1)),
@@ -421,7 +424,7 @@ public class TasksServiceTests
                            new TaskSummary
                            {
                              Id        = "taskId2",
-                             Status    = (ArmoniK.Api.gRPC.V1.TaskStatus)TaskStatus.Cancelling,
+                             Status    = (V1_TaskStatus)TaskStatus.Cancelling,
                              CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
                              StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-10)),
                              EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
@@ -544,7 +547,7 @@ public class TasksServiceTests
                            new TaskDetailed
                            {
                              Id        = "taskId1",
-                             Status    = ArmoniK.Api.gRPC.V1.TaskStatus.Completed,
+                             Status    = V1_TaskStatus.Completed,
                              CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
                              StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
                              EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-1)),
@@ -561,7 +564,7 @@ public class TasksServiceTests
                            new TaskDetailed
                            {
                              Id        = "taskId2",
-                             Status    = ArmoniK.Api.gRPC.V1.TaskStatus.Cancelling,
+                             Status    = V1_TaskStatus.Cancelling,
                              CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
                              StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-10)),
                              EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
@@ -683,6 +686,7 @@ public class TasksServiceTests
                 "Result should not be null.");
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
                                                           It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
+                                                          false,
                                                           It.IsAny<CancellationToken>()),
                                   Times.Once);
   }

@@ -37,6 +37,8 @@ using Grpc.Core;
 
 using Microsoft.Extensions.Logging;
 
+using static ArmoniK.Api.gRPC.V1.Results.ImportResultsDataRequest.Types;
+
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
 public class BlobService : IBlobService
@@ -73,6 +75,7 @@ public class BlobService : IBlobService
 
   public async IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                session,
                                                                    IEnumerable<string>                        names,
+                                                                   bool                                       manualDeletion    = false,
                                                                    [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
@@ -81,7 +84,8 @@ public class BlobService : IBlobService
 
     var resultsCreate = names.Select(blobName => new CreateResultsMetaDataRequest.Types.ResultCreate
                                                  {
-                                                   Name = blobName,
+                                                   Name           = blobName,
+                                                   ManualDeletion = manualDeletion,
                                                  })
                              .ToList();
 
@@ -176,20 +180,13 @@ public class BlobService : IBlobService
                                                         ResultId = blobInfo.BlobId,
                                                       })
                                       .ConfigureAwait(false);
-    return new BlobState
-           {
-             CreateAt    = blobDetails.Result.CreatedAt.ToDateTime(),
-             CompletedAt = blobDetails.Result.CompletedAt.ToDateTime(),
-             Status      = blobDetails.Result.Status.ToInternalStatus(),
-             BlobId      = blobDetails.Result.ResultId,
-             SessionId   = blobDetails.Result.SessionId,
-             BlobName    = blobDetails.Result.Name,
-           };
+    return blobDetails.Result.ToBlobState();
   }
 
   public async Task<BlobInfo> CreateBlobAsync(SessionInfo          session,
                                               string               name,
                                               ReadOnlyMemory<byte> content,
+                                              bool                 manualDeletion    = false,
                                               CancellationToken    cancellationToken = default)
   {
     if (serviceConfiguration_ is null)
@@ -209,6 +206,7 @@ public class BlobService : IBlobService
                                               {
                                                 name,
                                               },
+                                              manualDeletion,
                                               cancellationToken);
       var createdBlobs = await blobInfo.ToListAsync(cancellationToken)
                                        .ConfigureAwait(false);
@@ -227,8 +225,9 @@ public class BlobService : IBlobService
                                                                      {
                                                                        new CreateResultsRequest.Types.ResultCreate
                                                                        {
-                                                                         Name = name,
-                                                                         Data = ByteString.CopyFrom(content.Span),
+                                                                         Name           = name,
+                                                                         Data           = ByteString.CopyFrom(content.Span),
+                                                                         ManualDeletion = manualDeletion,
                                                                        },
                                                                      },
                                                                    },
@@ -246,6 +245,7 @@ public class BlobService : IBlobService
 
   public async IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                             session,
                                                            IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>> blobKeyValuePairs,
+                                                           bool                                                    manualDeletion    = false,
                                                            [EnumeratorCancellation] CancellationToken              cancellationToken = default)
   {
     var tasks = blobKeyValuePairs.Select(blobKeyValuePair => Task.Run(async () =>
@@ -253,6 +253,7 @@ public class BlobService : IBlobService
                                                                         var blobInfo = await CreateBlobAsync(session,
                                                                                                              blobKeyValuePair.Key,
                                                                                                              blobKeyValuePair.Value,
+                                                                                                             manualDeletion,
                                                                                                              cancellationToken)
                                                                                          .ConfigureAwait(false);
                                                                         return blobInfo;
@@ -293,26 +294,39 @@ public class BlobService : IBlobService
                                                                 },
                                                                 cancellationToken: cancellationToken)
                                               .ConfigureAwait(false);
-    var details = new List<BlobState>();
-    foreach (var x in listResultsResponse.Results)
-    {
-      details.Add(new BlobState
-                  {
-                    CreateAt    = x.CreatedAt.ToDateTime(),
-                    CompletedAt = x.CompletedAt?.ToDateTime(),
-                    Status      = x.Status.ToInternalStatus(),
-                    BlobId      = x.ResultId,
-                    BlobName    = x.Name,
-                    SessionId   = x.SessionId,
-                  });
-    }
 
     return new BlobPage
            {
              TotalBlobCount = listResultsResponse.Total,
              PageOrder      = blobPagination.Page,
-             Blobs          = details.ToArray(),
+             Blobs = listResultsResponse.Results.Select(result => result.ToBlobState())
+                                        .ToArray(),
            };
+  }
+
+  public async Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
+                                                                IEnumerable<KeyValuePair<BlobInfo, byte[]>> blobDescs,
+                                                                CancellationToken                           cancellationToken = default)
+  {
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+    var blobClient = new Results.ResultsClient(channel);
+    var request = new ImportResultsDataRequest
+                  {
+                    SessionId = session.SessionId,
+                  };
+    foreach (var blobDesc in blobDescs)
+    {
+      request.Results.Add(new ResultOpaqueId
+                          {
+                            ResultId = blobDesc.Key.BlobId,
+                            OpaqueId = ByteString.CopyFrom(blobDesc.Value),
+                          });
+    }
+
+    var response = await blobClient.ImportResultsDataAsync(request)
+                                   .ConfigureAwait(false);
+    return response.Results.Select(resultRaw => resultRaw.ToBlobState());
   }
 
   private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)

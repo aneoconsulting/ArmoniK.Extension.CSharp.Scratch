@@ -45,10 +45,12 @@ public interface IBlobService
   /// </summary>
   /// <param name="session">The session information in which the blobs are created.</param>
   /// <param name="names">The names of the blobs to create metadata for.</param>
+  /// <param name="manualDeletion">Whether the blob should be deleted manually or not.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
   IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo         session,
                                                       IEnumerable<string> names,
+                                                      bool                manualDeletion    = false,
                                                       CancellationToken   cancellationToken = default);
 
   /// <summary>
@@ -57,11 +59,13 @@ public interface IBlobService
   /// <param name="session">The session information in which the blob is created.</param>
   /// <param name="name">The name of the blob to create.</param>
   /// <param name="content">The content of the blob to create.</param>
+  /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the created blob information.</returns>
   Task<BlobInfo> CreateBlobAsync(SessionInfo          session,
                                  string               name,
                                  ReadOnlyMemory<byte> content,
+                                 bool                 manualDeletion    = false,
                                  CancellationToken    cancellationToken = default);
 
   /// <summary>
@@ -69,10 +73,12 @@ public interface IBlobService
   /// </summary>
   /// <param name="session">The session information in which the blobs are created.</param>
   /// <param name="blobKeyValuePairs">The key-value pairs representing blob names and their contents.</param>
+  /// <param name="manualDeletion">Whether the blobs should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
   IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                             session,
                                               IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>> blobKeyValuePairs,
+                                              bool                                                    manualDeletion    = false,
                                               CancellationToken                                       cancellationToken = default);
 
   /// <summary>
@@ -122,6 +128,17 @@ public interface IBlobService
   /// <returns>An asynchronous enumerable of blob pages.</returns>
   Task<BlobPage> ListBlobsAsync(BlobPagination    blobPagination,
                                 CancellationToken cancellationToken = default);
+
+  /// <summary>
+  ///   Import existing data from the object storage into existing results.
+  /// </summary>
+  /// <param name="session">The session information in which the blob is created.</param>
+  /// <param name="blobDescs">The BlobInfo associated with its OpaqueId.</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns></returns>
+  Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
+                                                   IEnumerable<KeyValuePair<BlobInfo, byte[]>> blobDescs,
+                                                   CancellationToken                           cancellationToken = default);
 }
 
 /// <summary>
@@ -135,11 +152,13 @@ public static class BlobServiceExt
   /// <param name="blobService">The blob service instance.</param>
   /// <param name="session">The session information in which the blobs are created.</param>
   /// <param name="quantity">The number of blobs to create metadata for.</param>
+  /// <param name="manualDeletion">Whether the blobs should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
   public static IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(this IBlobService blobService,
                                                                     SessionInfo       session,
                                                                     int               quantity,
+                                                                    bool              manualDeletion    = false,
                                                                     CancellationToken cancellationToken = default)
     => blobService.CreateBlobsMetadataAsync(session,
                                             Enumerable.Range(0,
@@ -147,6 +166,7 @@ public static class BlobServiceExt
                                                       .Select(_ => Guid.NewGuid()
                                                                        .ToString())
                                                       .ToList(),
+                                            manualDeletion,
                                             cancellationToken);
 
   /// <summary>

@@ -16,6 +16,8 @@
 
 using System.Collections.Generic;
 
+using ArmoniK.Api.gRPC.V1.Partitions;
+
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Partition;
 
 /// <summary>
@@ -58,4 +60,27 @@ public record Partition
   ///   Priority of the partition, which may influence scheduling decisions.
   /// </summary>
   public long Priority { get; init; }
+}
+
+/// <summary>
+///   Class of extensions methods to convert Protobuf instances and Partition instances
+/// </summary>
+public static class PartitionExt
+{
+  /// <summary>
+  ///   Convert a PartitionRaw instance into a Partition instance
+  /// </summary>
+  /// <param name="partitionRaw">The PartitionRaw instance</param>
+  /// <returns>The Partition instance</returns>
+  public static Partition ToPartition(this PartitionRaw partitionRaw)
+    => new()
+       {
+         Id                   = partitionRaw.Id,
+         ParentPartitionIds   = partitionRaw.ParentPartitionIds,
+         PodConfiguration     = partitionRaw.PodConfiguration,
+         PodMax               = partitionRaw.PodMax,
+         PodReserved          = partitionRaw.PodReserved,
+         PreemptionPercentage = partitionRaw.PreemptionPercentage,
+         Priority             = partitionRaw.Priority,
+       };
 }

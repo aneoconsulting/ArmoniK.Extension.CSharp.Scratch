@@ -666,4 +666,63 @@ public class BlobServiceTests
                                                     "AsyncServerStreamingCall should be called exactly once");
                     });
   }
+
+  [Test]
+  public async Task CreateBlobAsync_ImportBlobData()
+  {
+    var client = new MockedArmoniKClient();
+
+    var sessionInfo = new SessionInfo("session1");
+    var blobInfo = new BlobInfo
+                   {
+                     BlobId    = "blob1",
+                     BlobName  = "myBlob",
+                     SessionId = sessionInfo.SessionId,
+                   };
+    var opaqueId = new byte[]
+                   {
+                     1,
+                     2,
+                     3,
+                   };
+    var blobDescs = new List<KeyValuePair<BlobInfo, byte[]>>
+                    {
+                      new(blobInfo,
+                          opaqueId),
+                    };
+
+    var now = DateTime.UtcNow;
+    var expectedResponse = new ImportResultsDataResponse
+                           {
+                             Results =
+                             {
+                               new ResultRaw
+                               {
+                                 Name      = "myBlob",
+                                 ResultId  = "blob1",
+                                 Status    = ResultStatus.Completed,
+                                 SessionId = sessionInfo.SessionId,
+                                 OpaqueId  = ByteString.CopyFrom(opaqueId),
+                                 CreatedAt = Timestamp.FromDateTime(now),
+                               },
+                             },
+                           };
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ImportResultsDataRequest, ImportResultsDataResponse>(expectedResponse);
+
+    var result = await client.BlobService.ImportBlobDataAsync(sessionInfo,
+                                                              blobDescs)
+                             .ConfigureAwait(false);
+
+    var blobState = result.Single();
+    Assert.That(blobState,
+                Is.EqualTo(new BlobState
+                           {
+                             SessionId = sessionInfo.SessionId,
+                             BlobId    = "blob1",
+                             Status    = BlobStatus.Completed,
+                             BlobName  = "myBlob",
+                             OpaqueId  = opaqueId,
+                             CreateAt  = now,
+                           }));
+  }
 }

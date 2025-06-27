@@ -65,6 +65,7 @@ public class TasksService : ITasksService
 
   public async Task<IEnumerable<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                              IEnumerable<TaskNode> taskNodes,
+                                                             bool                  manualDeletion    = false,
                                                              CancellationToken     cancellationToken = default)
   {
     var enumerableTaskNodes = taskNodes.ToList();
@@ -76,6 +77,7 @@ public class TasksService : ITasksService
 
     await CreateNewBlobsAsync(session,
                               enumerableTaskNodes,
+                              manualDeletion,
                               cancellationToken)
       .ConfigureAwait(false);
     await using var channel = await channelPool_.GetAsync(cancellationToken)
@@ -156,17 +158,7 @@ public class TasksService : ITasksService
                                                cancellationToken: cancellationToken)
                                  .ConfigureAwait(false);
 
-    return new TaskState
-           {
-             DataDependencies = tasks.Task.DataDependencies,
-             ExpectedOutputs  = tasks.Task.ExpectedOutputIds,
-             TaskId           = tasks.Task.Id,
-             Status           = tasks.Task.Status.ToInternalStatus(),
-             CreateAt         = tasks.Task.CreatedAt.ToDateTime(),
-             StartedAt        = tasks.Task.StartedAt.ToDateTime(),
-             EndedAt          = tasks.Task.EndedAt.ToDateTime(),
-             SessionId        = tasks.Task.SessionId,
-           };
+    return tasks.Task.ToTaskState();
   }
 
   public async IAsyncEnumerable<TaskDetailedPage> ListTasksDetailedAsync(SessionInfo                                session,
@@ -193,41 +185,33 @@ public class TasksService : ITasksService
 
     yield return new TaskDetailedPage
                  {
-                   TaskDetails = tasks.Tasks.Select(task => new TaskState
-                                                            {
-                                                              DataDependencies = task.DataDependencies,
-                                                              ExpectedOutputs  = task.ExpectedOutputIds,
-                                                              TaskId           = task.Id,
-                                                              Status           = task.Status.ToInternalStatus(),
-                                                              CreateAt         = task.CreatedAt.ToDateTime(),
-                                                              StartedAt        = task.StartedAt.ToDateTime(),
-                                                              EndedAt          = task.EndedAt.ToDateTime(),
-                                                              SessionId        = task.SessionId,
-                                                            }),
-                   TotalTasks = tasks.Total,
+                   TaskDetails = tasks.Tasks.Select(task => task.ToTaskState()),
+                   TotalTasks  = tasks.Total,
                  };
   }
 
-  public async Task CancelTasksAsync(IEnumerable<string> taskIds,
-                                     CancellationToken   cancellationToken = default)
+  public async Task<IEnumerable<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
+                                                             CancellationToken   cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
 
     var tasksClient = new Tasks.TasksClient(channel);
 
-    await tasksClient.CancelTasksAsync(new CancelTasksRequest
-                                       {
-                                         TaskIds =
-                                         {
-                                           taskIds,
-                                         },
-                                       })
-                     .ConfigureAwait(false);
+    var response = await tasksClient.CancelTasksAsync(new CancelTasksRequest
+                                                      {
+                                                        TaskIds =
+                                                        {
+                                                          taskIds,
+                                                        },
+                                                      })
+                                    .ConfigureAwait(false);
+    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState());
   }
 
   private async Task CreateNewBlobsAsync(SessionInfo           session,
                                          IEnumerable<TaskNode> taskNodes,
+                                         bool                  manualDeletion,
                                          CancellationToken     cancellationToken)
   {
     var enumerableNodes = taskNodes.ToList();
@@ -242,6 +226,7 @@ public class TasksService : ITasksService
 
       await foreach (var blob in blobService_.CreateBlobsAsync(session,
                                                                blobKeyValues,
+                                                               manualDeletion,
                                                                cancellationToken)
                                              .ConfigureAwait(false))
       {
@@ -271,6 +256,7 @@ public class TasksService : ITasksService
 
       await foreach (var blob in blobService_.CreateBlobsAsync(session,
                                                                payloadBlobKeyValues,
+                                                               manualDeletion,
                                                                cancellationToken)
                                              .ConfigureAwait(false))
       {
