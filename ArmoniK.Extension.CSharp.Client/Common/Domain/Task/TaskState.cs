@@ -16,6 +16,8 @@
 
 using System;
 
+using ArmoniK.Api.gRPC.V1.Tasks;
+
 using Google.Protobuf.Reflection;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
@@ -147,10 +149,31 @@ public enum TaskStatus
   /// </summary>
   [OriginalName("TASK_STATUS_RETRIED")]
   Retried,
+
+  /// <summary>
+  ///   Task is waiting for its dependencies before becoming executable.
+  /// </summary>
+  [OriginalName("TASK_STATUS_PENDING")]
+  Pending,
+
+  /// <summary>
+  ///   Task is paused and will not be executed until session is resumed.
+  /// </summary>
+  [OriginalName("TASK_STATUS_PAUSED")]
+  Paused,
 }
 
+/// <summary>
+///   Class of extensions methods to convert instances of Api.gRPC.V1.TaskStatus and TaskStatus
+/// </summary>
 public static class TaskStatusExt
 {
+  /// <summary>
+  ///   Convert a TaskStatus into an Api.gRPC.V1.TaskStatus
+  /// </summary>
+  /// <param name="status">The TaskStatus value</param>
+  /// <returns>The Api.gRPC.V1.TaskStatus value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">For an unknown TaskStatus</exception>
   public static Api.gRPC.V1.TaskStatus ToGrpcStatus(this TaskStatus status)
     => status switch
        {
@@ -171,6 +194,12 @@ public static class TaskStatusExt
                                                     null),
        };
 
+  /// <summary>
+  ///   Convert an Api.gRPC.V1.TaskStatus into a TaskStatus
+  /// </summary>
+  /// <param name="status">The Api.gRPC.V1.TaskStatus value</param>
+  /// <returns>The TaskStatus value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">For an unknown Api.gRPC.V1.TaskStatus</exception>
   public static TaskStatus ToInternalStatus(this Api.gRPC.V1.TaskStatus status)
     => status switch
        {
@@ -189,5 +218,47 @@ public static class TaskStatusExt
          _ => throw new ArgumentOutOfRangeException(nameof(status),
                                                     status,
                                                     null),
+       };
+}
+
+/// <summary>
+///   Class of extensions methods to convert Protobuf instances into TaskState instances
+/// </summary>
+public static class TaskStateExt
+{
+  /// <summary>
+  ///   Convert a TaskDetailed instance into a TaskState
+  /// </summary>
+  /// <param name="taskDetailed">The TaskDetailed instance</param>
+  /// <returns>The TaskState instance</returns>
+  public static TaskState ToTaskState(this TaskDetailed taskDetailed)
+    => new()
+       {
+         DataDependencies = taskDetailed.DataDependencies,
+         ExpectedOutputs  = taskDetailed.ExpectedOutputIds,
+         TaskId           = taskDetailed.Id,
+         Status           = taskDetailed.Status.ToInternalStatus(),
+         CreateAt         = taskDetailed.CreatedAt.ToDateTime(),
+         StartedAt        = taskDetailed.StartedAt.ToDateTime(),
+         EndedAt          = taskDetailed.EndedAt.ToDateTime(),
+         SessionId        = taskDetailed.SessionId,
+         PayloadId        = taskDetailed.PayloadId,
+       };
+
+  /// <summary>
+  ///   Convert a TaskSummary instance into a TaskState
+  /// </summary>
+  /// <param name="taskSummary">The TaskSummary instance</param>
+  /// <returns>The TaskState instance</returns>
+  public static TaskState ToTaskState(this TaskSummary taskSummary)
+    => new()
+       {
+         TaskId    = taskSummary.Id,
+         Status    = taskSummary.Status.ToInternalStatus(),
+         CreateAt  = taskSummary.CreatedAt.ToDateTime(),
+         StartedAt = taskSummary.StartedAt.ToDateTime(),
+         EndedAt   = taskSummary.EndedAt.ToDateTime(),
+         SessionId = taskSummary.SessionId,
+         PayloadId = taskSummary.PayloadId,
        };
 }

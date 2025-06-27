@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+using System.Threading.Tasks;
 
 using ArmoniK.Api.Client.Options;
 using ArmoniK.Api.Client.Submitter;
@@ -50,26 +50,35 @@ public class ClientServiceConnector
                     KeyPem                = properties.ClientKeyFilePem,
                     Endpoint              = properties.ControlPlaneUri.ToString(),
                     OverrideTargetName    = properties.TargetNameOverride,
+                    BackoffMultiplier     = properties.RetryBackoffMultiplier,
+                    InitialBackOff        = properties.RetryInitialBackoff,
                   };
 
-    if (properties.ControlPlaneUri.Scheme == Uri.UriSchemeHttps && options.AllowUnsafeConnection && string.IsNullOrEmpty(options.OverrideTargetName))
-    {
+    return new ObjectPool<ChannelBase>(ct => new ValueTask<ChannelBase>(GrpcChannelFactory.CreateChannel(options,
+                                                                                                         loggerFactory?.CreateLogger(typeof(ClientServiceConnector)))),
+
 #if NET5_0_OR_GREATER
-                var doOverride = !string.IsNullOrEmpty(options.CaCert);
-#else
-      var doOverride = true;
-#endif
-      if (doOverride)
-        // Doing it here once to improve performance
+      async (channel, ct) =>
       {
-        options.OverrideTargetName = GrpcChannelFactory.GetOverrideTargetName(options,
-                                                                              GrpcChannelFactory.GetServerCertificate(properties.ControlPlaneUri,
-                                                                                                                      options)) ?? "";
+        switch (channel.State)
+        {
+          case ConnectivityState.TransientFailure:
+            await channel.ShutdownAsync()
+                         .ConfigureAwait(false);
+            return false;
+          case ConnectivityState.Shutdown:
+            return false;
+          case ConnectivityState.Idle:
+          case ConnectivityState.Connecting:
+          case ConnectivityState.Ready:
+          default:
+            return true;
+        }
       }
-    }
-
-
-    return new ObjectPool<ChannelBase>(() => GrpcChannelFactory.CreateChannel(options,
-                                                                              loggerFactory?.CreateLogger(typeof(ClientServiceConnector))));
+#else
+                                       (_,
+                                        _) => new ValueTask<bool>(true)
+#endif
+                                      );
   }
 }

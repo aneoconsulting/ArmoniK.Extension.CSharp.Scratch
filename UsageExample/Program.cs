@@ -122,7 +122,8 @@ internal class Program
     var dllBlob = await blobService.SendDllBlobAsync(session,
                                                      dynamicLib,
                                                      content,
-                                                     default)
+                                                     false,
+                                                     CancellationToken.None)
                                    .ConfigureAwait(false);
 
     Console.WriteLine($"resultId: {result.BlobId}");
@@ -149,7 +150,8 @@ internal class Program
                                                             },
                                                           },
                                                           dllBlob,
-                                                          default)
+                                                          false,
+                                                          CancellationToken.None)
                                  .ConfigureAwait(false);
 
     Console.WriteLine($"taskId: {task.Single().TaskId}");
