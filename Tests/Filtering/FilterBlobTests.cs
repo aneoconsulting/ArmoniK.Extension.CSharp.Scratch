@@ -466,7 +466,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     => "blob";
 
   [Test]
-  public void BlobIdFilterWithMethodCall()
+  public void BlobIdFilterWithMethodCall1()
   {
     var client = new MockedArmoniKClient();
 
@@ -475,6 +475,66 @@ public class FilterBlobTests : BaseBlobFilterTests
                                                     "blob")));
 
     var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId == Foo());
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobIdFilterWithMethodCall2()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1")));
+
+    var obj = new RecursiveClass
+              {
+                Inner = new RecursiveClass
+                        {
+                          Inner = new RecursiveClass
+                                  {
+                                    Info = "blob1",
+                                  },
+                        },
+              };
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId == obj.Inner.Inner.GetInfo());
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.BlobPagination,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void BlobIdFilterWithMemberAccess()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1")));
+
+    var obj = new RecursiveClass
+              {
+                Inner = new RecursiveClass
+                        {
+                          Inner = new RecursiveClass
+                                  {
+                                    Info = "blob1",
+                                  },
+                        },
+              };
+    var query = client.BlobService.BlobCollection.Where(blobState => blobState.BlobId == obj.Inner.Inner.Info);
 
     // Execute the query
     var result = query.AsAsyncEnumerable()
@@ -687,5 +747,15 @@ public class FilterBlobTests : BaseBlobFilterTests
 
     // Execute the query
     Assert.Throws<InvalidExpressionException>(() => query.ToList());
+  }
+
+  private class RecursiveClass
+  {
+    public RecursiveClass? Inner { get; init; }
+
+    public string Info { get; init; } = "";
+
+    public string GetInfo()
+      => Info;
   }
 }
