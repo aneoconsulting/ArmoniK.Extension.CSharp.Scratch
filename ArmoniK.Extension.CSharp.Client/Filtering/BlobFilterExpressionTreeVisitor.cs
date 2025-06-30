@@ -44,6 +44,9 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
                                                                           nameof(BlobInfo.BlobName), typeof(string)
                                                                         },
                                                                         {
+                                                                          nameof(BlobInfo.CreatedBy), typeof(string)
+                                                                        },
+                                                                        {
                                                                           nameof(BlobState.CompletedAt), typeof(DateTime?)
                                                                         },
                                                                         {
@@ -51,6 +54,15 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
                                                                         },
                                                                         {
                                                                           nameof(BlobState.Status), typeof(BlobStatus)
+                                                                        },
+                                                                        {
+                                                                          nameof(BlobState.OwnerId), typeof(string)
+                                                                        },
+                                                                        {
+                                                                          nameof(BlobState.OpaqueId), typeof(byte[])
+                                                                        },
+                                                                        {
+                                                                          nameof(BlobState.Size), typeof(int)
                                                                         },
                                                                       };
 
@@ -66,6 +78,9 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
                                                                                              nameof(BlobInfo.BlobName), ResultRawEnumField.Name
                                                                                            },
                                                                                            {
+                                                                                             nameof(BlobInfo.CreatedBy), ResultRawEnumField.CreatedBy
+                                                                                           },
+                                                                                           {
                                                                                              nameof(BlobState.CompletedAt), ResultRawEnumField.CompletedAt
                                                                                            },
                                                                                            {
@@ -73,6 +88,15 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
                                                                                            },
                                                                                            {
                                                                                              nameof(BlobState.Status), ResultRawEnumField.Status
+                                                                                           },
+                                                                                           {
+                                                                                             nameof(BlobState.OwnerId), ResultRawEnumField.OwnerTaskId
+                                                                                           },
+                                                                                           {
+                                                                                             nameof(BlobState.OpaqueId), ResultRawEnumField.OpaqueId
+                                                                                           },
+                                                                                           {
+                                                                                             nameof(BlobState.Size), ResultRawEnumField.Size
                                                                                            },
                                                                                          };
 
@@ -127,10 +151,10 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
         throw new InvalidOperationException($"Operator '{type}' is not supported on operands of type string.");
     }
 
-    PushFilter(filter);
+    PushStringFilter(filter);
   }
 
-  private void PushFilter(FilterString filter)
+  private void PushStringFilter(FilterString filter)
   {
     var filterField = new FilterField();
     var fieldCount  = 0;
@@ -440,26 +464,25 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
 
     if (fieldCount != 1 || constCount != 1)
     {
-      // Invalid expression
       throw new InvalidOperationException("Invalid filter expression.");
     }
 
     FilterStack.Push(filterField);
   }
 
-  protected override void OnMethodOperator(MethodInfo method,
-                                           bool       notOp = false)
+  protected override void OnStringMethodOperator(MethodInfo method,
+                                                 bool       notOp = false)
   {
     var filter = new FilterString();
     switch (method.Name)
     {
       case nameof(string.StartsWith):
         filter.Operator = FilterStringOperator.StartsWith;
-        PushFilter(filter);
+        PushStringFilter(filter);
         break;
       case nameof(string.EndsWith):
         filter.Operator = FilterStringOperator.EndsWith;
-        PushFilter(filter);
+        PushStringFilter(filter);
         break;
       case nameof(string.Contains):
         if (notOp)
@@ -471,8 +494,89 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
           filter.Operator = FilterStringOperator.Contains;
         }
 
-        PushFilter(filter);
+        PushStringFilter(filter);
         break;
+      default:
+        throw new InvalidOperationException($"Method string.{method.Name} is not supported to filter blobs.");
     }
+  }
+
+  protected override void OnByteArrayMethodOperator(MethodInfo method,
+                                                    bool       notOp = false)
+  {
+    var filter = new FilterArray();
+    switch (method.Name)
+    {
+      case "Contains":
+        if (notOp)
+        {
+          filter.Operator = FilterArrayOperator.NotContains;
+        }
+        else
+        {
+          filter.Operator = FilterArrayOperator.Contains;
+        }
+
+        PushByteArrayFilter(filter);
+        break;
+      default:
+        throw new InvalidOperationException($"Method byte[].{method.Name} is not supported to filter blobs.");
+    }
+  }
+
+  private void PushByteArrayFilter(FilterArray filter)
+  {
+    var filterField = new FilterField();
+    var fieldCount  = 0;
+    var constCount  = 0;
+    var rhsFilter   = FilterStack.Pop();
+    var lhsFilter   = FilterStack.Pop();
+    if (lhsFilter is ResultRawEnumField lhsFilterField)
+    {
+      // Left hand side is the property
+      filterField.Field = new ResultField
+                          {
+                            ResultRawField = new ResultRawField
+                                             {
+                                               Field = lhsFilterField,
+                                             },
+                          };
+      fieldCount++;
+    }
+    else if (lhsFilter is byte value)
+    {
+      // Left hand side is a constant
+      filterField.FilterArray = filter;
+      filter.Value            = value.ToString();
+      constCount++;
+    }
+
+    if (rhsFilter is ResultRawEnumField rhsFilterField)
+    {
+      // Right hand side is the property
+      filterField.Field = new ResultField
+                          {
+                            ResultRawField = new ResultRawField
+                                             {
+                                               Field = rhsFilterField,
+                                             },
+                          };
+      fieldCount++;
+    }
+    else if (rhsFilter is byte value)
+    {
+      // Right hand side is a constant
+      filterField.FilterArray = filter;
+      filter.Value            = value.ToString();
+      constCount++;
+    }
+
+    if (fieldCount != 1 || constCount != 1)
+    {
+      // Invalid expression
+      throw new InvalidOperationException("Invalid filter expression.");
+    }
+
+    FilterStack.Push(filterField);
   }
 }

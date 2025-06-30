@@ -41,47 +41,67 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
 
   public TFilterOr Filters { get; private set; }
 
-  public void Visit()
+  public void VisitTree()
   {
-    if (Tree is MethodCallExpression call)
+    VisitTree(Tree);
+    Filters = (TFilterOr)FilterStack.Pop();
+    if (FilterStack.Any())
     {
-      var memberAccess = call.Object as MemberExpression;
-      var typeName     = call.Method.DeclaringType?.FullName ?? "";
+      throw new InvalidOperationException("Internal error: analysis stack is in an inconsistent state");
+    }
+  }
+
+  private void VisitTree(Expression tree)
+  {
+    if (tree is MethodCallExpression call)
+    {
+      var typeName = call.Method.DeclaringType?.FullName ?? "";
       if (call.Method.Name == nameof(Queryable.Where) && typeName == "System.Linq.Queryable")
       {
+        if (call.Arguments[0] is MethodCallExpression call2)
+        {
+          // We are in the case Where().Where()
+          VisitTree(call2);
+        }
+
         var expression = (UnaryExpression)call.Arguments[1];
         var lambda     = (LambdaExpression)expression.Operand;
         Visit(lambda.Body);
+
+        if (FilterStack.Count == 2)
+        {
+          // merge : left && right
+          HandleBoolExpression(ExpressionType.AndAlso);
+        }
+
+        FilterStack.Push(CreateFilterFromStack());
       }
+    }
+  }
+
+  private TFilterOr CreateFilterFromStack()
+  {
+    var orNode = new TFilterOr();
+    var filter = FilterStack.Pop();
+    if (filter is TFilterOr filterOr)
+    {
+      orNode = filterOr;
+    }
+    else if (filter is TFilterAnd andNode)
+    {
+      GetRepeatedFilterAnd(orNode)
+        .Add(andNode);
+    }
+    else if (filter is TFilterField filterField)
+    {
+      var and = new TFilterAnd();
+      GetRepeatedFilterField(and)
+        .Add(filterField);
+      GetRepeatedFilterAnd(orNode)
+        .Add(and);
     }
 
-    var filter = FilterStack.Pop();
-    if (!FilterStack.Any())
-    {
-      if (filter is TFilterOr orNode)
-      {
-        Filters = orNode;
-      }
-      else if (filter is TFilterAnd andNode)
-      {
-        Filters = new TFilterOr();
-        GetRepeatedFilterAnd(Filters)
-          .Add(andNode);
-      }
-      else if (filter is TFilterField filterField)
-      {
-        Filters = new TFilterOr();
-        var and = new TFilterAnd();
-        GetRepeatedFilterField(and)
-          .Add(filterField);
-        GetRepeatedFilterAnd(Filters)
-          .Add(and);
-      }
-      else
-      {
-        throw new InvalidOperationException("Internal error: analysis stack in an inconsistent state");
-      }
-    }
+    return orNode;
   }
 
   private void Visit(Expression node,
@@ -100,9 +120,11 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
 
         Visit(call.Object);
         Visit(call.Arguments[0]);
-        OnMethodOperator(call.Method);
+        OnStringMethodOperator(call.Method);
+        return;
       }
-      else if (call.Method.Name == nameof(string.EndsWith) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+
+      if (call.Method.Name == nameof(string.EndsWith) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
       {
         if (call.Arguments.Count != 1)
         {
@@ -111,25 +133,43 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
 
         Visit(call.Object);
         Visit(call.Arguments[0]);
-        OnMethodOperator(call.Method);
+        OnStringMethodOperator(call.Method);
+        return;
       }
-      else if (call.Method.Name == nameof(string.Contains) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+
+      if (call.Method.Name == nameof(string.Contains))
       {
-        if (call.Arguments.Count != 1)
+        if (typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
         {
-          throw new InvalidExpressionException("Contains method overload not supported.");
+          if (call.Arguments.Count != 1)
+          {
+            throw new InvalidExpressionException("Contains method overload not supported.");
+          }
+
+          Visit(call.Object);
+          Visit(call.Arguments[0]);
+          OnStringMethodOperator(call.Method,
+                                 notOp);
+          return;
         }
 
-        Visit(call.Object);
-        Visit(call.Arguments[0]);
-        OnMethodOperator(call.Method,
-                         notOp);
+        if (typeName == "System.Linq.Enumerable")
+        {
+          if (call.Arguments.Count != 2)
+          {
+            throw new InvalidExpressionException("Contains method overload not supported.");
+          }
+
+          Visit(call.Arguments[0]);
+          Visit(call.Arguments[1]);
+          OnByteArrayMethodOperator(call.Method,
+                                    notOp);
+          return;
+        }
       }
-      else
-      {
-        // Evaluate the method
-        EvaluateExpression(call);
-      }
+
+      // Evaluate the method
+      EvaluateExpression(call);
     }
     else if (node is ConstantExpression constant)
     {
@@ -199,12 +239,12 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     }
   }
 
-  private static object GetValueFromExpression(Expression expression)
+  private static object? GetValueFromExpression(Expression expression)
   {
     switch (expression)
     {
       case MemberExpression memberExpr:
-        object instance = null;
+        object? instance = null;
 
         if (memberExpr.Expression is ConstantExpression constant)
         {
@@ -274,14 +314,11 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
 
   private bool OnFieldAccess(MemberExpression member)
   {
-    if (member.Expression is ConstantExpression constant)
+    var val = GetValueFromExpression(member);
+    if (val != null)
     {
-      var closure = constant.Value;
-      var capturedValue = closure.GetType()
-                                 .GetField(member.Member.Name)
-                                 .GetValue(closure);
-      ExpressionTypeStack.Push(capturedValue.GetType());
-      FilterStack.Push(capturedValue);
+      ExpressionTypeStack.Push(val.GetType());
+      FilterStack.Push(val);
       return true;
     }
 
@@ -321,13 +358,28 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     ExpressionTypeStack.Push(typeof(bool));
   }
 
-  private bool LeftMostExpressionIsLambdaParameter(Expression expression)
+  private static Expression GetLeftMostExpression(BinaryExpression binaryExpression)
   {
-    if (expression == null)
+    if (binaryExpression.Left is BinaryExpression binary)
     {
-      return false;
+      return GetLeftMostExpression(binary);
     }
 
+    return binaryExpression.Left;
+  }
+
+  private static MemberExpression GetRightMostMemberExpression(MemberExpression member)
+  {
+    if (member.Expression is MemberExpression rightExpression)
+    {
+      return GetRightMostMemberExpression(rightExpression);
+    }
+
+    return member;
+  }
+
+  private bool LeftMostExpressionIsLambdaParameter(Expression expression)
+  {
     if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
     {
       expression = unary.Operand;
@@ -335,27 +387,27 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
 
     if (expression is BinaryExpression binary)
     {
-      while (binary != null)
-      {
-        expression = binary.Left;
-        binary     = expression as BinaryExpression;
-      }
+      expression = GetLeftMostExpression(binary);
     }
 
     if (expression is MemberExpression member)
     {
-      while (member != null)
-      {
-        expression = member.Expression;
-        member     = expression as MemberExpression;
-      }
-
-      return LeftMostExpressionIsLambdaParameter(expression);
+      member = GetRightMostMemberExpression(member);
+      return LeftMostExpressionIsLambdaParameter(member.Expression);
     }
 
     if (expression is MethodCallExpression call)
     {
-      return LeftMostExpressionIsLambdaParameter(call.Object);
+      if (call.Method.DeclaringType?.FullName == "System.Linq.Enumerable")
+      {
+        // This is an extension method, <this> is then the first argument.
+        return LeftMostExpressionIsLambdaParameter(call.Arguments[0]);
+      }
+
+      if (call.Object != null)
+      {
+        return LeftMostExpressionIsLambdaParameter(call.Object);
+      }
     }
 
     return expression.NodeType == ExpressionType.Parameter;
@@ -606,8 +658,11 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
   protected abstract void HandleDateTimeExpression(ExpressionType   type);
   protected abstract void HandleBlobStatusExpression(ExpressionType type);
 
-  protected abstract void OnMethodOperator(MethodInfo method,
-                                           bool       notOp = false);
+  protected abstract void OnStringMethodOperator(MethodInfo method,
+                                                 bool       notOp = false);
+
+  protected abstract void OnByteArrayMethodOperator(MethodInfo method,
+                                                    bool       notOp = false);
 
   protected abstract bool TryGetEnumFieldFromName(string         name,
                                                   out TEnumField enumField);

@@ -75,7 +75,7 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
                                       expression);
 
   /// <summary>
-  ///   Visit the expression tree and generate the protobuf filtering structures
+  ///   VisitTree the expression tree and generate the protobuf filtering structures
   ///   and fetches the BlobState instances according to the filter.
   /// </summary>
   /// <param name="expression">The filtering expression</param>
@@ -88,7 +88,7 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
 
 
   /// <summary>
-  ///   Visit the expression tree and generate the protobuf filtering structures
+  ///   VisitTree the expression tree and generate the protobuf filtering structures
   ///   and fetches the BlobState instances according to the filter.
   /// </summary>
   /// <param name="expression">The filtering expression</param>
@@ -98,7 +98,7 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
     => (TResult)Execute(expression);
 
   /// <summary>
-  ///   Visit the expression tree and generate the protobuf filtering structures
+  ///   VisitTree the expression tree and generate the protobuf filtering structures
   ///   and fetches the BlobState instances according to the filter.
   /// </summary>
   /// <param name="expression">The filtering expression</param>
@@ -112,7 +112,7 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
 
     try
     {
-      visitor.Visit();
+      visitor.VisitTree();
     }
     catch (Exception ex)
     {

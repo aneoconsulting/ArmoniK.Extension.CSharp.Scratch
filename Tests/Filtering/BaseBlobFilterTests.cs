@@ -17,6 +17,7 @@
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Client.Common.Enum;
 
 using Google.Protobuf.WellKnownTypes;
 
@@ -39,6 +40,9 @@ public class BaseBlobFilterTests
                                                                                              nameof(BlobInfo.BlobName), ResultRawEnumField.Name
                                                                                            },
                                                                                            {
+                                                                                             nameof(BlobInfo.CreatedBy), ResultRawEnumField.CreatedBy
+                                                                                           },
+                                                                                           {
                                                                                              nameof(BlobState.CompletedAt), ResultRawEnumField.CompletedAt
                                                                                            },
                                                                                            {
@@ -46,6 +50,15 @@ public class BaseBlobFilterTests
                                                                                            },
                                                                                            {
                                                                                              nameof(BlobState.Status), ResultRawEnumField.Status
+                                                                                           },
+                                                                                           {
+                                                                                             nameof(BlobState.OwnerId), ResultRawEnumField.OwnerTaskId
+                                                                                           },
+                                                                                           {
+                                                                                             nameof(BlobState.OpaqueId), ResultRawEnumField.OpaqueId
+                                                                                           },
+                                                                                           {
+                                                                                             nameof(BlobState.Size), ResultRawEnumField.Size
                                                                                            },
                                                                                          };
 
@@ -125,6 +138,48 @@ public class BaseBlobFilterTests
                                                                                     },
                                                                                   };
 
+  private static readonly Dictionary<string, FilterArrayOperator> op2EnumArrayOp_ = new()
+                                                                                    {
+                                                                                      {
+                                                                                        "Contains", FilterArrayOperator.Contains
+                                                                                      },
+                                                                                      {
+                                                                                        "NotContains", FilterArrayOperator.NotContains
+                                                                                      },
+                                                                                    };
+
+  protected readonly ListResultsResponse response = new()
+                                                    {
+                                                      Results =
+                                                      {
+                                                        new ResultRaw
+                                                        {
+                                                          ResultId    = "blob1Id",
+                                                          Name        = "blob1",
+                                                          SessionId   = "sessionId",
+                                                          Status      = ResultStatus.Completed,
+                                                          CreatedAt   = DateTime.UtcNow.ToTimestamp(),
+                                                          CompletedAt = DateTime.UtcNow.ToTimestamp(),
+                                                        },
+                                                      },
+                                                      Total = 1,
+                                                    };
+
+  protected BlobPagination BuildBlobPagination(Filters filter)
+    => new()
+       {
+         Filter        = filter,
+         Page          = 0,
+         PageSize      = 50,
+         SortDirection = SortDirection.Asc,
+         SortField = new ResultField
+                     {
+                       ResultRawField = new ResultRawField
+                                        {
+                                          Field = ResultRawEnumField.ResultId,
+                                        },
+                     },
+       };
 
   private ResultField BuildResultField(string fieldName)
     => new()
@@ -186,6 +241,19 @@ public class BaseBlobFilterTests
                         Value = value.ToUniversalTime()
                                      .ToTimestamp(),
                       },
+       };
+
+  protected FilterField BuildFilterArray(string fieldName,
+                                         string op,
+                                         byte   value)
+    => new()
+       {
+         Field = BuildResultField(fieldName),
+         FilterArray = new FilterArray
+                       {
+                         Operator = op2EnumArrayOp_[op],
+                         Value    = value.ToString(),
+                       },
        };
 
   protected FiltersAnd BuildAnd(params FilterField[] filters)
