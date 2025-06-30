@@ -164,9 +164,9 @@ public class ArmoniKClient
   /// </summary>
   /// <param name="blobInfo">The blob information.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the blob handler instance.</returns>
-  public Task<BlobHandler> GetBlobHandler(BlobInfo blobInfo)
-    => Task.FromResult(new BlobHandler(blobInfo,
-                                       this));
+  public Task<BlobHandle> GetBlobHandle(BlobInfo blobInfo)
+    => Task.FromResult(new BlobHandle(blobInfo,
+                                      this));
 
   /// <summary>
   ///   Gets a task handler for the specified task information.
