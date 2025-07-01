@@ -128,4 +128,31 @@ public class LibraryWorker : ILibraryWorker
              };
     }
   }
+
+  /// <summary>
+  ///   Checks the health of the library worker.
+  /// </summary>
+  /// <returns>True if the worker is healthy, false otherwise.</returns>
+  public bool CheckHealth(CancellationToken cancellationToken = default)
+  {
+    try
+    {
+      // Basic health checks
+      if (Configuration == null || LoggerFactory == null)
+      {
+        Logger?.LogWarning("Health check failed: Core components are not initialized");
+        return false;
+      }
+
+      // Check if logger is working
+      Logger.LogDebug("Library worker health check passed");
+      return true;
+    }
+    catch (Exception ex)
+    {
+      Logger?.LogError(ex,
+                       "Library worker health check failed");
+      return false;
+    }
+  }
 }
