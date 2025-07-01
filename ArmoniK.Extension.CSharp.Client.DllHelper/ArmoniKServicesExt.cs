@@ -86,7 +86,7 @@ public static class ArmoniKServicesExt
   /// <param name="dllBlob">The dynamic library blob dependency for the tasks.</param>
   /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests during the task submission process.</param>
-  public static async Task<IEnumerable<TaskInfos>> SubmitTasksWithDllAsync(this ITasksService       taskService,
+  public static async Task<ICollection<TaskInfos>> SubmitTasksWithDllAsync(this ITasksService       taskService,
                                                                            SessionInfo              session,
                                                                            IEnumerable<TaskNodeExt> taskNodes,
                                                                            DllBlob                  dllBlob,

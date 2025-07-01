@@ -63,7 +63,7 @@ public class TasksService : ITasksService
     blobService_ = blobService;
   }
 
-  public async Task<IEnumerable<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
+  public async Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                              IEnumerable<TaskNode> taskNodes,
                                                              bool                  manualDeletion    = false,
                                                              CancellationToken     cancellationToken = default)
@@ -111,7 +111,8 @@ public class TasksService : ITasksService
                                                   .ConfigureAwait(false);
 
     return taskSubmissionResponse.TaskInfos.Select(x => new TaskInfos(x,
-                                                                      session.SessionId));
+                                                                      session.SessionId))
+                                 .ToList();
   }
 
   public async IAsyncEnumerable<TaskPage> ListTasksAsync(TaskPagination                             paginationOptions,
@@ -190,7 +191,7 @@ public class TasksService : ITasksService
                  };
   }
 
-  public async Task<IEnumerable<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
+  public async Task<ICollection<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
                                                              CancellationToken   cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
@@ -206,7 +207,8 @@ public class TasksService : ITasksService
                                                         },
                                                       })
                                     .ConfigureAwait(false);
-    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState());
+    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState())
+                   .ToList();
   }
 
   private async Task CreateNewBlobsAsync(SessionInfo           session,
