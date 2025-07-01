@@ -36,4 +36,11 @@ public interface IWorker
   Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
                             ILogger           logger,
                             CancellationToken cancellationToken);
+
+  /// <summary>
+  ///   Checks the health of the worker service.
+  /// </summary>
+  /// <returns>True if the worker is healthy, false otherwise.</returns>
+  /// <summary />
+  bool CheckHealth();
 }

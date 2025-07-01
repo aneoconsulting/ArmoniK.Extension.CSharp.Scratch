@@ -27,7 +27,6 @@ namespace ArmoniK.Extension.CSharp.DllWorker;
 public class ServiceRequestContext
 {
   private readonly ILibraryLoader                 libraryLoader_;
-  private readonly ILibraryWorker                 libraryWorker_;
   private readonly ILogger<ServiceRequestContext> logger_;
 
   private string? currentSession_;
@@ -45,14 +44,19 @@ public class ServiceRequestContext
     logger_ = loggerFactory.CreateLogger<ServiceRequestContext>();
 
     libraryLoader_ = new LibraryLoader(loggerFactory);
-    libraryWorker_ = new LibraryWorker(configuration,
-                                       loggerFactory);
+    LibraryWorker = new LibraryWorker(configuration,
+                                      loggerFactory);
   }
 
   /// <summary>
   ///   Gets or sets the logger factory.
   /// </summary>
   public ILoggerFactory LoggerFactory { get; set; }
+
+  /// <summary>
+  ///   Gets the library worker instance.
+  /// </summary>
+  public ILibraryWorker LibraryWorker { get; }
 
   /// <summary>
   ///   Executes a task asynchronously.
@@ -73,11 +77,11 @@ public class ServiceRequestContext
                                                             cancellationToken)
                                           .ConfigureAwait(false);
 
-    var result = await libraryWorker_.ExecuteAsync(taskHandler,
-                                                   libraryLoader_,
-                                                   contextName,
-                                                   cancellationToken)
-                                     .ConfigureAwait(false);
+    var result = await LibraryWorker.ExecuteAsync(taskHandler,
+                                                  libraryLoader_,
+                                                  contextName,
+                                                  cancellationToken)
+                                    .ConfigureAwait(false);
     return result;
   }
 }

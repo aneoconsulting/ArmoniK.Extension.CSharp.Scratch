@@ -54,4 +54,14 @@ public class Worker : IWorker
              Ok = new Empty(),
            };
   }
+
+  public bool CheckHealth()
+  {
+    if (ServiceClass is ICheckHealth checkHealth)
+    {
+      return checkHealth.CheckHealth();
+    }
+
+    return true;
+  }
 }
