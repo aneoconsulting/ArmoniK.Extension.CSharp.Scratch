@@ -14,23 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Api.gRPC.V1;
-using ArmoniK.Api.Worker.Worker;
-
-using Microsoft.Extensions.Logging;
-
 namespace ArmoniK.Extension.CSharp.DllCommon;
 
-public interface IWorker
+/// <summary>
+///   Represents a component that can perform health checks.
+/// </summary>
+public interface ICheckHealth
 {
-  Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
-                            ILogger           logger,
-                            CancellationToken cancellationToken);
-
   /// <summary>
-  ///   Checks the health of the worker service.
+  ///   Checks the health of the component.
   /// </summary>
-  /// <returns>True if the worker is healthy, false otherwise.</returns>
-  /// <summary />
+  /// <returns>True if the component is healthy, false otherwise.</returns>
   bool CheckHealth();
 }
