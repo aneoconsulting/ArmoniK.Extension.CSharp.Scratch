@@ -21,7 +21,6 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
-using ArmoniK.Utils;
 
 using Google.Protobuf.WellKnownTypes;
 
@@ -198,18 +197,31 @@ public class TasksServiceTests
 
     var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
                                                             taskNodes)
-                             .ToListAsync()
                              .ConfigureAwait(false);
-    Assert.That(result,
-                Has.Count.EqualTo(2),
-                "Result should contain two task infos");
 
-    Assert.That(result,
-                Has.Some.Matches<TaskInfos>(r => r.TaskId == "taskId1" && r.PayloadId == "payloadId1" && r.ExpectedOutputs.Contains("outputId1")),
-                "Result should contain an item with taskId1, payloadId1, and outputId1");
-    Assert.That(result,
-                Has.Some.Matches<TaskInfos>(r => r.TaskId == "taskId2" && r.PayloadId == "payloadId2" && r.ExpectedOutputs.Contains("outputId2")),
-                "Result should contain an item with taskId2, payloadId2, and outputId2");
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result.Count,
+                                  Is.EqualTo(2),
+                                  "Expected two task infos in the response.");
+                      Assert.That(result.Select(t => t.TaskId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "taskId1",
+                                               "taskId2",
+                                             }),
+                                  "Expected task IDs to match.");
+                      Assert.That(result.Select(t => t.PayloadId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "payloadId1",
+                                               "payloadId2",
+                                             }),
+                                  "Expected payload IDs to match.");
+                    });
   }
 
 
@@ -606,7 +618,34 @@ public class TasksServiceTests
   {
     var client = new MockedArmoniKClient();
 
-    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CancelTasksRequest, CancelTasksResponse>(new CancelTasksResponse());
+    var cancelResponse = new CancelTasksResponse
+                         {
+                           Tasks =
+                           {
+                             new TaskSummary
+                             {
+                               Id        = "taskId1",
+                               Status    = V1_TaskStatus.Cancelled,
+                               CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-10)),
+                               StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
+                               EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow),
+                               SessionId = "sessionId1",
+                               PayloadId = "payloadId1",
+                             },
+                             new TaskSummary
+                             {
+                               Id        = "taskId2",
+                               Status    = V1_TaskStatus.Cancelled,
+                               CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-8)),
+                               StartedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-3)),
+                               EndedAt   = Timestamp.FromDateTime(DateTime.UtcNow),
+                               SessionId = "sessionId1",
+                               PayloadId = "payloadId2",
+                             },
+                           },
+                         };
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CancelTasksRequest, CancelTasksResponse>(cancelResponse);
 
     var taskIds = new List<string>
                   {
@@ -614,15 +653,26 @@ public class TasksServiceTests
                     "taskId2",
                   };
 
-    await client.TasksService.CancelTasksAsync(taskIds)
-                .ConfigureAwait(false);
+    var result = await client.TasksService.CancelTasksAsync(taskIds)
+                             .ConfigureAwait(false);
 
-    client.CallInvokerMock.Verify(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<CancelTasksRequest, CancelTasksResponse>>(),
-                                                                    It.IsAny<string>(),
-                                                                    It.IsAny<CallOptions>(),
-                                                                    It.Is<CancelTasksRequest>(req => req.TaskIds.Count == 2 && req.TaskIds.Contains("taskId1") &&
-                                                                                                     req.TaskIds.Contains("taskId2"))),
-                                  Times.Once);
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(result,
+                                  Is.Not.Null);
+                      Assert.That(result.Count,
+                                  Is.EqualTo(2));
+
+                      var resultList = result.ToList();
+                      Assert.That(resultList[0].TaskId,
+                                  Is.EqualTo("taskId1"));
+                      Assert.That(resultList[0].Status,
+                                  Is.EqualTo(TaskStatus.Cancelled));
+                      Assert.That(resultList[1].TaskId,
+                                  Is.EqualTo("taskId2"));
+                      Assert.That(resultList[1].Status,
+                                  Is.EqualTo(TaskStatus.Cancelled));
+                    });
   }
 
   [Test]

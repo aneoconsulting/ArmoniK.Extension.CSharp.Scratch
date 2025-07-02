@@ -129,7 +129,7 @@ public interface IBlobService
   /// <param name="blobDescs">The BlobInfo associated with its OpaqueId.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns></returns>
-  Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
+  Task<ICollection<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
                                                    IEnumerable<KeyValuePair<BlobInfo, byte[]>> blobDescs,
                                                    CancellationToken                           cancellationToken = default);
 }
