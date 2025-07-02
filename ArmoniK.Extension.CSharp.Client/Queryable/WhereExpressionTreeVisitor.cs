@@ -25,58 +25,37 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 using Google.Protobuf.Collections;
 
-namespace ArmoniK.Extension.CSharp.Client.Filtering;
+namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilterAnd, TFilterField>
+internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilterAnd, TFilterField>
   where TFilterOr : new()
   where TFilterAnd : new()
 {
   protected readonly Stack<Type>   ExpressionTypeStack = new();
   protected readonly Stack<object> FilterStack         = new();
 
-  public FilterExpressionTreeVisitor(Expression tree)
-    => Tree = tree;
-
-  public Expression Tree { get; init; }
-
-  public TFilterOr Filters { get; private set; }
-
-  public void VisitTree()
+  public void Visit(LambdaExpression lambda)
   {
-    VisitTree(Tree);
-    Filters = (TFilterOr)FilterStack.Pop();
+    Visit(lambda.Body);
+
+    if (FilterStack.Count == 2)
+    {
+      // merge : left && right
+      HandleBoolExpression(ExpressionType.AndAlso);
+    }
+
+    FilterStack.Push(CreateFilterFromStack());
+  }
+
+  public TFilterOr GetFilterOrRootNode()
+  {
+    var filters = (TFilterOr)FilterStack.Pop();
     if (FilterStack.Any())
     {
       throw new InvalidOperationException("Internal error: analysis stack is in an inconsistent state");
     }
-  }
 
-  private void VisitTree(Expression tree)
-  {
-    if (tree is MethodCallExpression call)
-    {
-      var typeName = call.Method.DeclaringType?.FullName ?? "";
-      if (call.Method.Name == nameof(Queryable.Where) && typeName == "System.Linq.Queryable")
-      {
-        if (call.Arguments[0] is MethodCallExpression call2)
-        {
-          // We are in the case Where().Where()
-          VisitTree(call2);
-        }
-
-        var expression = (UnaryExpression)call.Arguments[1];
-        var lambda     = (LambdaExpression)expression.Operand;
-        Visit(lambda.Body);
-
-        if (FilterStack.Count == 2)
-        {
-          // merge : left && right
-          HandleBoolExpression(ExpressionType.AndAlso);
-        }
-
-        FilterStack.Push(CreateFilterFromStack());
-      }
-    }
+    return filters;
   }
 
   private TFilterOr CreateFilterFromStack()
@@ -115,10 +94,10 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
       {
         if (call.Arguments.Count != 1)
         {
-          throw new InvalidExpressionException("StartsWith method overload not supported.");
+          throw new InvalidExpressionException("Invalid filter: StartsWith method overload not supported.");
         }
 
-        Visit(call.Object);
+        Visit(call.Object!);
         Visit(call.Arguments[0]);
         OnStringMethodOperator(call.Method);
         return;
@@ -128,10 +107,10 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
       {
         if (call.Arguments.Count != 1)
         {
-          throw new InvalidExpressionException("EndsWith method overload not supported.");
+          throw new InvalidExpressionException("Invalid filter: EndsWith method overload not supported.");
         }
 
-        Visit(call.Object);
+        Visit(call.Object!);
         Visit(call.Arguments[0]);
         OnStringMethodOperator(call.Method);
         return;
@@ -143,10 +122,10 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
         {
           if (call.Arguments.Count != 1)
           {
-            throw new InvalidExpressionException("Contains method overload not supported.");
+            throw new InvalidExpressionException("Invalid filter: Contains method overload not supported.");
           }
 
-          Visit(call.Object);
+          Visit(call.Object!);
           Visit(call.Arguments[0]);
           OnStringMethodOperator(call.Method,
                                  notOp);
@@ -157,7 +136,7 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
         {
           if (call.Arguments.Count != 2)
           {
-            throw new InvalidExpressionException("Contains method overload not supported.");
+            throw new InvalidExpressionException("Invalid filter: Contains method overload not supported.");
           }
 
           Visit(call.Arguments[0]);
@@ -234,7 +213,7 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     }
     catch (Exception ex)
     {
-      throw new InvalidExpressionException("could not evaluate method call " + lambda,
+      throw new InvalidExpressionException("Invalid filter: could not evaluate method call " + lambda,
                                            ex);
     }
   }
@@ -301,7 +280,7 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
       }
       else
       {
-        throw new InvalidOperationException("Illegal expression on member " + member.Member.Name);
+        throw new InvalidOperationException("Unsupported filter expression on member " + member.Member.Name);
       }
     }
   }
@@ -352,7 +331,7 @@ internal abstract class FilterExpressionTreeVisitor<TEnumField, TFilterOr, TFilt
     }
     else
     {
-      throw new InvalidOperationException("Operands of expression type {rhsType.Name} are not supported.");
+      throw new InvalidOperationException("Invalid filter: Operands of expression type {rhsType.Name} are not supported.");
     }
 
     ExpressionTypeStack.Push(typeof(bool));

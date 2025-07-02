@@ -14,20 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-using System.Linq;
+using System.Linq.Expressions;
 
-namespace ArmoniK.Extension.CSharp.Client.Filtering;
+namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-public static class QueryableExt
+internal abstract class OrderByExpressionTreeVisitor<TEnumField>
 {
-  public static IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IQueryable<T> queryable)
-  {
-    if (queryable is ArmoniKQueryable<T> armoniKQueryable)
-    {
-      return armoniKQueryable.AsAsyncEnumerable();
-    }
-
-    return null;
-  }
+  public abstract TEnumField Visit(LambdaExpression lambda);
 }

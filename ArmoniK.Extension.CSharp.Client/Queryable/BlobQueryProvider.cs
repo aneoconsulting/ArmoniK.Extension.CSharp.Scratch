@@ -29,7 +29,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Services;
 
 using Microsoft.Extensions.Logging;
 
-namespace ArmoniK.Extension.CSharp.Client.Filtering;
+namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
 /// <summary>
 ///   Class query provider that build the protobuf filtering structure
@@ -108,31 +108,33 @@ public class BlobQueryProvider : IAsyncQueryProvider<BlobState>
   public async IAsyncEnumerable<BlobState> ExecuteAsync(Expression                                 expression,
                                                         [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
-    var visitor = new BlobFilterExpressionTreeVisitor(expression);
+    var visitor = new BlobQueryableExpressionTreeVisitor();
 
     try
     {
-      visitor.VisitTree();
+      visitor.VisitTree(expression);
     }
     catch (Exception ex)
     {
       logger_.LogError(ex,
-                       "Invalid blob filter: " + expression);
-      throw new InvalidExpressionException("Invalid blob filter: " + expression,
+                       "Invalid blob query: " + expression);
+      throw new InvalidExpressionException("Invalid blob query: " + expression,
                                            ex);
     }
 
     BlobPagination = new BlobPagination
                      {
-                       Filter        = visitor.Filters ?? new Filters(),
-                       Page          = -1,
-                       PageSize      = 50,
-                       SortDirection = SortDirection.Asc,
+                       Filter   = visitor.Filters,
+                       Page     = -1,
+                       PageSize = 50,
+                       SortDirection = visitor.IsSortAscending
+                                         ? SortDirection.Asc
+                                         : SortDirection.Desc,
                        SortField = new ResultField
                                    {
                                      ResultRawField = new ResultRawField
                                                       {
-                                                        Field = ResultRawEnumField.ResultId,
+                                                        Field = visitor.SortCriteria,
                                                       },
                                    },
                      };

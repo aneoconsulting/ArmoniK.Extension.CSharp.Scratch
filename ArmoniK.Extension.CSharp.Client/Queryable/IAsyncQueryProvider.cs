@@ -19,7 +19,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 
-namespace ArmoniK.Extension.CSharp.Client.Filtering;
+namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
 /// <summary>
 ///   Interface for asynchronous query provider

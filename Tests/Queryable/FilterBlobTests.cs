@@ -18,14 +18,14 @@ using System.Data;
 
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Filtering;
+using ArmoniK.Extension.CSharp.Client.Queryable;
 
 using NUnit.Framework;
 
 using Tests.Configuration;
 using Tests.Helpers;
 
-namespace Tests.Filtering;
+namespace Tests.Queryable;
 
 public class FilterBlobTests : BaseBlobFilterTests
 {

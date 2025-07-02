@@ -21,13 +21,13 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 
-namespace ArmoniK.Extension.CSharp.Client.Filtering;
+namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
 /// <summary>
 ///   Class that define a query object
 /// </summary>
 /// <typeparam name="TElement"></typeparam>
-public class ArmoniKQueryable<TElement> : IQueryable<TElement>
+public class ArmoniKQueryable<TElement> : IOrderedQueryable<TElement>
 {
   /// <summary>
   ///   Create the query object

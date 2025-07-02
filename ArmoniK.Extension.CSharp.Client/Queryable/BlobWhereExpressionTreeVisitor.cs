@@ -28,9 +28,9 @@ using Google.Protobuf.WellKnownTypes;
 
 using Type = System.Type;
 
-namespace ArmoniK.Extension.CSharp.Client.Filtering;
+namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>
 {
   private static readonly Dictionary<string, Type> memberName2Type_ = new()
                                                                       {
@@ -99,11 +99,6 @@ internal class BlobFilterExpressionTreeVisitor : FilterExpressionTreeVisitor<Res
                                                                                              nameof(BlobState.Size), ResultRawEnumField.Size
                                                                                            },
                                                                                          };
-
-  public BlobFilterExpressionTreeVisitor(Expression tree)
-    : base(tree)
-  {
-  }
 
   protected override Filters CreateFilterOr(params FiltersAnd[] filters)
   {

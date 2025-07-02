@@ -21,7 +21,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Enum;
 
 using Google.Protobuf.WellKnownTypes;
 
-namespace Tests.Filtering;
+namespace Tests.Queryable;
 
 /// <summary>
 ///   Helper class to build protobuf structure for filtering
@@ -165,18 +165,24 @@ public class BaseBlobFilterTests
                                                       Total = 1,
                                                     };
 
-  protected BlobPagination BuildBlobPagination(Filters filter)
+  protected BlobPagination BuildBlobPagination(Filters filter,
+                                               string  sortCriteria  = null,
+                                               bool    ascendingSort = true)
     => new()
        {
-         Filter        = filter,
-         Page          = 0,
-         PageSize      = 50,
-         SortDirection = SortDirection.Asc,
+         Filter   = filter,
+         Page     = 0,
+         PageSize = 50,
+         SortDirection = ascendingSort
+                           ? SortDirection.Asc
+                           : SortDirection.Desc,
          SortField = new ResultField
                      {
                        ResultRawField = new ResultRawField
                                         {
-                                          Field = ResultRawEnumField.ResultId,
+                                          Field = string.IsNullOrEmpty(sortCriteria)
+                                                    ? ResultRawEnumField.ResultId
+                                                    : memberName2EnumField_[sortCriteria],
                                         },
                      },
        };

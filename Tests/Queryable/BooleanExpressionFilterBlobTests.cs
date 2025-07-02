@@ -17,13 +17,13 @@
 using System.Linq.Expressions;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Filtering;
+using ArmoniK.Extension.CSharp.Client.Queryable;
 
 using NUnit.Framework;
 
 using Tests.Configuration;
 
-namespace Tests.Filtering;
+namespace Tests.Queryable;
 
 /// <summary>
 ///   logical OR and logical AND tests

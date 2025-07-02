@@ -28,7 +28,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Filtering;
+using ArmoniK.Extension.CSharp.Client.Queryable;
 using ArmoniK.Utils;
 
 using Google.Protobuf;
