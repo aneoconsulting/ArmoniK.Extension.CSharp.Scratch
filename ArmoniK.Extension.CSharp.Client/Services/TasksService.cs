@@ -112,7 +112,7 @@ public class TasksService : ITasksService
 
     return taskSubmissionResponse.TaskInfos.Select(x => new TaskInfos(x,
                                                                       session.SessionId))
-                                 .ToList();
+                                 .AsICollection();
   }
 
   public async IAsyncEnumerable<TaskPage> ListTasksAsync(TaskPagination                             paginationOptions,
@@ -208,7 +208,7 @@ public class TasksService : ITasksService
                                                       })
                                     .ConfigureAwait(false);
     return response.Tasks.Select(taskSummary => taskSummary.ToTaskState())
-                   .ToList();
+                   .AsICollection();
   }
 
   private async Task CreateNewBlobsAsync(SessionInfo           session,

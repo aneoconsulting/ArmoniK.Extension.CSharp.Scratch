@@ -317,7 +317,7 @@ public class BlobService : IBlobService
     var response = await blobClient.ImportResultsDataAsync(request)
                                    .ConfigureAwait(false);
     return response.Results.Select(resultRaw => resultRaw.ToBlobState())
-                   .ToList();
+                   .AsICollection();
   }
 
   private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)

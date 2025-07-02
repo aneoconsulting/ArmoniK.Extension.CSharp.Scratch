@@ -199,16 +199,28 @@ public class TasksServiceTests
                                                             taskNodes)
                              .ConfigureAwait(false);
 
-    var resultList = result.ToList();
-
     Assert.Multiple(() =>
                     {
-                      Assert.That(resultList,
-                                  Has.Count.EqualTo(2));
-                      Assert.That(resultList[0].TaskId,
-                                  Is.EqualTo("taskId1"));
-                      Assert.That(resultList[1].TaskId,
-                                  Is.EqualTo("taskId2"));
+                      Assert.That(result,
+                                  Is.Not.Null,
+                                  "Result should not be null.");
+                      Assert.That(result.Count,
+                                  Is.EqualTo(2),
+                                  "Expected two task infos in the response.");
+                      Assert.That(result.Select(t => t.TaskId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "taskId1",
+                                               "taskId2",
+                                             }),
+                                  "Expected task IDs to match.");
+                      Assert.That(result.Select(t => t.PayloadId),
+                                  Is.EqualTo(new[]
+                                             {
+                                               "payloadId1",
+                                               "payloadId2",
+                                             }),
+                                  "Expected payload IDs to match.");
                     });
   }
 
@@ -806,12 +818,23 @@ public class TasksServiceTests
     Assert.Multiple(() =>
                     {
                       Assert.That(result,
-                                  Is.Not.Null);
+                                  Is.Not.Null,
+                                  "Result should not be null.");
                       Assert.That(result.Count,
-                                  Is.EqualTo(1));
+                                  Is.EqualTo(1),
+                                  "Expected one task info in the response.");
                       Assert.That(result.First()
                                         .TaskId,
-                                  Is.EqualTo("taskId1"));
+                                  Is.EqualTo("taskId1"),
+                                  "Expected task ID to match.");
+                      Assert.That(result.First()
+                                        .PayloadId,
+                                  Is.EqualTo("payloadId1"),
+                                  "Expected payload ID to match.");
+                      Assert.That(result.First()
+                                        .ExpectedOutputs.First(),
+                                  Is.EqualTo("outputId1"),
+                                  "Expected output ID to match.");
                     });
   }
 
