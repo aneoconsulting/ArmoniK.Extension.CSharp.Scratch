@@ -304,7 +304,7 @@ public class BlobService : IBlobService
            };
   }
 
-  public async Task<IEnumerable<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
+  public async Task<ICollection<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,
                                                                 IEnumerable<KeyValuePair<BlobInfo, byte[]>> blobDescs,
                                                                 CancellationToken                           cancellationToken = default)
   {
@@ -326,7 +326,8 @@ public class BlobService : IBlobService
 
     var response = await blobClient.ImportResultsDataAsync(request)
                                    .ConfigureAwait(false);
-    return response.Results.Select(resultRaw => resultRaw.ToBlobState());
+    return response.Results.Select(resultRaw => resultRaw.ToBlobState())
+                   .AsICollection();
   }
 
   private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)

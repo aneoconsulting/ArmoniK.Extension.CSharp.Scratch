@@ -41,7 +41,7 @@ public interface ITasksService
   /// <param name="manualDeletion">Whether the blobs should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
-  Task<IEnumerable<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
+  Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                 IEnumerable<TaskNode> taskNodes,
                                                 bool                  manualDeletion    = false,
                                                 CancellationToken     cancellationToken = default);
@@ -81,7 +81,7 @@ public interface ITasksService
   /// <param name="taskIds">The identifiers of the tasks to cancel.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task state.</returns>
-  Task<IEnumerable<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
+  Task<ICollection<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
                                                 CancellationToken   cancellationToken = default);
 }
 
