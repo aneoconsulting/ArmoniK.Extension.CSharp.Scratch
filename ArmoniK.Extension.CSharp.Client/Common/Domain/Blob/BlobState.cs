@@ -60,6 +60,7 @@ public sealed record BlobState : BlobInfo, IEquatable<BlobState>
 
   /// <summary>
   ///   Whether the user is responsible for the deletion of the data in the underlying object storage.
+  ///   It cannot be used as filtering criteria.
   /// </summary>
   public bool ManualDeletion { get; init; }
 
