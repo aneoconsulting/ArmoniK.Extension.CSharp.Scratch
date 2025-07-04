@@ -22,7 +22,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Handlers;
+using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Services;
 using ArmoniK.Utils;
 
@@ -160,29 +160,29 @@ public class ArmoniKClient
                            LoggerFactory);
 
   /// <summary>
-  ///   Gets a blob handler for the specified blob information.
+  ///   Gets a blob handle for the specified blob information.
   /// </summary>
   /// <param name="blobInfo">The blob information.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains the blob handler instance.</returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the blob handle instance.</returns>
   public Task<BlobHandle> GetBlobHandle(BlobInfo blobInfo)
     => Task.FromResult(new BlobHandle(blobInfo,
                                       this));
 
   /// <summary>
-  ///   Gets a task handler for the specified task information.
+  ///   Gets a task handle for the specified task information.
   /// </summary>
   /// <param name="taskInfos">The task information.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains the task handler instance.</returns>
-  public Task<TaskHandler> GetTaskHandler(TaskInfos taskInfos)
-    => Task.FromResult(new TaskHandler(this,
-                                       taskInfos));
+  /// <returns>A task representing the asynchronous operation. The task result contains the task handle instance.</returns>
+  public Task<TaskHandle> GetTaskHandle(TaskInfos taskInfos)
+    => Task.FromResult(new TaskHandle(this,
+                                      taskInfos));
 
   /// <summary>
-  ///   Gets a session handler for the specified session information.
+  ///   Gets a session handle for the specified session information.
   /// </summary>
   /// <param name="session">The session information.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains the session handler instance.</returns>
-  public Task<SessionHandler> GetSessionHandler(SessionInfo session)
-    => Task.FromResult(new SessionHandler(session,
-                                          this));
+  /// <returns>A task representing the asynchronous operation. The task result contains the session handle instance.</returns>
+  public Task<SessionHandle> GetSessionHandle(SessionInfo session)
+    => Task.FromResult(new SessionHandle(session,
+                                         this));
 }

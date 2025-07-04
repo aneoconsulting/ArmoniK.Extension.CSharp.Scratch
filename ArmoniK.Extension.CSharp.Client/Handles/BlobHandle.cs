@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
-namespace ArmoniK.Extension.CSharp.Client.Handlers;
+namespace ArmoniK.Extension.CSharp.Client.Handles;
 
 /// <summary>
 ///   Provides methods for handling operations related to blobs, such as retrieving state, downloading, and uploading
