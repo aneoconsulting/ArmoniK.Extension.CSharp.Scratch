@@ -14,33 +14,56 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 
-namespace ArmoniK.Extension.CSharp.Client.Handlers;
+namespace ArmoniK.Extension.CSharp.Client.Handles;
 
 /// <summary>
 ///   Handles session management operations for an ArmoniK client, providing methods to control the lifecycle of a
 ///   session.
 /// </summary>
-public class SessionHandler
+public class SessionHandle
 {
   private readonly ArmoniKClient armoniKClient_;
   private readonly SessionInfo   sessionInfo_;
 
   /// <summary>
-  ///   Initializes a new instance of the <see cref="SessionHandler" /> class.
+  ///   Initializes a new instance of the <see cref="SessionHandle" /> class.
   /// </summary>
   /// <param name="session">The session information for managing session-related operations.</param>
   /// <param name="armoniKClient">The ArmoniK client used to perform operations on the session.</param>
-  public SessionHandler(SessionInfo   session,
+  public SessionHandle(SessionInfo   session,
                         ArmoniKClient armoniKClient)
   {
     armoniKClient_ = armoniKClient;
     sessionInfo_   = session;
   }
+
+  /// <summary>
+  ///   Implicit conversion operator from SessionHandle to SessionInfo.
+  ///   Allows SessionHandle to be used wherever SessionInfo is expected.
+  /// </summary>
+  /// <param name="sessionHandle">The SessionHandle to convert.</param>
+  /// <returns>The SessionInfo contained within the SessionHandle.</returns>
+  /// <exception cref="ArgumentNullException">Thrown when sessionHandle is null.</exception>
+  public static implicit operator SessionInfo(SessionHandle sessionHandle)
+    => sessionHandle?.sessionInfo_ ?? throw new ArgumentNullException(nameof(sessionHandle));
+
+  /// <summary>
+  ///   Creates a SessionHandle from SessionInfo and ArmoniKClient.
+  /// </summary>
+  /// <param name="sessionInfo">The SessionInfo to wrap.</param>
+  /// <param name="armoniKClient">The ArmoniK client for operations.</param>
+  /// <returns>A new SessionHandle instance.</returns>
+  /// <exception cref="ArgumentNullException">Thrown when sessionInfo or armoniKClient is null.</exception>
+  public static SessionHandle FromSessionInfo(SessionInfo   sessionInfo,
+                                              ArmoniKClient armoniKClient)
+    => new(sessionInfo   ?? throw new ArgumentNullException(nameof(sessionInfo)),
+           armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient)));
 
   /// <summary>
   ///   Cancels the session asynchronously.

@@ -14,17 +14,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
-namespace ArmoniK.Extension.CSharp.Client.Handlers;
+namespace ArmoniK.Extension.CSharp.Client.Handles;
 
 /// <summary>
 ///   Handles operations related to tasks using the ArmoniK client.
 /// </summary>
-public class TaskHandler
+public class TaskHandle
 {
   /// <summary>
   ///   Gets the ArmoniK client used to interact with task services.
@@ -32,17 +33,17 @@ public class TaskHandler
   public readonly ArmoniKClient ArmoniKClient;
 
   /// <summary>
-  ///   Gets the task information for which this handler will perform operations.
+  ///   Gets the task information for which this handle will perform operations.
   /// </summary>
   private readonly TaskInfos taskInfos_;
 
   /// <summary>
-  ///   Initializes a new instance of the <see cref="TaskHandler" /> class with a specified ArmoniK client and task
+  ///   Initializes a new instance of the <see cref="TaskHandle" /> class with a specified ArmoniK client and task
   ///   information.
   /// </summary>
   /// <param name="armoniKClient">The ArmoniK client to be used for task service operations.</param>
   /// <param name="taskInfo">The task information related to the tasks that will be handled.</param>
-  public TaskHandler(ArmoniKClient armoniKClient,
+  public TaskHandle(ArmoniKClient armoniKClient,
                      TaskInfos     taskInfo)
   {
     ArmoniKClient = armoniKClient;
@@ -50,7 +51,29 @@ public class TaskHandler
   }
 
   /// <summary>
-  ///   Asynchronously retrieves detailed state information about the task associated with this handler.
+  ///   Implicit conversion operator from TaskHandle to TaskInfos.
+  ///   Allows TaskHandle to be used wherever TaskInfos is expected.
+  /// </summary>
+  /// <param name="taskHandle">The TaskHandle to convert.</param>
+  /// <returns>The TaskInfos contained within the TaskHandle.</returns>
+  /// <exception cref="ArgumentNullException">Thrown when taskHandle is null.</exception>
+  public static implicit operator TaskInfos(TaskHandle taskHandle)
+    => taskHandle?.taskInfos_ ?? throw new ArgumentNullException(nameof(taskHandle));
+
+  /// <summary>
+  ///   Creates a TaskHandle from TaskInfos and ArmoniKClient.
+  /// </summary>
+  /// <param name="taskInfos">The TaskInfos to wrap.</param>
+  /// <param name="armoniKClient">The ArmoniK client for operations.</param>
+  /// <returns>A new TaskHandle instance.</returns>
+  /// <exception cref="ArgumentNullException">Thrown when taskInfos or armoniKClient is null.</exception>
+  public static TaskHandle FromTaskInfos(TaskInfos     taskInfos,
+                                         ArmoniKClient armoniKClient)
+    => new(armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient)),
+           taskInfos     ?? throw new ArgumentNullException(nameof(taskInfos)));
+
+  /// <summary>
+  ///   Asynchronously retrieves detailed state information about the task associated with this handle.
   /// </summary>
   /// <param name="cancellationToken">A token that can be used to request cancellation of the asynchronous operation.</param>
   /// <returns>
