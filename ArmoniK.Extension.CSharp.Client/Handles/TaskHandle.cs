@@ -43,11 +43,12 @@ public class TaskHandle
   /// </summary>
   /// <param name="armoniKClient">The ArmoniK client to be used for task service operations.</param>
   /// <param name="taskInfo">The task information related to the tasks that will be handled.</param>
+  /// <exception cref="ArgumentNullException">Thrown when armoniKClient or taskInfo is null.</exception>
   public TaskHandle(ArmoniKClient armoniKClient,
-                     TaskInfos     taskInfo)
+                    TaskInfos     taskInfo)
   {
-    ArmoniKClient = armoniKClient;
-    taskInfos_    = taskInfo;
+    ArmoniKClient = armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient));
+    taskInfos_    = taskInfo      ?? throw new ArgumentNullException(nameof(taskInfo));
   }
 
   /// <summary>

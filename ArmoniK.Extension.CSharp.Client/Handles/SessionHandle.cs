@@ -37,10 +37,10 @@ public class SessionHandle
   /// <param name="session">The session information for managing session-related operations.</param>
   /// <param name="armoniKClient">The ArmoniK client used to perform operations on the session.</param>
   public SessionHandle(SessionInfo   session,
-                        ArmoniKClient armoniKClient)
+                       ArmoniKClient armoniKClient)
   {
-    armoniKClient_ = armoniKClient;
-    sessionInfo_   = session;
+    armoniKClient_ = armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient));
+    sessionInfo_   = session       ?? throw new ArgumentNullException(nameof(session));
   }
 
   /// <summary>

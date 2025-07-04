@@ -175,7 +175,7 @@ public class ArmoniKClient
   /// <returns>A task representing the asynchronous operation. The task result contains the task handle instance.</returns>
   public Task<TaskHandle> GetTaskHandle(TaskInfos taskInfos)
     => Task.FromResult(new TaskHandle(this,
-                                       taskInfos));
+                                      taskInfos));
 
   /// <summary>
   ///   Gets a session handle for the specified session information.
@@ -184,5 +184,5 @@ public class ArmoniKClient
   /// <returns>A task representing the asynchronous operation. The task result contains the session handle instance.</returns>
   public Task<SessionHandle> GetSessionHandle(SessionInfo session)
     => Task.FromResult(new SessionHandle(session,
-                                          this));
+                                         this));
 }
