@@ -19,12 +19,12 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal class BlobQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
 {
   private OrderByExpressionTreeVisitor<ResultRawEnumField>                                  orderByVisitor_;
   private WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>? whereVisitor_;
 
-  public BlobQueryExpressionTreeVisitor()
+  public BlobStateQueryExpressionTreeVisitor()
   {
     // By default the requests are ordered by BlobId in ascending order
     SortCriteria    = ResultRawEnumField.ResultId;
@@ -38,7 +38,7 @@ internal class BlobQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobS
   {
     get
     {
-      whereVisitor_ = whereVisitor_ ?? new BlobWhereExpressionTreeVisitor();
+      whereVisitor_ = whereVisitor_ ?? new BlobStateWhereExpressionTreeVisitor();
       return whereVisitor_;
     }
   }
@@ -47,7 +47,7 @@ internal class BlobQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobS
   {
     get
     {
-      orderByVisitor_ = orderByVisitor_ ?? new BlobOrderByExpressionTreeVisitor();
+      orderByVisitor_ = orderByVisitor_ ?? new BlobStateOrderByExpressionTreeVisitor();
       return orderByVisitor_;
     }
   }

@@ -47,7 +47,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -68,7 +68,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     // Execute the query
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -89,7 +89,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -114,7 +114,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -135,7 +135,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -157,7 +157,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -179,7 +179,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -201,7 +201,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -223,7 +223,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -245,7 +245,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -267,7 +267,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -289,7 +289,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -310,7 +310,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -331,7 +331,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -352,7 +352,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -373,7 +373,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -394,7 +394,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -415,7 +415,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -436,7 +436,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -457,7 +457,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -478,7 +478,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -502,7 +502,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -533,7 +533,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -564,7 +564,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -589,7 +589,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -610,7 +610,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -631,7 +631,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -652,7 +652,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -673,7 +673,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -694,7 +694,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -715,7 +715,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -740,7 +740,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query.AsAsyncEnumerable()
                       .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
@@ -765,7 +765,7 @@ public class FilterBlobTests : BaseBlobFilterTests
     var result = query2.AsAsyncEnumerable()
                        .ToListAsync();
 
-    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query2).Provider;
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query2).Provider;
     Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }

@@ -27,13 +27,13 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal class BlobQueryExecution : QueryExecution<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
 {
   private readonly IBlobService          blobService_;
   private readonly ILogger<IBlobService> logger_;
 
-  public BlobQueryExecution(IBlobService          service,
-                            ILogger<IBlobService> logger)
+  public BlobStateQueryExecution(IBlobService          service,
+                                 ILogger<IBlobService> logger)
   {
     blobService_ = service;
     logger_      = logger;
@@ -54,7 +54,7 @@ internal class BlobQueryExecution : QueryExecution<BlobPagination, BlobPage, Blo
   }
 
   protected override QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField> CreateQueryExpressionTreeVisitor()
-    => new BlobQueryExpressionTreeVisitor();
+    => new BlobStateQueryExpressionTreeVisitor();
 
   protected override BlobPagination CreatePaginationInstance(Filters            filter,
                                                              ResultRawEnumField sortCriteria,

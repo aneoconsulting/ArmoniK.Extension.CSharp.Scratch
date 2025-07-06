@@ -22,16 +22,16 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal class BlobQueryProvider : ArmoniKQueryProvider<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobStateQueryProvider : ArmoniKQueryProvider<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
 {
   private readonly IBlobService blobService_;
 
-  public BlobQueryProvider(IBlobService          service,
-                           ILogger<IBlobService> logger)
+  public BlobStateQueryProvider(IBlobService          service,
+                                ILogger<IBlobService> logger)
     : base(logger)
     => blobService_ = service;
 
   protected override QueryExecution<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField> CreateQueryExecution()
-    => new BlobQueryExecution(blobService_,
-                              logger_);
+    => new BlobStateQueryExecution(blobService_,
+                                   logger_);
 }

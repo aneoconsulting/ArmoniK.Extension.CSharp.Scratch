@@ -30,7 +30,7 @@ using Type = System.Type;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal class BlobWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>
 {
   private static readonly Dictionary<string, Type> memberName2Type_ = new()
                                                                       {

@@ -24,7 +24,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal class BlobOrderByExpressionTreeVisitor : OrderByExpressionTreeVisitor<ResultRawEnumField>
+internal class BlobStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisitor<ResultRawEnumField>
 {
   private static readonly Dictionary<string, ResultRawEnumField> memberName2EnumField_ = new()
                                                                                          {

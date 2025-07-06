@@ -65,8 +65,8 @@ public class BlobService : IBlobService
     channelPool_ = channel;
     logger_      = loggerFactory.CreateLogger<BlobService>();
 
-    var queryProvider = new BlobQueryProvider(this,
-                                              logger_);
+    var queryProvider = new BlobStateQueryProvider(this,
+                                                   logger_);
     queryable_ = new ArmoniKQueryable<BlobState>(queryProvider);
   }
 
