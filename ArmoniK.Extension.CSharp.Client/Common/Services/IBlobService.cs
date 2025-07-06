@@ -38,7 +38,7 @@ public interface IBlobService
   ///   Get a queryable object to filter and order BlobState instances
   /// </summary>
   /// <returns>An IQueryable instance to apply Linq methods on</returns>
-  IQueryable<BlobState> BlobCollection { get; }
+  IQueryable<BlobState> AsQueryable();
 
   /// <summary>
   ///   Asynchronously creates metadata for multiple blobs in a given session.

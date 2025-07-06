@@ -26,15 +26,15 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 /// <summary>
 ///   Class that define a query object
 /// </summary>
-/// <typeparam name="TElement"></typeparam>
-public class ArmoniKQueryable<TElement> : IOrderedQueryable<TElement>
+/// <typeparam name="TSource"></typeparam>
+internal class ArmoniKQueryable<TSource> : IOrderedQueryable<TSource>
 {
   /// <summary>
   ///   Create the query object
   /// </summary>
   /// <param name="provider">The query provider</param>
   /// <exception cref="ArgumentNullException">When provider is null</exception>
-  public ArmoniKQueryable(IAsyncQueryProvider<TElement> provider)
+  public ArmoniKQueryable(IAsyncQueryProvider<TSource> provider)
   {
     Provider   = provider ?? throw new ArgumentNullException(nameof(provider));
     Expression = Expression.Constant(this);
@@ -55,7 +55,7 @@ public class ArmoniKQueryable<TElement> : IOrderedQueryable<TElement>
 
   /// <inheritdoc />
   public Type ElementType
-    => typeof(TElement);
+    => typeof(TSource);
 
   /// <inheritdoc />
   public Expression Expression { get; }
@@ -64,26 +64,26 @@ public class ArmoniKQueryable<TElement> : IOrderedQueryable<TElement>
   public IQueryProvider Provider { get; }
 
   /// <inheritdoc />
-  public IEnumerator<TElement> GetEnumerator()
-    => ((IEnumerable<TElement>)Provider.Execute(Expression)).GetEnumerator();
+  public IEnumerator<TSource> GetEnumerator()
+    => ((IEnumerable<TSource>)Provider.Execute(Expression)).GetEnumerator();
 
   IEnumerator IEnumerable.GetEnumerator()
     => GetEnumerator();
 
   /// <summary>
-  ///   Makes the query object asynchronously queryable
+  ///   Makes the query object asynchronously enumerable
   /// </summary>
-  /// <returns>The object asynchronously queryable</returns>
-  public IAsyncEnumerable<TElement> AsAsyncEnumerable()
+  /// <returns>The object asynchronously enumerable</returns>
+  public IAsyncEnumerable<TSource> AsAsyncEnumerable()
     => new ArmoniKQueryableAsync(this);
 
-  internal class ArmoniKQueryableAsync(ArmoniKQueryable<TElement> queryable) : IAsyncEnumerable<TElement>
+  internal class ArmoniKQueryableAsync(ArmoniKQueryable<TSource> queryable) : IAsyncEnumerable<TSource>
   {
-    private readonly ArmoniKQueryable<TElement> queryable_ = queryable;
+    private readonly ArmoniKQueryable<TSource> queryable_ = queryable;
 
-    public IAsyncEnumerator<TElement> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    public IAsyncEnumerator<TSource> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-      var asyncProvider = (IAsyncQueryProvider<TElement>)queryable_.Provider;
+      var asyncProvider = (IAsyncQueryProvider<TSource>)queryable_.Provider;
       return asyncProvider.ExecuteAsync(queryable_.Expression,
                                         cancellationToken)
                           .GetAsyncEnumerator(cancellationToken);

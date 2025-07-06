@@ -70,7 +70,7 @@ public class BlobService : IBlobService
     queryable_ = new ArmoniKQueryable<BlobState>(queryProvider);
   }
 
-  public IQueryable<BlobState> BlobCollection
+  public IQueryable<BlobState> AsQueryable()
     => queryable_;
 
   public async IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                session,

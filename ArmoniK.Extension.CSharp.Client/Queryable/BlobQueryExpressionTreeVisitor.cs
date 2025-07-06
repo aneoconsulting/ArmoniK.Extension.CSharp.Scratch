@@ -15,17 +15,18 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Results;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal class BlobQueryableExpressionTreeVisitor : QueryableExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
 {
   private OrderByExpressionTreeVisitor<ResultRawEnumField>                                  orderByVisitor_;
   private WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>? whereVisitor_;
 
-  public BlobQueryableExpressionTreeVisitor()
+  public BlobQueryExpressionTreeVisitor()
   {
-    // By default the requests are the order by BlobId in ascending order
+    // By default the requests are ordered by BlobId in ascending order
     SortCriteria    = ResultRawEnumField.ResultId;
     IsSortAscending = true;
   }

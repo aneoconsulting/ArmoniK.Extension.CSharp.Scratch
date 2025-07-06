@@ -38,7 +38,8 @@ public class QueryableBlobTests : BaseBlobFilterTests
 
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
 
-    var query = client.BlobService.BlobCollection.Where(blobState => blobState.SessionId == "session1")
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobState.SessionId == "session1")
                       .OrderBy(blobState => blobState.BlobId);
 
     // Execute the query
@@ -46,7 +47,7 @@ public class QueryableBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.BlobPagination,
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter,
                                                "BlobId")));
   }
@@ -62,7 +63,8 @@ public class QueryableBlobTests : BaseBlobFilterTests
 
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
 
-    var query = client.BlobService.BlobCollection.Where(blobState => blobState.SessionId == "session1")
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobState.SessionId == "session1")
                       .OrderByDescending(blobState => blobState.BlobId);
 
     // Execute the query
@@ -70,7 +72,7 @@ public class QueryableBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.BlobPagination,
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter,
                                                "BlobId",
                                                false)));
@@ -87,7 +89,8 @@ public class QueryableBlobTests : BaseBlobFilterTests
 
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
 
-    var query = client.BlobService.BlobCollection.OrderBy(blobState => blobState.BlobId)
+    var query = client.BlobService.AsQueryable()
+                      .OrderBy(blobState => blobState.BlobId)
                       .Where(blobState => blobState.SessionId == "session1");
 
     // Execute the query
@@ -95,7 +98,7 @@ public class QueryableBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.BlobPagination,
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter,
                                                "BlobId")));
   }
@@ -107,8 +110,9 @@ public class QueryableBlobTests : BaseBlobFilterTests
 
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
 
-    // The last call is right
-    var query = client.BlobService.BlobCollection.OrderBy(blobState => blobState.Size)
+    // The last call to OrderBy is right (Here BlobId)
+    var query = client.BlobService.AsQueryable()
+                      .OrderBy(blobState => blobState.Size)
                       .OrderBy(blobState => blobState.BlobId);
 
     // Execute the query
@@ -116,8 +120,136 @@ public class QueryableBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.BlobPagination,
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(new Filters(),
                                                "BlobId")));
+  }
+
+  [Test]
+  public void FirstOrDefaultOnSessionId()
+  {
+    var client = new MockedArmoniKClient();
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("SessionId",
+                                                    "==",
+                                                    "session1")));
+
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobState.SessionId == "session1");
+
+    // Execute the query
+    var result = query.FirstOrDefault();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter,
+                                               "BlobId")));
+    Assert.That(result.BlobId,
+                Is.EqualTo("blob1Id"));
+
+    // Execute query with an OrderBy
+    var resultOrderBy = query.OrderBy(blobState => blobState.BlobId)
+                             .FirstOrDefault();
+
+    blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter,
+                                               "BlobId")));
+    Assert.That(resultOrderBy.BlobId,
+                Is.EqualTo("blob1Id"));
+  }
+
+  [Test]
+  public void FirstOrDefaultWithLambdaOnSessionId()
+  {
+    var client = new MockedArmoniKClient();
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("SessionId",
+                                                    "==",
+                                                    "session1"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Completed)));
+
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobState.SessionId == "session1");
+
+    // Execute the query (combine the Where condition && FirstOrDefault condition)
+    var result = query.FirstOrDefault(blobState => blobState.Status == BlobStatus.Completed);
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter,
+                                               "BlobId")));
+    Assert.That(result.BlobId,
+                Is.EqualTo("blob1Id"));
+  }
+
+  [Test]
+  public void FirstOnSessionId()
+  {
+    var client = new MockedArmoniKClient();
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("SessionId",
+                                                    "==",
+                                                    "session1")));
+
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobState.SessionId == "session1");
+
+    // Execute the query
+    var result = query.First();
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter,
+                                               "BlobId")));
+    Assert.That(result.BlobId,
+                Is.EqualTo("blob1Id"));
+
+    // Execute query with an OrderBy
+    var resultOrderBy = query.OrderBy(blobState => blobState.BlobId)
+                             .First();
+
+    blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter,
+                                               "BlobId")));
+    Assert.That(resultOrderBy.BlobId,
+                Is.EqualTo("blob1Id"));
+  }
+
+  [Test]
+  public void FirstWithLambdaOnSessionId()
+  {
+    var client = new MockedArmoniKClient();
+
+    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<ListResultsRequest, ListResultsResponse>(response);
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("SessionId",
+                                                    "==",
+                                                    "session1"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Completed)));
+
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobState.SessionId == "session1");
+
+    // Execute the query (combine the Where condition && FirstOrDefault condition)
+    var result = query.First(blobState => blobState.Status == BlobStatus.Completed);
+
+    var blobQueryProvider = (BlobQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter,
+                                               "BlobId")));
+    Assert.That(result.BlobId,
+                Is.EqualTo("blob1Id"));
   }
 }

@@ -25,7 +25,7 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 ///   Interface for asynchronous query provider
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public interface IAsyncQueryProvider<out T> : IQueryProvider
+internal interface IAsyncQueryProvider<out T> : IQueryProvider
 {
   /// <summary>
   ///   Execute a request with a specific filtering expression

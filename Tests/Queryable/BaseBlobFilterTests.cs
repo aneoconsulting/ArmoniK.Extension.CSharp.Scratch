@@ -161,8 +161,17 @@ public class BaseBlobFilterTests
                                                           CreatedAt   = DateTime.UtcNow.ToTimestamp(),
                                                           CompletedAt = DateTime.UtcNow.ToTimestamp(),
                                                         },
+                                                        new ResultRaw
+                                                        {
+                                                          ResultId    = "blob2Id",
+                                                          Name        = "blob2",
+                                                          SessionId   = "sessionId",
+                                                          Status      = ResultStatus.Completed,
+                                                          CreatedAt   = DateTime.UtcNow.ToTimestamp(),
+                                                          CompletedAt = DateTime.UtcNow.ToTimestamp(),
+                                                        },
                                                       },
-                                                      Total = 1,
+                                                      Total = 2,
                                                     };
 
   protected BlobPagination BuildBlobPagination(Filters filter,
