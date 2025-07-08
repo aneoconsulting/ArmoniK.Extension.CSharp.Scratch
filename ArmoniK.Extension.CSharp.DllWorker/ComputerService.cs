@@ -127,7 +127,7 @@ public class ComputerService : WorkerStreamWrapper
 
     return Task.FromResult(new HealthCheckReply
                            {
-                             Status = isHealthy
+                             Status = isHealthy.IsHealthy
                                         ? HealthCheckReply.Types.ServingStatus.Serving
                                         : HealthCheckReply.Types.ServingStatus.NotServing,
                            });
