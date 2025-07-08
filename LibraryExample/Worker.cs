@@ -26,11 +26,6 @@ namespace LibraryExample;
 
 public class Worker : IWorker
 {
-  public Worker()
-    => ServiceClass = new object();
-
-  public object ServiceClass { get; set; }
-
   public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
                                          ILogger           logger,
                                          CancellationToken cancellationToken)
@@ -48,13 +43,11 @@ public class Worker : IWorker
            };
   }
 
-  public bool CheckHealth()
-  {
-    if (ServiceClass is ICheckHealth checkHealth)
-    {
-      return checkHealth.CheckHealth();
-    }
-
-    return true;
-  }
+  /// <summary>
+  ///   Checks the health status of this example worker.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token to cancel the health check operation.</param>
+  /// <returns>A healthy HealthCheckResult indicating the example worker is always operational.</returns>
+  public HealthCheckResult CheckHealth(CancellationToken cancellationToken = default)
+    => HealthCheckResult.Healthy();
 }
