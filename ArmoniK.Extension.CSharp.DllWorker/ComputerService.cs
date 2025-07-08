@@ -120,16 +120,17 @@ public class ComputerService : WorkerStreamWrapper
   /// <param name="request"></param>
   /// <param name="context"></param>
   /// <returns></returns>
-  public override Task<HealthCheckReply> HealthCheck(Empty             request,
-                                                     ServerCallContext context)
+  public override async Task<HealthCheckReply> HealthCheck(Empty             request,
+                                                           ServerCallContext context)
   {
-    var isHealthy = ServiceRequestContext.LibraryWorker.CheckHealth(context.CancellationToken);
+    var isHealthy = await ServiceRequestContext.LibraryWorker.CheckHealth(context.CancellationToken)
+                                               .ConfigureAwait(false);
 
-    return Task.FromResult(new HealthCheckReply
-                           {
-                             Status = isHealthy
-                                        ? HealthCheckReply.Types.ServingStatus.Serving
-                                        : HealthCheckReply.Types.ServingStatus.NotServing,
-                           });
+    return new HealthCheckReply
+           {
+             Status = isHealthy.IsHealthy
+                        ? HealthCheckReply.Types.ServingStatus.Serving
+                        : HealthCheckReply.Types.ServingStatus.NotServing,
+           };
   }
 }

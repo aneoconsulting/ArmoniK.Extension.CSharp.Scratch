@@ -44,5 +44,5 @@ public interface ILibraryWorker
   /// </summary>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>True if the library worker is healthy; otherwise, false.</returns>
-  public bool CheckHealth(CancellationToken cancellationToken = default);
+  Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default);
 }

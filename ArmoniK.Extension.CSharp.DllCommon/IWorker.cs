@@ -38,9 +38,8 @@ public interface IWorker
                             CancellationToken cancellationToken);
 
   /// <summary>
-  ///   Checks the health of the worker service.
+  ///   Checks the health of the component.
   /// </summary>
-  /// <returns>True if the worker is healthy, false otherwise.</returns>
-  /// <summary />
-  bool CheckHealth();
+  /// <returns>True if the component is healthy, false otherwise.</returns>
+  HealthCheckResult CheckHealth(CancellationToken cancellationToken = default);
 }
