@@ -128,4 +128,32 @@ public class LibraryWorker : ILibraryWorker
              };
     }
   }
+
+  /// <summary>
+  ///   Checks the health of the library worker.
+  /// </summary>
+  /// <returns>True if the worker is healthy with a message, false otherwise with the precision of the exception.</returns>
+  public HealthCheckResult CheckHealth(CancellationToken cancellationToken = default)
+  {
+    try
+    {
+      var testLogger = LoggerFactory.CreateLogger<LibraryWorker>();
+      if (testLogger == null)
+      {
+        return HealthCheckResult.Unhealthy("Cannot create logger instance");
+      }
+
+      testLogger.LogInformation("Health check validation at {Time}",
+                                DateTime.UtcNow);
+
+      return HealthCheckResult.Healthy();
+    }
+    catch (Exception ex)
+    {
+      Logger?.LogError(ex,
+                       "Library worker health check failed");
+      return HealthCheckResult.Unhealthy("Library worker health check failed",
+                                         ex);
+    }
+  }
 }
