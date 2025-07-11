@@ -16,13 +16,13 @@
 
 using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Handlers;
+using ArmoniK.Extension.CSharp.Client.Handles;
 
 using NUnit.Framework;
 
 using Tests.Configuration;
 
-namespace Tests.Handlers;
+namespace Tests.Handles;
 
 [TestFixture]
 public class BlobHandleTests
