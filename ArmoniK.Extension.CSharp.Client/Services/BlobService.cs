@@ -28,6 +28,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Extension.CSharp.Client.Queryable;
 using ArmoniK.Utils;
 
 using Google.Protobuf;
@@ -44,6 +45,7 @@ public class BlobService : IBlobService
 {
   private readonly ObjectPool<ChannelBase>             channelPool_;
   private readonly ILogger<BlobService>                logger_;
+  private readonly ArmoniKQueryable<BlobState>         queryable_;
   private          ResultsServiceConfigurationResponse serviceConfiguration_;
 
   /// <summary>
@@ -62,7 +64,14 @@ public class BlobService : IBlobService
   {
     channelPool_ = channel;
     logger_      = loggerFactory.CreateLogger<BlobService>();
+
+    var queryProvider = new BlobStateQueryProvider(this,
+                                                   logger_);
+    queryable_ = new ArmoniKQueryable<BlobState>(queryProvider);
   }
+
+  public IQueryable<BlobState> AsQueryable()
+    => queryable_;
 
   public async IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                session,
                                                                    IEnumerable<string>                        names,
@@ -266,8 +275,8 @@ public class BlobService : IBlobService
     }
   }
 
-  public async IAsyncEnumerable<BlobPage> ListBlobsAsync(BlobPagination                             blobPagination,
-                                                         [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  public async Task<BlobPage> ListBlobsAsync(BlobPagination    blobPagination,
+                                             CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
@@ -277,6 +286,7 @@ public class BlobService : IBlobService
                                                                   Sort = new ListResultsRequest.Types.Sort
                                                                          {
                                                                            Direction = blobPagination.SortDirection.ToGrpc(),
+                                                                           Field     = blobPagination.SortField,
                                                                          },
                                                                   Filters  = blobPagination.Filter,
                                                                   Page     = blobPagination.Page,
@@ -284,14 +294,14 @@ public class BlobService : IBlobService
                                                                 },
                                                                 cancellationToken: cancellationToken)
                                               .ConfigureAwait(false);
-    foreach (var resultRaw in listResultsResponse.Results)
-    {
-      yield return new BlobPage
-                   {
-                     TotalPages  = listResultsResponse.Total,
-                     BlobDetails = resultRaw.ToBlobState(),
-                   };
-    }
+
+    return new BlobPage
+           {
+             TotalBlobCount = listResultsResponse.Total,
+             PageOrder      = blobPagination.Page,
+             Blobs = listResultsResponse.Results.Select(result => result.ToBlobState())
+                                        .ToArray(),
+           };
   }
 
   public async Task<ICollection<BlobState>> ImportBlobDataAsync(SessionInfo                                 session,

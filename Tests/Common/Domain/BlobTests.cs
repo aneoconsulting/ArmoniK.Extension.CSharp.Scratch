@@ -105,13 +105,14 @@ public class BlobTests
                       };
     var blobPage = new BlobPage
                    {
-                     TotalPages  = 5,
-                     BlobDetails = blobDetails,
+                     TotalBlobCount = 5,
+                     PageOrder      = 0,
+                     Blobs          = [blobDetails],
                    };
-    Assert.That(blobPage.TotalPages,
+    Assert.That(blobPage.TotalBlobCount,
                 Is.EqualTo(5));
     Assert.That(blobDetails,
-                Is.EqualTo(blobPage.BlobDetails));
+                Is.EqualTo(blobPage.Blobs[0]));
   }
 
   [Test]
