@@ -27,7 +27,7 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 ///   Class that define a query object
 /// </summary>
 /// <typeparam name="TSource"></typeparam>
-internal class ArmoniKQueryable<TSource> : IOrderedQueryable<TSource>
+internal class ArmoniKQueryable<TSource> : IOrderedQueryable<TSource>, IAsyncEnumerable<TSource>
 {
   /// <summary>
   ///   Create the query object
@@ -53,6 +53,17 @@ internal class ArmoniKQueryable<TSource> : IOrderedQueryable<TSource>
     Expression = tree     ?? throw new ArgumentNullException(nameof(tree));
   }
 
+  /// <summary>
+  ///   Makes the query object asynchronously enumerable
+  /// </summary>
+  public IAsyncEnumerator<TSource> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+  {
+    var asyncProvider = (IAsyncQueryProvider<TSource>)Provider;
+    return asyncProvider.ExecuteAsync(Expression,
+                                      cancellationToken)
+                        .GetAsyncEnumerator(cancellationToken);
+  }
+
   /// <inheritdoc />
   public Type ElementType
     => typeof(TSource);
@@ -69,24 +80,4 @@ internal class ArmoniKQueryable<TSource> : IOrderedQueryable<TSource>
 
   IEnumerator IEnumerable.GetEnumerator()
     => GetEnumerator();
-
-  /// <summary>
-  ///   Makes the query object asynchronously enumerable
-  /// </summary>
-  /// <returns>The object asynchronously enumerable</returns>
-  public IAsyncEnumerable<TSource> AsAsyncEnumerable()
-    => new ArmoniKQueryableAsync(this);
-
-  internal class ArmoniKQueryableAsync(ArmoniKQueryable<TSource> queryable) : IAsyncEnumerable<TSource>
-  {
-    private readonly ArmoniKQueryable<TSource> queryable_ = queryable;
-
-    public IAsyncEnumerator<TSource> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-    {
-      var asyncProvider = (IAsyncQueryProvider<TSource>)queryable_.Provider;
-      return asyncProvider.ExecuteAsync(queryable_.Expression,
-                                        cancellationToken)
-                          .GetAsyncEnumerator(cancellationToken);
-    }
-  }
 }

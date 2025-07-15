@@ -22,12 +22,5 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 public static class QueryableExt
 {
   public static IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IQueryable<T> queryable)
-  {
-    if (queryable is ArmoniKQueryable<T> armoniKQueryable)
-    {
-      return armoniKQueryable.AsAsyncEnumerable();
-    }
-
-    return null;
-  }
+    => queryable as IAsyncEnumerable<T> ?? queryable.ToAsyncEnumerable();
 }
