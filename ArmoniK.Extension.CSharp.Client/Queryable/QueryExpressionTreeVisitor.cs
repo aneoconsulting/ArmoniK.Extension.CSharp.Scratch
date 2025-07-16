@@ -18,7 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
+
+using ArmoniK.Utils;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
@@ -26,8 +27,8 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
   where TFilterOr : new()
   where TFilterAnd : new()
 {
-  public Func<IAsyncEnumerable<TSource>, ValueTask<TSource?>>? FuncReturnNullableTSource { get; private set; }
-  public Func<IAsyncEnumerable<TSource>, ValueTask<TSource>>?  FuncReturnTSource         { get; private set; }
+  public Func<IAsyncEnumerable<TSource>, TSource?>? FuncReturnNullableTSource { get; private set; }
+  public Func<IAsyncEnumerable<TSource>, TSource>?  FuncReturnTSource         { get; private set; }
 
   public TFilterOr Filters { get; private set; }
 
@@ -183,11 +184,13 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
 
       if (call.Method.Name == nameof(System.Linq.Queryable.FirstOrDefault))
       {
-        FuncReturnNullableTSource = queryable => queryable.FirstOrDefaultAsync();
+        FuncReturnNullableTSource = queryable => queryable.FirstOrDefaultAsync()
+                                                          .WaitSync();
       }
       else
       {
-        FuncReturnTSource = queryable => queryable.FirstAsync();
+        FuncReturnTSource = queryable => queryable.FirstAsync()
+                                                  .WaitSync();
       }
     }
     else

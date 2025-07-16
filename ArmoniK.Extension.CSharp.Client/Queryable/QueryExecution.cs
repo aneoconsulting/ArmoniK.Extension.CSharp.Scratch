@@ -30,10 +30,10 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
 {
   private QueryExpressionTreeVisitor<TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> visitor_;
 
-  public Func<IAsyncEnumerable<TSource>, ValueTask<TSource?>>? FuncReturnNullableTSource
+  public Func<IAsyncEnumerable<TSource>, TSource?>? FuncReturnNullableTSource
     => visitor_.FuncReturnNullableTSource;
 
-  public Func<IAsyncEnumerable<TSource>, ValueTask<TSource>>? FuncReturnTSource
+  public Func<IAsyncEnumerable<TSource>, TSource>? FuncReturnTSource
     => visitor_.FuncReturnTSource;
 
   /// <summary>

@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Utils;
 
 using Microsoft.Extensions.Logging;
 
@@ -76,22 +77,17 @@ internal abstract class ArmoniKQueryProvider<TPagination, TPage, TSource, TEnumF
     QueryExecution.VisitExpression(expression);
     if (QueryExecution.FuncReturnTSource != null)
     {
-      return QueryExecution.FuncReturnTSource(QueryExecution.ExecuteAsync())
-                           .GetAwaiter()
-                           .GetResult();
+      return QueryExecution.FuncReturnTSource(QueryExecution.ExecuteAsync());
     }
 
     if (QueryExecution.FuncReturnNullableTSource != null)
     {
-      return QueryExecution.FuncReturnNullableTSource(QueryExecution.ExecuteAsync())
-                           .GetAwaiter()
-                           .GetResult();
+      return QueryExecution.FuncReturnNullableTSource(QueryExecution.ExecuteAsync());
     }
 
     return QueryExecution.ExecuteAsync()
                          .ToListAsync()
-                         .GetAwaiter()
-                         .GetResult();
+                         .WaitSync();
   }
 
   /// <summary>
