@@ -71,7 +71,7 @@ internal abstract class ArmoniKQueryProvider<TPagination, TPage, TSource, TEnumF
   /// <param name="expression">The filtering expression</param>
   /// <returns>An enumeration of instances compliant with the filter</returns>
   /// <exception cref="InvalidExpressionException">When the filtering expression is invalid</exception>
-  public object Execute(Expression expression)
+  public object? Execute(Expression expression)
   {
     QueryExecution = CreateQueryExecution();
     QueryExecution.VisitExpression(expression);
@@ -97,8 +97,8 @@ internal abstract class ArmoniKQueryProvider<TPagination, TPage, TSource, TEnumF
   /// <param name="expression">The filtering expression</param>
   /// <returns>An enumeration of instances compliant with the filter</returns>
   /// <exception cref="InvalidExpressionException">When the filtering expression is invalid</exception>
-  public TResult Execute<TResult>(Expression expression)
-    => (TResult)Execute(expression);
+  public TResult? Execute<TResult>(Expression expression)
+    => (TResult?)Execute(expression);
 
   /// <summary>
   ///   Visit the expression tree and generate the protobuf filtering structures
