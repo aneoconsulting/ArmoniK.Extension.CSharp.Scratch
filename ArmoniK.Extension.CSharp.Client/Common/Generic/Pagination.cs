@@ -22,8 +22,9 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Generic;
 ///   Represents a generic pagination model to handle data pagination effectively.
 ///   This class can be used to manage paging information and the data subset filtering.
 /// </summary>
-/// <typeparam name="T">The type of data being paginated.</typeparam>
-public class Pagination<T>
+/// <typeparam name="TFilter">The type of data being paginated.</typeparam>
+/// <typeparam name="TField">The enum type of fields, used as sorting criteria.</typeparam>
+public record Pagination<TFilter, TField>
 {
   /// <summary>
   ///   The current page number.
@@ -50,8 +51,13 @@ public class Pagination<T>
   public SortDirection SortDirection { get; set; }
 
   /// <summary>
+  ///   The sorting criteria
+  /// </summary>
+  public TField SortField { get; set; }
+
+  /// <summary>
   ///   The filter used for the pagination.
   /// </summary>
   /// <value>The filter criteria used to determine which items appear in the pagination.</value>
-  public T Filter { get; set; }
+  public TFilter Filter { get; set; }
 }

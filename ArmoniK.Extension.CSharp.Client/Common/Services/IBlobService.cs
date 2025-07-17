@@ -21,6 +21,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
@@ -33,6 +34,12 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 /// </summary>
 public interface IBlobService
 {
+  /// <summary>
+  ///   Get a queryable object to filter and order BlobState instances
+  /// </summary>
+  /// <returns>An IQueryable instance to apply Linq methods on</returns>
+  IQueryable<BlobState> AsQueryable();
+
   /// <summary>
   ///   Asynchronously creates metadata for multiple blobs in a given session.
   /// </summary>
@@ -119,8 +126,8 @@ public interface IBlobService
   /// <param name="blobPagination">The options for pagination, including page number, page size, and sorting.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of blob pages.</returns>
-  IAsyncEnumerable<BlobPage> ListBlobsAsync(BlobPagination    blobPagination,
-                                            CancellationToken cancellationToken = default);
+  Task<BlobPage> ListBlobsAsync(BlobPagination    blobPagination,
+                                CancellationToken cancellationToken = default);
 
   /// <summary>
   ///   Import existing data from the object storage into existing results.
@@ -169,11 +176,11 @@ public static class BlobServiceExt
   /// <param name="session">The session information in which the blobs are listed.</param>
   /// <param name="pageSize">The number of blobs to retrieve per page.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>An asynchronous enumerable of blob pages.</returns>
-  public static async IAsyncEnumerable<BlobPage> ListAllBlobsAsync(this IBlobService                          blobService,
-                                                                   SessionInfo                                session,
-                                                                   int                                        pageSize          = 50,
-                                                                   [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  /// <returns>An asynchronous enumerable of BlobState.</returns>
+  public static async IAsyncEnumerable<BlobState> ListAllBlobsAsync(this IBlobService                          blobService,
+                                                                    SessionInfo                                session,
+                                                                    int                                        pageSize          = 50,
+                                                                    [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     var blobPagination = new BlobPagination
                          {
@@ -194,6 +201,11 @@ public static class BlobServiceExt
                                                                            Field = ResultRawEnumField.SessionId,
                                                                          },
                                                       },
+                                              FilterString = new FilterString
+                                                             {
+                                                               Operator = FilterStringOperator.Equal,
+                                                               Value    = session.SessionId,
+                                                             },
                                             },
                                           },
                                         },
@@ -202,30 +214,30 @@ public static class BlobServiceExt
                            Page          = 0,
                            PageSize      = pageSize,
                            SortDirection = SortDirection.Asc,
+                           SortField = new ResultField
+                                       {
+                                         ResultRawField = new ResultRawField
+                                                          {
+                                                            Field = ResultRawEnumField.ResultId,
+                                                          },
+                                       },
                          };
 
-    var total     = 0;
-    var firstPage = true;
+    var total = 0;
 
-    IAsyncEnumerable<BlobPage> res;
-
-    while (await (res = blobService.ListBlobsAsync(blobPagination,
-                                                   cancellationToken)).AnyAsync(cancellationToken)
-                                                                      .ConfigureAwait(false))
+    BlobPage page;
+    do
     {
-      await foreach (var blobPage in res.WithCancellation(cancellationToken)
-                                        .ConfigureAwait(false))
+      page = await blobService.ListBlobsAsync(blobPagination,
+                                              cancellationToken)
+                              .ConfigureAwait(false);
+      total += page.Blobs.Length;
+      foreach (var blobState in page.Blobs)
       {
-        if (firstPage)
-        {
-          total     = blobPage.TotalPages;
-          firstPage = false;
-        }
-
-        yield return blobPage;
+        yield return blobState;
       }
 
       blobPagination.Page++;
-    }
+    } while (total < page.TotalBlobCount);
   }
 }

@@ -539,17 +539,18 @@ public class BlobServiceTests
                            Filter        = new Filters(),
                          };
 
-    var resultBlobs = new List<BlobPage>();
-    await foreach (var blobPage in client.BlobService.ListBlobsAsync(blobPagination))
+    var resultBlobs = new List<BlobState>();
+    var blobPage    = await client.BlobService.ListBlobsAsync(blobPagination);
+    foreach (var bp in blobPage.Blobs)
     {
-      resultBlobs.Add(blobPage);
+      resultBlobs.Add(bp);
     }
 
     Assert.Multiple(() =>
                     {
                       Assert.That(response.Results.Count,
                                   Is.EqualTo(2));
-                      Assert.That(resultBlobs.Select(b => b.BlobDetails.BlobName),
+                      Assert.That(resultBlobs.Select(b => b.BlobName),
                                   Is.EqualTo(new[]
                                              {
                                                "blob1",
