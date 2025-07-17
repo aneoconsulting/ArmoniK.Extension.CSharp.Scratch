@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -79,6 +80,6 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
   protected override int GetTotalPageElements(BlobPage page)
     => page.TotalBlobCount;
 
-  protected override BlobState[] GetPageElements(BlobPage page)
+  protected override IEnumerable<BlobState> GetPageElements(BlobPage page)
     => page.Blobs;
 }

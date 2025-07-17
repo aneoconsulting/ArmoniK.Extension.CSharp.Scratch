@@ -75,9 +75,9 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
                                     cancellationToken)
                .ConfigureAwait(false);
       var elements = GetPageElements(page);
-      total += elements.Length;
       foreach (var blobState in elements)
       {
+        total++;
         yield return blobState;
       }
     } while (total < GetTotalPageElements(page));
@@ -95,6 +95,6 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
                                                           TEnumField sortCriteria,
                                                           bool       isAscending);
 
-  protected abstract int       GetTotalPageElements(TPage page);
-  protected abstract TSource[] GetPageElements(TPage      page);
+  protected abstract int                  GetTotalPageElements(TPage page);
+  protected abstract IEnumerable<TSource> GetPageElements(TPage      page);
 }

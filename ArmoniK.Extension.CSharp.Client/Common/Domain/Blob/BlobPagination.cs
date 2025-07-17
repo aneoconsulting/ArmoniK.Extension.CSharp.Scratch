@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Generic;
 
@@ -44,5 +46,5 @@ public record BlobPage
   /// <summary>
   ///   Blobs of the page.
   /// </summary>
-  public BlobState[] Blobs { get; init; }
+  public IEnumerable<BlobState> Blobs { get; init; }
 }

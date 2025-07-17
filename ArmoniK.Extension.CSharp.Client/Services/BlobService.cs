@@ -299,8 +299,7 @@ public class BlobService : IBlobService
            {
              TotalBlobCount = listResultsResponse.Total,
              PageOrder      = blobPagination.Page,
-             Blobs = listResultsResponse.Results.Select(result => result.ToBlobState())
-                                        .ToArray(),
+             Blobs          = listResultsResponse.Results.Select(result => result.ToBlobState()),
            };
   }
 
