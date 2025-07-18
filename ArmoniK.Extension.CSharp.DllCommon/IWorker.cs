@@ -26,4 +26,10 @@ public interface IWorker
   Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
                             ILogger           logger,
                             CancellationToken cancellationToken);
+
+  /// <summary>
+  ///   Checks the health of the component.
+  /// </summary>
+  /// <returns>True if the component is healthy, false otherwise.</returns>
+  HealthCheckResult CheckHealth(CancellationToken cancellationToken = default);
 }

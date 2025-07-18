@@ -42,4 +42,12 @@ public class Worker : IWorker
              Ok = new Empty(),
            };
   }
+
+  /// <summary>
+  ///   Checks the health status of this example worker.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token to cancel the health check operation.</param>
+  /// <returns>A healthy HealthCheckResult indicating the example worker is always operational.</returns>
+  public HealthCheckResult CheckHealth(CancellationToken cancellationToken = default)
+    => HealthCheckResult.Healthy();
 }
