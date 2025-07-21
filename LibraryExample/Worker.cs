@@ -24,8 +24,20 @@ using Microsoft.Extensions.Logging;
 
 namespace LibraryExample;
 
+/// <summary>
+///   Example implementation of IWorker <see cref="IWorker" /> for demonstration purposes.
+///   This worker processes tasks by sending results back with a "World_" prefix.
+/// </summary>
 public class Worker : IWorker
 {
+  /// <summary>
+  ///   Executes a task asynchronously by processing the first expected result and sending it back with a "World_" prefix.
+  /// </summary>
+  /// <param name="taskHandler">The task handler containing task details and expected results.</param>
+  /// <param name="logger">The logger instance for recording execution information.</param>
+  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+  /// <returns>A task representing the asynchronous operation, containing a successful output.</returns>
+  /// <exception cref="InvalidOperationException">Thrown when no expected results are found (Single() fails).</exception>
   public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
                                          ILogger           logger,
                                          CancellationToken cancellationToken)
