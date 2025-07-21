@@ -179,9 +179,8 @@ public class LibraryWorker : ILibraryWorker
                         lastServiceKey_);
 
         // Async call to check health of the last loaded service
-        var serviceHealthResult = await Task.Run(() => lastLoadedService_.CheckHealth(cancellationToken),
-                                                 cancellationToken)
-                                            .ConfigureAwait(false);
+        var serviceHealthResult = await lastLoadedService_.CheckHealth(cancellationToken)
+                                                          .ConfigureAwait(false);
 
 
         if (!serviceHealthResult.IsHealthy)

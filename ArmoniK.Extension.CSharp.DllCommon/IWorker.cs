@@ -41,5 +41,5 @@ public interface IWorker
   ///   Checks the health of the component.
   /// </summary>
   /// <returns>True if the component is healthy, false otherwise.</returns>
-  HealthCheckResult CheckHealth(CancellationToken cancellationToken = default);
+  Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default);
 }
