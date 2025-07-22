@@ -21,7 +21,6 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Utils;
 
 using Microsoft.Extensions.Logging;
@@ -31,17 +30,17 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 /// <summary>
 ///   Class query provider that build the protobuf filtering structure
 /// </summary>
-internal abstract class ArmoniKQueryProvider<TPagination, TPage, TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> : IAsyncQueryProvider<TSource>
+internal abstract class ArmoniKQueryProvider<TService, TPagination, TPage, TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> : IAsyncQueryProvider<TSource>
   where TFilterOr : new()
   where TFilterAnd : new()
 {
-  protected readonly ILogger<IBlobService> logger_;
+  protected readonly ILogger<TService> logger_;
 
   /// <summary>
   ///   Create the query provider
   /// </summary>
   /// <param name="logger">The logger</param>
-  protected ArmoniKQueryProvider(ILogger<IBlobService> logger)
+  protected ArmoniKQueryProvider(ILogger<TService> logger)
     => logger_ = logger;
 
   public QueryExecution<TPagination, TPage, TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> QueryExecution { get; private set; }

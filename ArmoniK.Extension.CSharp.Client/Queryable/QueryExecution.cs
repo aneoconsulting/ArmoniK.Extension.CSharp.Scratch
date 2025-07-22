@@ -24,11 +24,11 @@ using System.Threading.Tasks;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField>
+internal abstract class QueryExecution<TPagination, TPage, TSource, TSortField, TFilterOr, TFilterAnd, TFilterField>
   where TFilterOr : new()
   where TFilterAnd : new()
 {
-  private QueryExpressionTreeVisitor<TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> visitor_;
+  private QueryExpressionTreeVisitor<TSource, TSortField, TFilterOr, TFilterAnd, TFilterField> visitor_;
 
   public Func<IAsyncEnumerable<TSource>, TSource?>? FuncReturnNullableTSource
     => visitor_.FuncReturnNullableTSource;
@@ -89,10 +89,10 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
   protected abstract Task<TPage> RequestInstances(TPagination       pagination,
                                                   CancellationToken cancellationToken);
 
-  protected abstract QueryExpressionTreeVisitor<TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> CreateQueryExpressionTreeVisitor();
+  protected abstract QueryExpressionTreeVisitor<TSource, TSortField, TFilterOr, TFilterAnd, TFilterField> CreateQueryExpressionTreeVisitor();
 
   protected abstract TPagination CreatePaginationInstance(TFilterOr  filter,
-                                                          TEnumField sortCriteria,
+                                                          TSortField sortCriteria,
                                                           bool       isAscending);
 
   protected abstract int                  GetTotalPageElements(TPage page);

@@ -23,7 +23,7 @@ using ArmoniK.Utils;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField>
+internal abstract class QueryExpressionTreeVisitor<TSource, TSortField, TFilterOr, TFilterAnd, TFilterField>
   where TFilterOr : new()
   where TFilterAnd : new()
 {
@@ -32,13 +32,13 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
 
   public TFilterOr Filters { get; private set; }
 
-  public TEnumField SortCriteria { get; protected set; }
+  public TSortField SortCriteria { get; protected set; }
 
   public bool IsSortAscending { get; protected set; }
 
-  protected abstract bool                                                                        IsWhereExpressionTreeVisitorInstantiated { get; }
-  protected abstract WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilterAnd, TFilterField> WhereExpressionTreeVisitor               { get; }
-  protected abstract OrderByExpressionTreeVisitor<TEnumField>                                    OrderByWhereExpressionTreeVisitor        { get; }
+  protected abstract bool                                                            IsWhereExpressionTreeVisitorInstantiated { get; }
+  protected abstract WhereExpressionTreeVisitor<TFilterOr, TFilterAnd, TFilterField> WhereExpressionTreeVisitor               { get; }
+  protected abstract OrderByExpressionTreeVisitor<TSortField>                        OrderByWhereExpressionTreeVisitor        { get; }
 
   public void VisitTree(Expression tree)
   {

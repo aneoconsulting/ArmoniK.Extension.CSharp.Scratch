@@ -112,7 +112,7 @@ public class BlobTests
     Assert.That(blobPage.TotalBlobCount,
                 Is.EqualTo(5));
     Assert.That(blobDetails,
-                Is.EqualTo(blobPage.Blobs[0]));
+                Is.EqualTo(blobPage.Blobs.First()));
   }
 
   [Test]

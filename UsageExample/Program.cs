@@ -92,24 +92,18 @@ internal class Program
 
     Console.WriteLine($"sessionId: {session.SessionId}");
 
-    var blobService = client.BlobService;
-
-    var tasksService = client.TasksService;
-
-    var eventsService = client.EventsService;
-
-    var payload = await blobService.CreateBlobAsync(session,
-                                                    "Payload",
-                                                    Encoding.ASCII.GetBytes("Hello"))
-                                   .ConfigureAwait(false);
+    var payload = await client.BlobService.CreateBlobAsync(session,
+                                                           "Payload",
+                                                           Encoding.ASCII.GetBytes("Hello"))
+                              .ConfigureAwait(false);
 
     Console.WriteLine($"payloadId: {payload.BlobId}");
 
-    var results = blobService.CreateBlobsMetadataAsync(session,
-                                                       new[]
-                                                       {
-                                                         "Result",
-                                                       });
+    var results = client.BlobService.CreateBlobsMetadataAsync(session,
+                                                              new[]
+                                                              {
+                                                                "Result",
+                                                              });
 
     var blobInfos = await results.ToListAsync()
                                  .ConfigureAwait(false);
@@ -119,12 +113,12 @@ internal class Program
     var content = await File.ReadAllBytesAsync(filePath)
                             .ConfigureAwait(false);
 
-    var dllBlob = await blobService.SendDllBlobAsync(session,
-                                                     dynamicLib,
-                                                     content,
-                                                     false,
-                                                     CancellationToken.None)
-                                   .ConfigureAwait(false);
+    var dllBlob = await client.BlobService.SendDllBlobAsync(session,
+                                                            dynamicLib,
+                                                            content,
+                                                            false,
+                                                            CancellationToken.None)
+                              .ConfigureAwait(false);
 
     Console.WriteLine($"resultId: {result.BlobId}");
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
@@ -135,34 +129,34 @@ internal class Program
                                                           "LibraryExample",
                                                           "Worker");
 
-    var task = await tasksService.SubmitTasksWithDllAsync(session,
-                                                          new List<TaskNodeExt>
-                                                          {
-                                                            new()
-                                                            {
-                                                              Payload = payload,
-                                                              ExpectedOutputs = new[]
-                                                                                {
-                                                                                  result,
-                                                                                },
-                                                              TaskOptions    = defaultTaskOptions,
-                                                              DynamicLibrary = taskLibraryDefinition,
-                                                            },
-                                                          },
-                                                          dllBlob,
-                                                          false,
-                                                          CancellationToken.None)
-                                 .ConfigureAwait(false);
+    var task = await client.TasksService.SubmitTasksWithDllAsync(session,
+                                                                 new List<TaskNodeExt>
+                                                                 {
+                                                                   new()
+                                                                   {
+                                                                     Payload = payload,
+                                                                     ExpectedOutputs = new[]
+                                                                                       {
+                                                                                         result,
+                                                                                       },
+                                                                     TaskOptions    = defaultTaskOptions,
+                                                                     DynamicLibrary = taskLibraryDefinition,
+                                                                   },
+                                                                 },
+                                                                 dllBlob,
+                                                                 false,
+                                                                 CancellationToken.None)
+                           .ConfigureAwait(false);
 
     Console.WriteLine($"taskId: {task.Single().TaskId}");
 
-    await eventsService.WaitForBlobsAsync(session,
-                                          new List<BlobInfo>([result]))
-                       .ConfigureAwait(false);
+    await client.EventsService.WaitForBlobsAsync(session,
+                                                 new List<BlobInfo>([result]))
+                .ConfigureAwait(false);
 
-    var download = await blobService.DownloadBlobAsync(result,
-                                                       CancellationToken.None)
-                                    .ConfigureAwait(false);
+    var download = await client.BlobService.DownloadBlobAsync(result,
+                                                              CancellationToken.None)
+                               .ConfigureAwait(false);
     var stringArray = Encoding.ASCII.GetString(download)
                               .Split(new[]
                                      {

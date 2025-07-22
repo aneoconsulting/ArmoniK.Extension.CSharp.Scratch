@@ -18,6 +18,7 @@ using System.Linq.Expressions;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Queryable;
+using ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
 using NUnit.Framework;
 

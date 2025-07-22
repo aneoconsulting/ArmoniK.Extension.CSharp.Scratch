@@ -603,9 +603,7 @@ public class TasksServiceTests
                               SortDirection = SortDirection.Asc,
                             };
 
-    var result = await client.TasksService.ListTasksDetailedAsync(new SessionInfo("sessionId1"),
-                                                                  paginationOptions)
-                             .FirstOrDefaultAsync()
+    var result = await client.TasksService.ListTasksDetailedAsync(paginationOptions)
                              .ConfigureAwait(false);
 
     Assert.That(result,

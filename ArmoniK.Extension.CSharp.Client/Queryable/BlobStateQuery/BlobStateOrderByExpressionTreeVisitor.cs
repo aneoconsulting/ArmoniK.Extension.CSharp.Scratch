@@ -22,9 +22,9 @@ using System.Linq.Expressions;
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
-namespace ArmoniK.Extension.CSharp.Client.Queryable;
+namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
-internal class BlobStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisitor<ResultRawEnumField>
+internal class BlobStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisitor<ResultField>
 {
   private static readonly Dictionary<string, ResultRawEnumField> memberName2EnumField_ = new()
                                                                                          {
@@ -60,14 +60,20 @@ internal class BlobStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisi
                                                                                            },
                                                                                          };
 
-  public override ResultRawEnumField Visit(LambdaExpression lambda)
+  public override ResultField Visit(LambdaExpression lambda)
   {
     if (lambda.Body is MemberExpression member)
     {
       if (memberName2EnumField_.TryGetValue(member.Member.Name,
                                             out var field))
       {
-        return field;
+        return new ResultField
+               {
+                 ResultRawField = new ResultRawField
+                                  {
+                                    Field = field,
+                                  },
+               };
       }
     }
 

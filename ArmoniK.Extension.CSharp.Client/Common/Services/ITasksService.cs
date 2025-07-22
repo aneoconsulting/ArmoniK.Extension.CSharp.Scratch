@@ -34,6 +34,12 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 public interface ITasksService
 {
   /// <summary>
+  ///   Get a queryable object on TaskState instances
+  /// </summary>
+  /// <returns>An IQueryable instance to apply Linq extensions methods on</returns>
+  IQueryable<TaskState> AsQueryable();
+
+  /// <summary>
   ///   Asynchronously submits a collection of tasks for a given session.
   /// </summary>
   /// <param name="session">The session information to which the tasks belong.</param>
@@ -67,13 +73,11 @@ public interface ITasksService
   /// <summary>
   ///   Asynchronously lists detailed task information based on session and pagination options.
   /// </summary>
-  /// <param name="session">The session information to which the tasks belong.</param>
   /// <param name="paginationOptions">The options for pagination, including page number, page size, and sorting.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>An asynchronous enumerable of detailed task pages.</returns>
-  IAsyncEnumerable<TaskDetailedPage> ListTasksDetailedAsync(SessionInfo       session,
-                                                            TaskPagination    paginationOptions,
-                                                            CancellationToken cancellationToken = default);
+  /// <returns>A task representing the asynchronous operation. The task result contains a task page.</returns>
+  Task<TaskDetailedPage> ListTasksDetailedAsync(TaskPagination    paginationOptions,
+                                                CancellationToken cancellationToken = default);
 
   /// <summary>
   ///   Asynchronously cancels a collection of tasks based on their identifiers.

@@ -22,17 +22,17 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 using Google.Protobuf.Collections;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilterAnd, TFilterField>
+internal abstract class WhereExpressionTreeVisitor<TFilterOr, TFilterAnd, TFilterField>
   where TFilterOr : new()
   where TFilterAnd : new()
 {
-  protected readonly Stack<Type>   ExpressionTypeStack = new();
-  protected readonly Stack<object> FilterStack         = new();
+  protected readonly Stack<(object, Type)> FilterStack = new();
 
   public void Visit(LambdaExpression lambda)
   {
@@ -44,12 +44,12 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
       HandleBoolExpression(ExpressionType.AndAlso);
     }
 
-    FilterStack.Push(CreateFilterFromStack());
+    FilterStack.Push((CreateFilterFromStack()!, typeof(bool)));
   }
 
   public TFilterOr GetFilterOrRootNode()
   {
-    var filters = (TFilterOr)FilterStack.Pop();
+    var (filters, _) = ((TFilterOr, Type))FilterStack.Pop();
     if (FilterStack.Any())
     {
       throw new InvalidOperationException("Internal error: analysis stack is in an inconsistent state");
@@ -61,7 +61,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
   private TFilterOr CreateFilterFromStack()
   {
     var orNode = new TFilterOr();
-    var filter = FilterStack.Pop();
+    var (filter, _) = FilterStack.Pop();
     if (filter is TFilterOr filterOr)
     {
       orNode = filterOr;
@@ -88,9 +88,9 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
   {
     if (node is MethodCallExpression call)
     {
-      var memberAccess = call.Object as MemberExpression;
-      var typeName     = call.Method.DeclaringType?.FullName ?? "";
-      if (call.Method.Name == nameof(string.StartsWith) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+      var hasParameterQualifier = call.Object!.IsLeftMostQualifierAParameter();
+      var typeName              = call.Method.DeclaringType?.FullName ?? "";
+      if (call.Method.Name == nameof(string.StartsWith) && typeName == "System.String" && hasParameterQualifier)
       {
         if (call.Arguments.Count != 1)
         {
@@ -103,7 +103,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
         return;
       }
 
-      if (call.Method.Name == nameof(string.EndsWith) && typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+      if (call.Method.Name == nameof(string.EndsWith) && typeName == "System.String" && hasParameterQualifier)
       {
         if (call.Arguments.Count != 1)
         {
@@ -118,7 +118,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
 
       if (call.Method.Name == nameof(string.Contains))
       {
-        if (typeName == "System.String" && memberAccess?.Expression.NodeType == ExpressionType.Parameter)
+        if (typeName == "System.String" && hasParameterQualifier)
         {
           if (call.Arguments.Count != 1)
           {
@@ -147,8 +147,29 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
         }
       }
 
+      if (call.Method.Name == "get_Item")
+      {
+        Visit(call.Object!);
+        Visit(call.Arguments[0]);
+        OnIndexerAccess();
+        return;
+      }
+
       // Evaluate the method
-      EvaluateExpression(call);
+      var result = call.EvaluateExpression();
+      if (result != null)
+      {
+        FilterStack.Push((result, result.GetType()));
+      }
+    }
+    else if (node is InvocationExpression invoke)
+    {
+      // Invocation of a delegate or lambda, let's evaluate it
+      var result = invoke.EvaluateExpression();
+      if (result != null)
+      {
+        FilterStack.Push((result, result.GetType()));
+      }
     }
     else if (node is ConstantExpression constant)
     {
@@ -176,7 +197,11 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
       }
       else
       {
-        EvaluateExpression(binary);
+        var result = binary.EvaluateExpression();
+        if (result != null)
+        {
+          FilterStack.Push((result, result.GetType()));
+        }
       }
     }
     else if (node is UnaryExpression unary)
@@ -184,8 +209,6 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
       if (unary.NodeType == ExpressionType.Convert)
       {
         Visit(unary.Operand);
-        ExpressionTypeStack.Pop();
-        ExpressionTypeStack.Push(unary.Operand.Type);
       }
       else if (unary.NodeType == ExpressionType.Not && LeftMostExpressionIsLambdaParameter(unary.Operand))
       {
@@ -194,89 +217,30 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
       }
       else
       {
-        EvaluateExpression(unary);
+        var result = unary.EvaluateExpression();
+        if (result != null)
+        {
+          FilterStack.Push((result, result.GetType()));
+        }
       }
     }
   }
 
-  private void EvaluateExpression(Expression expr)
-  {
-    Expression<Func<object>> lambda = null;
-    try
-    {
-      var objectExpr = Expression.Convert(expr,
-                                          typeof(object));
-      lambda = Expression.Lambda<Func<object>>(objectExpr);
-      var result = lambda.Compile()();
-      ExpressionTypeStack.Push(result.GetType());
-      FilterStack.Push(result);
-    }
-    catch (Exception ex)
-    {
-      throw new InvalidExpressionException("Invalid filter: could not evaluate method call " + lambda,
-                                           ex);
-    }
-  }
-
-  private static object? GetValueFromExpression(Expression expression)
-  {
-    switch (expression)
-    {
-      case MemberExpression memberExpr:
-        object? instance = null;
-
-        if (memberExpr.Expression is ConstantExpression constant)
-        {
-          instance = constant.Value;
-        }
-        else if (memberExpr.Expression != null)
-        {
-          instance = GetValueFromExpression(memberExpr.Expression);
-          if (instance == null)
-          {
-            return null;
-          }
-        }
-
-        if (memberExpr.Member is PropertyInfo propInfo)
-        {
-          return propInfo.GetValue(instance);
-        }
-
-        if (memberExpr.Member is FieldInfo fieldInfo)
-        {
-          return fieldInfo.GetValue(instance);
-        }
-
-        break;
-
-      case ConstantExpression constExpr:
-        return constExpr.Value;
-    }
-
-    return null;
-  }
-
-
   private void OnPropertyMemberAccess(MemberExpression member)
   {
-    Type memberType;
-
-    var val = GetValueFromExpression(member);
-    if (val != null)
+    if (member.IsLeftMostQualifierAParameter())
     {
-      ExpressionTypeStack.Push(val.GetType());
-      FilterStack.Push(val);
+      if (!PushProperty(member))
+      {
+        throw new InvalidOperationException("Unsupported filter expression on member " + member.Member.Name);
+      }
     }
     else
     {
-      TEnumField enumField;
-      if (TryGetFieldTypeFromName(member.Member.Name,
-                                  out memberType) && TryGetEnumFieldFromName(member.Member.Name,
-                                                                             out enumField))
+      var val = member.GetValueFromExpression();
+      if (val != null)
       {
-        ExpressionTypeStack.Push(memberType);
-        FilterStack.Push(enumField);
+        FilterStack.Push((val, val.GetType()));
       }
       else
       {
@@ -286,18 +250,14 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
   }
 
   private void OnConstant(ConstantExpression constant)
-  {
-    ExpressionTypeStack.Push(constant.Type);
-    FilterStack.Push(constant.Value);
-  }
+    => FilterStack.Push((constant.Value, constant.Type));
 
   private bool OnFieldAccess(MemberExpression member)
   {
-    var val = GetValueFromExpression(member);
+    var val = member.GetValueFromExpression();
     if (val != null)
     {
-      ExpressionTypeStack.Push(val.GetType());
-      FilterStack.Push(val);
+      FilterStack.Push((val, val.GetType()));
       return true;
     }
 
@@ -306,9 +266,12 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
 
   private void OnBinaryOperator(ExpressionType expressionType)
   {
-    var rhsType = ExpressionTypeStack.Pop();
-    var lhsType = ExpressionTypeStack.Pop();
-
+    var rhs     = FilterStack.Pop();
+    var lhs     = FilterStack.Pop();
+    var rhsType = rhs.Item2;
+    var lhsType = lhs.Item2;
+    FilterStack.Push(lhs);
+    FilterStack.Push(rhs);
     if (rhsType == typeof(bool))
     {
       HandleBoolExpression(expressionType);
@@ -317,9 +280,9 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
     {
       HandleStringExpression(expressionType);
     }
-    else if (rhsType == typeof(BlobStatus) || lhsType == typeof(BlobStatus))
+    else if (rhsType == typeof(BlobStatus) || lhsType == typeof(BlobStatus) || rhsType == typeof(TaskStatus) || lhsType == typeof(TaskStatus))
     {
-      HandleBlobStatusExpression(expressionType);
+      HandleStatusExpression(expressionType);
     }
     else if (rhsType == typeof(int))
     {
@@ -329,12 +292,14 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
     {
       HandleDateTimeExpression(expressionType);
     }
+    else if (rhsType == typeof(TimeSpan))
+    {
+      HandleTimeSpanExpression(expressionType);
+    }
     else
     {
       throw new InvalidOperationException("Invalid filter: Operands of expression type {rhsType.Name} are not supported.");
     }
-
-    ExpressionTypeStack.Push(typeof(bool));
   }
 
   private static Expression GetLeftMostExpression(BinaryExpression binaryExpression)
@@ -401,8 +366,8 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
 
   private void HandleBoolExpression(ExpressionType type)
   {
-    var rhsFilter = FilterStack.Pop();
-    var lhsFilter = FilterStack.Pop();
+    var (rhsFilter, _) = FilterStack.Pop();
+    var (lhsFilter, _) = FilterStack.Pop();
     switch (type)
     {
       case ExpressionType.OrElse:
@@ -417,14 +382,14 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(rhsAndFilter);
             }
 
-            FilterStack.Push(lhsOrFilter);
+            FilterStack.Push((lhsOrFilter, typeof(bool)));
           }
           else if (rhsFilter is TFilterAnd rhsAndFilter)
           {
             // <or expression> || <and expression>
             GetRepeatedFilterAnd(lhsOrFilter)
               .Add(rhsAndFilter);
-            FilterStack.Push(lhsOrFilter);
+            FilterStack.Push((lhsOrFilter, typeof(bool)));
           }
           else if (rhsFilter is TFilterField rhsFilterField)
           {
@@ -432,7 +397,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
             var andFilter = CreateFilterAnd(rhsFilterField);
             GetRepeatedFilterAnd(lhsOrFilter)
               .Add(andFilter);
-            FilterStack.Push(lhsOrFilter);
+            FilterStack.Push((lhsOrFilter, typeof(bool)));
           }
           else
           {
@@ -451,14 +416,14 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(rhsAndFilter);
             }
 
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter!, typeof(bool)));
           }
           else if (rhsFilter is TFilterAnd rhsAndFilter)
           {
             // <and expression> || <and expression>
             var orFilter = CreateFilterOr(lhsAndFilter,
                                           rhsAndFilter);
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter!, typeof(bool)));
           }
           else if (rhsFilter is TFilterField rhsFilterField)
           {
@@ -466,7 +431,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
             var andRhsFilter = CreateFilterAnd(rhsFilterField);
             var orFilter = CreateFilterOr(lhsAndFilter,
                                           andRhsFilter);
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter!, typeof(bool)));
           }
           else
           {
@@ -486,21 +451,21 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(rhsAndFilter);
             }
 
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter!, typeof(bool)));
           }
           else if (rhsFilter is TFilterAnd rhsAndFilter)
           {
             // <filter field> || <and expression>
             var orFilter = CreateFilterOr(CreateFilterAnd(lhsFilterField),
                                           rhsAndFilter);
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter!, typeof(bool)));
           }
           else if (rhsFilter is TFilterField rhsFilterField)
           {
             // <filter field> || <filter field>
             var orFilter = CreateFilterOr(CreateFilterAnd(lhsFilterField),
                                           CreateFilterAnd(rhsFilterField));
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter!, typeof(bool)));
           }
           else
           {
@@ -530,7 +495,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
               }
             }
 
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter, typeof(bool)));
           }
           else if (rhsFilter is TFilterAnd rhsAndFilter)
           {
@@ -551,7 +516,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(andFilter);
             }
 
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter, typeof(bool)));
           }
           else if (rhsFilter is TFilterField rhsFilterField)
           {
@@ -562,7 +527,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(rhsFilterField);
             }
 
-            FilterStack.Push(lhsOrFilter2);
+            FilterStack.Push((lhsOrFilter2, typeof(bool)));
           }
           else
           {
@@ -586,7 +551,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(andFilter);
             }
 
-            FilterStack.Push(orFilter);
+            FilterStack.Push((orFilter, typeof(bool)));
           }
           else if (rhsFilter is TFilterAnd rhsAndFilter)
           {
@@ -597,14 +562,14 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(rhsFilterField);
             }
 
-            FilterStack.Push(lhsAndFilter);
+            FilterStack.Push((lhsAndFilter, typeof(bool)));
           }
           else if (rhsFilter is TFilterField rhsFilterField)
           {
             // <and expression> && <filter field>
             GetRepeatedFilterField(lhsAndFilter)
               .Add(rhsFilterField);
-            FilterStack.Push(lhsAndFilter);
+            FilterStack.Push((lhsAndFilter, typeof(bool)));
           }
           else
           {
@@ -618,7 +583,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
             // <filter field> && <filter field>
             var andFilter = CreateFilterAnd(lhsFilterField,
                                             rhsFilterField);
-            FilterStack.Push(andFilter);
+            FilterStack.Push((andFilter!, typeof(bool)));
           }
           else
           {
@@ -632,10 +597,11 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
     }
   }
 
-  protected abstract void HandleStringExpression(ExpressionType     type);
-  protected abstract void HandleIntegerExpression(ExpressionType    type);
-  protected abstract void HandleDateTimeExpression(ExpressionType   type);
-  protected abstract void HandleBlobStatusExpression(ExpressionType type);
+  protected abstract void HandleStringExpression(ExpressionType   type);
+  protected abstract void HandleIntegerExpression(ExpressionType  type);
+  protected abstract void HandleDateTimeExpression(ExpressionType type);
+  protected abstract void HandleTimeSpanExpression(ExpressionType type);
+  protected abstract void HandleStatusExpression(ExpressionType   type);
 
   protected abstract void OnStringMethodOperator(MethodInfo method,
                                                  bool       notOp = false);
@@ -643,9 +609,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
   protected abstract void OnByteArrayMethodOperator(MethodInfo method,
                                                     bool       notOp = false);
 
-  protected abstract bool TryGetEnumFieldFromName(string         name,
-                                                  out TEnumField enumField);
+  protected abstract void OnIndexerAccess();
 
-  protected abstract bool TryGetFieldTypeFromName(string   name,
-                                                  out Type type);
+  protected abstract bool PushProperty(MemberExpression member);
 }

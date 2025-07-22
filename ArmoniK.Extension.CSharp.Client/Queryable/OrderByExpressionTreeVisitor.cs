@@ -18,7 +18,7 @@ using System.Linq.Expressions;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal abstract class OrderByExpressionTreeVisitor<TEnumField>
+internal abstract class OrderByExpressionTreeVisitor<TSortField>
 {
-  public abstract TEnumField Visit(LambdaExpression lambda);
+  public abstract TSortField Visit(LambdaExpression lambda);
 }

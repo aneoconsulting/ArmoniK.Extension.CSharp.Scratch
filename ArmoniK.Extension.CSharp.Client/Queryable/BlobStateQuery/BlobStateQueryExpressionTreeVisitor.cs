@@ -17,24 +17,30 @@
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
-namespace ArmoniK.Extension.CSharp.Client.Queryable;
+namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
-internal class BlobStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobState, ResultField, Filters, FiltersAnd, FilterField>
 {
-  private OrderByExpressionTreeVisitor<ResultRawEnumField>                                  orderByVisitor_;
-  private WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>? whereVisitor_;
+  private OrderByExpressionTreeVisitor<ResultField>?                    orderByVisitor_;
+  private WhereExpressionTreeVisitor<Filters, FiltersAnd, FilterField>? whereVisitor_;
 
   public BlobStateQueryExpressionTreeVisitor()
   {
     // By default the requests are ordered by BlobId in ascending order
-    SortCriteria    = ResultRawEnumField.ResultId;
+    SortCriteria = new ResultField
+                   {
+                     ResultRawField = new ResultRawField
+                                      {
+                                        Field = ResultRawEnumField.ResultId,
+                                      },
+                   };
     IsSortAscending = true;
   }
 
   protected override bool IsWhereExpressionTreeVisitorInstantiated
     => whereVisitor_ != null;
 
-  protected override WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField> WhereExpressionTreeVisitor
+  protected override WhereExpressionTreeVisitor<Filters, FiltersAnd, FilterField> WhereExpressionTreeVisitor
   {
     get
     {
@@ -43,7 +49,7 @@ internal class BlobStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<
     }
   }
 
-  protected override OrderByExpressionTreeVisitor<ResultRawEnumField> OrderByWhereExpressionTreeVisitor
+  protected override OrderByExpressionTreeVisitor<ResultField> OrderByWhereExpressionTreeVisitor
   {
     get
     {

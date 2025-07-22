@@ -28,6 +28,8 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Extension.CSharp.Client.Queryable;
+using ArmoniK.Extension.CSharp.Client.Queryable.TaskStateQuery;
 using ArmoniK.Utils;
 
 using Grpc.Core;
@@ -40,9 +42,10 @@ namespace ArmoniK.Extension.CSharp.Client.Services;
 
 public class TasksService : ITasksService
 {
-  private readonly IBlobService            blobService_;
-  private readonly ObjectPool<ChannelBase> channelPool_;
-  private readonly ILogger<TasksService>   logger_;
+  private readonly IBlobService                blobService_;
+  private readonly ObjectPool<ChannelBase>     channelPool_;
+  private readonly ILogger<TasksService>       logger_;
+  private readonly ArmoniKQueryable<TaskState> queryable_;
 
   /// <summary>
   ///   Creates an instance of <see cref="TasksService" /> using the specified GRPC channel, blob service, and an optional
@@ -61,7 +64,14 @@ public class TasksService : ITasksService
     channelPool_ = channel;
     logger_      = loggerFactory.CreateLogger<TasksService>();
     blobService_ = blobService;
+
+    var queryProvider = new TaskStateQueryProvider(this,
+                                                   logger_);
+    queryable_ = new ArmoniKQueryable<TaskState>(queryProvider);
   }
+
+  public IQueryable<TaskState> AsQueryable()
+    => queryable_;
 
   public async Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                              IEnumerable<TaskNode> taskNodes,
@@ -162,9 +172,28 @@ public class TasksService : ITasksService
     return tasks.Task.ToTaskState();
   }
 
-  public async IAsyncEnumerable<TaskDetailedPage> ListTasksDetailedAsync(SessionInfo                                session,
-                                                                         TaskPagination                             paginationOptions,
-                                                                         [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  public async Task<ICollection<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
+                                                             CancellationToken   cancellationToken = default)
+  {
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+
+    var tasksClient = new Tasks.TasksClient(channel);
+
+    var response = await tasksClient.CancelTasksAsync(new CancelTasksRequest
+                                                      {
+                                                        TaskIds =
+                                                        {
+                                                          taskIds,
+                                                        },
+                                                      })
+                                    .ConfigureAwait(false);
+    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState())
+                   .AsICollection();
+  }
+
+  public async Task<TaskDetailedPage> ListTasksDetailedAsync(TaskPagination                             paginationOptions,
+                                                             [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
@@ -184,31 +213,11 @@ public class TasksService : ITasksService
                                                          cancellationToken: cancellationToken)
                                  .ConfigureAwait(false);
 
-    yield return new TaskDetailedPage
-                 {
-                   TaskDetails = tasks.Tasks.Select(task => task.ToTaskState()),
-                   TotalTasks  = tasks.Total,
-                 };
-  }
-
-  public async Task<ICollection<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
-                                                             CancellationToken   cancellationToken = default)
-  {
-    await using var channel = await channelPool_.GetAsync(cancellationToken)
-                                                .ConfigureAwait(false);
-
-    var tasksClient = new Tasks.TasksClient(channel);
-
-    var response = await tasksClient.CancelTasksAsync(new CancelTasksRequest
-                                                      {
-                                                        TaskIds =
-                                                        {
-                                                          taskIds,
-                                                        },
-                                                      })
-                                    .ConfigureAwait(false);
-    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState())
-                   .AsICollection();
+    return new TaskDetailedPage
+           {
+             TaskDetails = tasks.Tasks.Select(task => task.ToTaskState()),
+             TotalTasks  = tasks.Total,
+           };
   }
 
   private async Task CreateNewBlobsAsync(SessionInfo           session,
