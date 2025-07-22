@@ -28,6 +28,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
+/// <summary>
+///   Specialisation of QueryExecution for queries on BlobState instances.
+/// </summary>
 internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage, BlobState, ResultField, Filters, FiltersAnd, FilterField>
 {
   private readonly IBlobService          blobService_;

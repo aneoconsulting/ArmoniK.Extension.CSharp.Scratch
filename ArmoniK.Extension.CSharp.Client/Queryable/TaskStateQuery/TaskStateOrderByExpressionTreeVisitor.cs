@@ -24,6 +24,9 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.TaskStateQuery;
 
+/// <summary>
+///   Specialisation of OrderByExpressionTreeVisitor for queries on TaskState instances.
+/// </summary>
 internal class TaskStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisitor<TaskField>
 {
   private static readonly Dictionary<string, TaskSummaryEnumField> memberName2EnumField_ = new()
@@ -69,6 +72,7 @@ internal class TaskStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisi
                                                                                                   },
                                                                                                 };
 
+  /// <inheritdoc />
   public override TaskField Visit(LambdaExpression lambda)
   {
     switch (lambda.Body)

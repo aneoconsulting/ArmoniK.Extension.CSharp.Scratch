@@ -21,8 +21,17 @@ using System.Reflection;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
+/// <summary>
+///   Class containing helper extension methods to work on Expressions Trees
+/// </summary>
 internal static class ExpressionTreeExt
 {
+  /// <summary>
+  ///   Checks that the leftmost element of a qualified expression is a parameter
+  ///   of the Expression Tree lambda.
+  /// </summary>
+  /// <param name="expression"></param>
+  /// <returns></returns>
   public static bool IsLeftMostQualifierAParameter(this Expression expression)
   {
     switch (expression)
@@ -46,6 +55,15 @@ internal static class ExpressionTreeExt
     }
   }
 
+  /// <summary>
+  ///   Evaluates an Expression Tree by compiling and invoking it.
+  /// </summary>
+  /// <param name="expr">The expression</param>
+  /// <returns>The result of the evaluation</returns>
+  /// <exception cref="InvalidExpressionException">
+  ///   When something went wrong during the evaluation,
+  ///   either during the compilation or the execution.
+  /// </exception>
   public static object? EvaluateExpression(this Expression expr)
   {
     Expression<Func<object>> lambda = null;
@@ -64,6 +82,11 @@ internal static class ExpressionTreeExt
     }
   }
 
+  /// <summary>
+  ///   Evaluates an Expression Tree that does not need compilation.
+  /// </summary>
+  /// <param name="expression">The expression</param>
+  /// <returns>The value described by the expression.</returns>
   public static object? GetValueFromExpression(this Expression expression)
   {
     switch (expression)

@@ -22,6 +22,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
+/// <summary>
+///   Specialisation of ArmoniKQueryProvider for queries on BlobState instances.
+/// </summary>
 internal class BlobStateQueryProvider : ArmoniKQueryProvider<IBlobService, BlobPagination, BlobPage, BlobState, ResultField, Filters, FiltersAnd, FilterField>
 {
   private readonly IBlobService blobService_;

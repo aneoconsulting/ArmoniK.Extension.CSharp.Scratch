@@ -19,6 +19,9 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
+/// <summary>
+///   Specialisation of QueryExpressionTreeVisitor for queries on BlobState instances.
+/// </summary>
 internal class BlobStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobState, ResultField, Filters, FiltersAnd, FilterField>
 {
   private OrderByExpressionTreeVisitor<ResultField>?                    orderByVisitor_;

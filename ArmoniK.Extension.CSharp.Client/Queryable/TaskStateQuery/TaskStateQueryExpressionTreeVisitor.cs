@@ -19,6 +19,9 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.TaskStateQuery;
 
+/// <summary>
+///   Specialisation of QueryExpressionTreeVisitor for queries on TaskState instances.
+/// </summary>
 internal class TaskStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<TaskState, TaskField, Filters, FiltersAnd, FilterField>
 {
   private OrderByExpressionTreeVisitor<TaskField>?                      orderByVisitor_;

@@ -24,6 +24,9 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
+/// <summary>
+///   Specialisation of OrderByExpressionTreeVisitor for queries on BlobState instances.
+/// </summary>
 internal class BlobStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisitor<ResultField>
 {
   private static readonly Dictionary<string, ResultRawEnumField> memberName2EnumField_ = new()
@@ -60,6 +63,7 @@ internal class BlobStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisi
                                                                                            },
                                                                                          };
 
+  /// <inheritdoc />
   public override ResultField Visit(LambdaExpression lambda)
   {
     if (lambda.Body is MemberExpression member)

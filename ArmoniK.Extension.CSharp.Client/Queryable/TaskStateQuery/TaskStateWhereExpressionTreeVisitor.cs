@@ -36,6 +36,9 @@ using Type = System.Type;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.TaskStateQuery;
 
+/// <summary>
+///   Specialisation of WhereExpressionTreeVisitor for queries on TaskState instances.
+/// </summary>
 internal class TaskStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<Filters, FiltersAnd, FilterField>
 {
   private static readonly Dictionary<string, TaskSummaryEnumField> memberName2EnumField_ = new()

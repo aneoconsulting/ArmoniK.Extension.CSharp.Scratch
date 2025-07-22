@@ -32,6 +32,9 @@ using FiltersAnd = ArmoniK.Api.gRPC.V1.Tasks.FiltersAnd;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.TaskStateQuery;
 
+/// <summary>
+///   Specialisation of QueryExecution for queries on TaskState instances.
+/// </summary>
 internal class TaskStateQueryExecution : QueryExecution<TaskPagination, TaskDetailedPage, TaskState, TaskField, Filters, FiltersAnd, FilterField>
 {
   private readonly ILogger<ITasksService> logger_;

@@ -31,6 +31,9 @@ using Type = System.Type;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
+/// <summary>
+///   Specialisation of WhereExpressionTreeVisitor for queries on BlobState instances.
+/// </summary>
 internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<Filters, FiltersAnd, FilterField>
 {
   private static readonly Dictionary<string, Type> memberName2Type_ = new()

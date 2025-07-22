@@ -28,12 +28,22 @@ using Google.Protobuf.Collections;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
+/// <summary>
+///   Visitor class of a lambda describing a filter.
+/// </summary>
+/// <typeparam name="TFilterOr">The type of logical OR nodes.</typeparam>
+/// <typeparam name="TFilterAnd">The type of logical AND nodes.</typeparam>
+/// <typeparam name="TFilterField">The type of instance node describing a filter on a single property.</typeparam>
 internal abstract class WhereExpressionTreeVisitor<TFilterOr, TFilterAnd, TFilterField>
   where TFilterOr : new()
   where TFilterAnd : new()
 {
   protected readonly Stack<(object, Type)> FilterStack = new();
 
+  /// <summary>
+  ///   Visit the lambda Expression Tree describing the filter.
+  /// </summary>
+  /// <param name="lambda">the lambda Expression Tree.</param>
   public void Visit(LambdaExpression lambda)
   {
     Visit(lambda.Body);
@@ -47,6 +57,14 @@ internal abstract class WhereExpressionTreeVisitor<TFilterOr, TFilterAnd, TFilte
     FilterStack.Push((CreateFilterFromStack()!, typeof(bool)));
   }
 
+  /// <summary>
+  ///   Get the resulting tree from the analysis stack.
+  /// </summary>
+  /// <returns>The root node of the tree.</returns>
+  /// <exception cref="InvalidOperationException">
+  ///   When the analysis stack is in an inconsistent state,
+  ///   which results from an invalid Expression Tree filter.
+  /// </exception>
   public TFilterOr GetFilterOrRootNode()
   {
     var (filters, _) = ((TFilterOr, Type))FilterStack.Pop();
