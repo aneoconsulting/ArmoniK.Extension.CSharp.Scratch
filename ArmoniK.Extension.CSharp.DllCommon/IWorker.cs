@@ -21,8 +21,18 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.DllCommon;
 
+/// <summary>
+///   Defines the contract for worker implementations that can execute tasks and perform health checks.
+/// </summary>
 public interface IWorker
 {
+  /// <summary>
+  ///   Executes a task asynchronously.
+  /// </summary>
+  /// <param name="taskHandler">The task handler containing task details and data.</param>
+  /// <param name="logger">The logger instance for recording execution information.</param>
+  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+  /// <returns>A task representing the asynchronous operation, containing the execution output.</returns>
   Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
                             ILogger           logger,
                             CancellationToken cancellationToken);

@@ -23,6 +23,15 @@ using ArmoniK.Utils;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
+/// <summary>
+///   Abstract base class for visiting and analyzing LINQ query expression trees.
+///   Converts LINQ expressions into filter and sort criteria for ArmoniK queries.
+/// </summary>
+/// <typeparam name="TSource">The source type being queried.</typeparam>
+/// <typeparam name="TSortField">The gRPC instance describing how to sort the result.</typeparam>
+/// <typeparam name="TFilterOr">The type representing OR filter operations.</typeparam>
+/// <typeparam name="TFilterAnd">The type representing AND filter operations.</typeparam>
+/// <typeparam name="TFilterField">The type representing individual field filters.</typeparam>
 internal abstract class QueryExpressionTreeVisitor<TSource, TSortField, TFilterOr, TFilterAnd, TFilterField>
   where TFilterOr : new()
   where TFilterAnd : new()
@@ -40,6 +49,10 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TSortField, TFilterO
   protected abstract WhereExpressionTreeVisitor<TFilterOr, TFilterAnd, TFilterField> WhereExpressionTreeVisitor               { get; }
   protected abstract OrderByExpressionTreeVisitor<TSortField>                        OrderByWhereExpressionTreeVisitor        { get; }
 
+  /// <summary>
+  ///   Visits and analyzes the provided expression tree.
+  /// </summary>
+  /// <param name="tree">The expression tree to analyze.</param>
   public void VisitTree(Expression tree)
   {
     VisitTreeInternal(tree);
