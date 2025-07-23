@@ -18,6 +18,7 @@ using ArmoniK.Api.Common.Channel.Utils;
 using ArmoniK.Api.Common.Options;
 using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Api.gRPC.V1.Worker;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Worker;
 
@@ -111,5 +112,25 @@ public class ComputerService : WorkerStreamWrapper
     }
 
     return output;
+  }
+
+  /// <summary>
+  ///   Checks the health of the service.
+  /// </summary>
+  /// <param name="request"></param>
+  /// <param name="context"></param>
+  /// <returns></returns>
+  public override async Task<HealthCheckReply> HealthCheck(Empty             request,
+                                                           ServerCallContext context)
+  {
+    var isHealthy = await ServiceRequestContext.LibraryWorker.CheckHealth(context.CancellationToken)
+                                               .ConfigureAwait(false);
+
+    return new HealthCheckReply
+           {
+             Status = isHealthy.IsHealthy
+                        ? HealthCheckReply.Types.ServingStatus.Serving
+                        : HealthCheckReply.Types.ServingStatus.NotServing,
+           };
   }
 }
