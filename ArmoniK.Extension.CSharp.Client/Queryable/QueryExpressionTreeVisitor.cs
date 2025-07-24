@@ -28,26 +28,41 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 ///   Converts LINQ expressions into filter and sort criteria for ArmoniK queries.
 /// </summary>
 /// <typeparam name="TSource">The source type being queried.</typeparam>
-/// <typeparam name="TEnumField">The enumeration type for field identifiers.</typeparam>
+/// <typeparam name="TSortField">The protobuf instance describing how to sort the result.</typeparam>
 /// <typeparam name="TFilterOr">The type representing OR filter operations.</typeparam>
 /// <typeparam name="TFilterAnd">The type representing AND filter operations.</typeparam>
 /// <typeparam name="TFilterField">The type representing individual field filters.</typeparam>
-internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField>
+internal abstract class QueryExpressionTreeVisitor<TSource, TSortField, TFilterOr, TFilterAnd, TFilterField>
   where TFilterOr : new()
   where TFilterAnd : new()
 {
+  /// <summary>
+  ///   Not null when an extension method retuning TSource? has been applied
+  ///   on the IQueryable instance.
+  /// </summary>
   public Func<IAsyncEnumerable<TSource>, TSource?>? FuncReturnNullableTSource { get; private set; }
-  public Func<IAsyncEnumerable<TSource>, TSource>?  FuncReturnTSource         { get; private set; }
 
+  /// <summary>
+  ///   Not null when an extension method retuning TSource has been applied
+  ///   on the IQueryable instance.
+  /// </summary>
+  public Func<IAsyncEnumerable<TSource>, TSource>? FuncReturnTSource { get; private set; }
+
+  /// <summary>
+  ///   The root node of the filter expression built by the translation of the Expression Tree
+  /// </summary>
   public TFilterOr Filters { get; private set; }
 
-  public TEnumField SortCriteria { get; protected set; }
+  /// <summary>
+  ///   The instance describing how to sort the results of the query.
+  /// </summary>
+  public TSortField SortCriteria { get; protected set; }
 
   public bool IsSortAscending { get; protected set; }
 
-  protected abstract bool                                                                        IsWhereExpressionTreeVisitorInstantiated { get; }
-  protected abstract WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilterAnd, TFilterField> WhereExpressionTreeVisitor               { get; }
-  protected abstract OrderByExpressionTreeVisitor<TEnumField>                                    OrderByWhereExpressionTreeVisitor        { get; }
+  protected abstract bool                                                            IsWhereExpressionTreeVisitorInstantiated { get; }
+  protected abstract WhereExpressionTreeVisitor<TFilterOr, TFilterAnd, TFilterField> WhereExpressionTreeVisitor               { get; }
+  protected abstract OrderByExpressionTreeVisitor<TSortField>                        OrderByWhereExpressionTreeVisitor        { get; }
 
   /// <summary>
   ///   Visits and analyzes the provided expression tree.

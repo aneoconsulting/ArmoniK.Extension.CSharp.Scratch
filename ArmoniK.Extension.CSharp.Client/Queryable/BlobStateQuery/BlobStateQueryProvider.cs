@@ -20,9 +20,12 @@ using ArmoniK.Extension.CSharp.Client.Common.Services;
 
 using Microsoft.Extensions.Logging;
 
-namespace ArmoniK.Extension.CSharp.Client.Queryable;
+namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
-internal class BlobStateQueryProvider : ArmoniKQueryProvider<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+/// <summary>
+///   Specialisation of ArmoniKQueryProvider for queries on BlobState instances.
+/// </summary>
+internal class BlobStateQueryProvider : ArmoniKQueryProvider<IBlobService, BlobPagination, BlobPage, BlobState, ResultField, Filters, FiltersAnd, FilterField>
 {
   private readonly IBlobService blobService_;
 
@@ -31,7 +34,7 @@ internal class BlobStateQueryProvider : ArmoniKQueryProvider<BlobPagination, Blo
     : base(logger)
     => blobService_ = service;
 
-  protected override QueryExecution<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField> CreateQueryExecution()
+  protected override QueryExecution<BlobPagination, BlobPage, BlobState, ResultField, Filters, FiltersAnd, FilterField> CreateQueryExecution()
     => new BlobStateQueryExecution(blobService_,
                                    logger_);
 }

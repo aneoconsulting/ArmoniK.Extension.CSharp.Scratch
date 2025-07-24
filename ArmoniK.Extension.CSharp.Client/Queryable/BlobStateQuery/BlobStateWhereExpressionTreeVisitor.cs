@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -28,9 +29,12 @@ using Google.Protobuf.WellKnownTypes;
 
 using Type = System.Type;
 
-namespace ArmoniK.Extension.CSharp.Client.Queryable;
+namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
-internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>
+/// <summary>
+///   Specialisation of WhereExpressionTreeVisitor for queries on BlobState instances.
+/// </summary>
+internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<Filters, FiltersAnd, FilterField>
 {
   private static readonly Dictionary<string, Type> memberName2Type_ = new()
                                                                       {
@@ -120,16 +124,21 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
   protected override RepeatedField<FilterField> GetRepeatedFilterField(FiltersAnd and)
     => and.And;
 
-  protected override bool TryGetEnumFieldFromName(string                 name,
-                                                  out ResultRawEnumField enumField)
-    => memberName2EnumField_.TryGetValue(name,
-                                         out enumField);
+  protected override bool PushProperty(MemberExpression member)
+  {
+    if (memberName2Type_.TryGetValue(member.Member.Name,
+                                     out var memberType) && memberName2EnumField_.TryGetValue(member.Member.Name,
+                                                                                              out var enumField))
+    {
+      FilterStack.Push((enumField, memberType));
+      return true;
+    }
 
-  protected override bool TryGetFieldTypeFromName(string   name,
-                                                  out Type type)
-    => memberName2Type_.TryGetValue(name,
-                                    out type);
+    return false;
+  }
 
+  protected override void OnIndexerAccess()
+    => throw new InvalidExpressionException("Invalid filter expression.");
 
   protected override void HandleStringExpression(ExpressionType type)
   {
@@ -154,8 +163,8 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
     var filterField = new FilterField();
     var fieldCount  = 0;
     var constCount  = 0;
-    var rhsFilter   = FilterStack.Pop();
-    var lhsFilter   = FilterStack.Pop();
+    var (rhsFilter, _) = FilterStack.Pop();
+    var (lhsFilter, _) = FilterStack.Pop();
     if (lhsFilter is ResultRawEnumField lhsFilterField)
     {
       // Left hand side is the property
@@ -216,7 +225,7 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
       throw new InvalidOperationException("Invalid filter expression.");
     }
 
-    FilterStack.Push(filterField);
+    FilterStack.Push((filterField, typeof(bool)));
   }
 
   protected override void HandleIntegerExpression(ExpressionType type)
@@ -249,8 +258,8 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
 
     var fieldCount = 0;
     var constCount = 0;
-    var rhsFilter  = FilterStack.Pop();
-    var lhsFilter  = FilterStack.Pop();
+    var (rhsFilter, _) = FilterStack.Pop();
+    var (lhsFilter, _) = FilterStack.Pop();
     if (lhsFilter is ResultRawEnumField lhsFilterField)
     {
       // Left hand side is the property
@@ -297,7 +306,7 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
       throw new InvalidOperationException("Invalid filter expression.");
     }
 
-    FilterStack.Push(filterField);
+    FilterStack.Push((filterField, typeof(bool)));
   }
 
   protected override void HandleDateTimeExpression(ExpressionType type)
@@ -330,8 +339,8 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
 
     var fieldCount = 0;
     var constCount = 0;
-    var rhsFilter  = FilterStack.Pop();
-    var lhsFilter  = FilterStack.Pop();
+    var (rhsFilter, _) = FilterStack.Pop();
+    var (lhsFilter, _) = FilterStack.Pop();
     if (lhsFilter is ResultRawEnumField lhsFilterField)
     {
       // Left hand side is the property
@@ -380,10 +389,14 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
       throw new InvalidOperationException("Invalid filter expression.");
     }
 
-    FilterStack.Push(filterField);
+    FilterStack.Push((filterField, typeof(bool)));
   }
 
-  protected override void HandleBlobStatusExpression(ExpressionType type)
+  protected override void HandleTimeSpanExpression(ExpressionType type)
+    // Should never happen
+    => throw new InvalidOperationException("Internal error: TimeSpan expression unexpected in a BlobState filter");
+
+  protected override void HandleStatusExpression(ExpressionType type)
   {
     var filterField = new FilterField();
     var filter      = new FilterStatus();
@@ -401,8 +414,8 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
 
     var fieldCount = 0;
     var constCount = 0;
-    var rhsFilter  = FilterStack.Pop();
-    var lhsFilter  = FilterStack.Pop();
+    var (rhsFilter, _) = FilterStack.Pop();
+    var (lhsFilter, _) = FilterStack.Pop();
     if (lhsFilter is ResultRawEnumField lhsFilterField)
     {
       // Left hand side is the property
@@ -462,7 +475,7 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
       throw new InvalidOperationException("Invalid filter expression.");
     }
 
-    FilterStack.Push(filterField);
+    FilterStack.Push((filterField, typeof(bool)));
   }
 
   protected override void OnStringMethodOperator(MethodInfo method,
@@ -502,7 +515,7 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
     var filter = new FilterArray();
     switch (method.Name)
     {
-      case "Contains":
+      case nameof(string.Contains):
         if (notOp)
         {
           filter.Operator = FilterArrayOperator.NotContains;
@@ -524,8 +537,8 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
     var filterField = new FilterField();
     var fieldCount  = 0;
     var constCount  = 0;
-    var rhsFilter   = FilterStack.Pop();
-    var lhsFilter   = FilterStack.Pop();
+    var (rhsFilter, _) = FilterStack.Pop();
+    var (lhsFilter, _) = FilterStack.Pop();
     if (lhsFilter is ResultRawEnumField lhsFilterField)
     {
       // Left hand side is the property
@@ -572,6 +585,6 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
       throw new InvalidOperationException("Invalid filter expression.");
     }
 
-    FilterStack.Push(filterField);
+    FilterStack.Push((filterField, typeof(bool)));
   }
 }

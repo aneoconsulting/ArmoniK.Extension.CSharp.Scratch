@@ -42,8 +42,8 @@ public record TaskState : TaskInfos
   /// <param name="startedAt">The start time of the task.</param>
   /// <param name="status">The status of the task.</param>
   public TaskState(DateTime   createAt,
-                   DateTime   endedAt,
-                   DateTime   startedAt,
+                   DateTime?  endedAt,
+                   DateTime?  startedAt,
                    TaskStatus status)
   {
     CreateAt  = createAt;
@@ -239,8 +239,8 @@ public static class TaskStateExt
          TaskId           = taskDetailed.Id,
          Status           = taskDetailed.Status.ToInternalStatus(),
          CreateAt         = taskDetailed.CreatedAt.ToDateTime(),
-         StartedAt        = taskDetailed.StartedAt.ToDateTime(),
-         EndedAt          = taskDetailed.EndedAt.ToDateTime(),
+         StartedAt        = taskDetailed.StartedAt?.ToDateTime(),
+         EndedAt          = taskDetailed.EndedAt?.ToDateTime(),
          SessionId        = taskDetailed.SessionId,
          PayloadId        = taskDetailed.PayloadId,
        };
@@ -256,8 +256,8 @@ public static class TaskStateExt
          TaskId    = taskSummary.Id,
          Status    = taskSummary.Status.ToInternalStatus(),
          CreateAt  = taskSummary.CreatedAt.ToDateTime(),
-         StartedAt = taskSummary.StartedAt.ToDateTime(),
-         EndedAt   = taskSummary.EndedAt.ToDateTime(),
+         StartedAt = taskSummary.StartedAt?.ToDateTime(),
+         EndedAt   = taskSummary.EndedAt?.ToDateTime(),
          SessionId = taskSummary.SessionId,
          PayloadId = taskSummary.PayloadId,
        };

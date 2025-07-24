@@ -19,8 +19,17 @@ using System.Linq;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
+/// <summary>
+///   Contains methods to extend IQueryable interface.
+/// </summary>
 public static class QueryableExt
 {
+  /// <summary>
+  ///   Convert an IQueryable to IAsyncEnumerable
+  /// </summary>
+  /// <typeparam name="T">The type of instances requested</typeparam>
+  /// <param name="queryable">The IQueryable instance</param>
+  /// <returns>The IAsyncEnumerable instance.</returns>
   public static IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IQueryable<T> queryable)
     => queryable as IAsyncEnumerable<T> ?? queryable.ToAsyncEnumerable();
 }

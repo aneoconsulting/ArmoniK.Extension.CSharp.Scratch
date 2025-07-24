@@ -35,9 +35,9 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 public interface IBlobService
 {
   /// <summary>
-  ///   Get a queryable object to filter and order BlobState instances
+  ///   Get a queryable object on BlobState instances
   /// </summary>
-  /// <returns>An IQueryable instance to apply Linq methods on</returns>
+  /// <returns>An IQueryable instance to apply Linq extensions methods on</returns>
   IQueryable<BlobState> AsQueryable();
 
   /// <summary>
@@ -125,7 +125,7 @@ public interface IBlobService
   /// </summary>
   /// <param name="blobPagination">The options for pagination, including page number, page size, and sorting.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>An asynchronous enumerable of blob pages.</returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains a blob page.</returns>
   Task<BlobPage> ListBlobsAsync(BlobPagination    blobPagination,
                                 CancellationToken cancellationToken = default);
 
@@ -231,9 +231,9 @@ public static class BlobServiceExt
       page = await blobService.ListBlobsAsync(blobPagination,
                                               cancellationToken)
                               .ConfigureAwait(false);
-      total += page.Blobs.Length;
       foreach (var blobState in page.Blobs)
       {
+        total++;
         yield return blobState;
       }
 

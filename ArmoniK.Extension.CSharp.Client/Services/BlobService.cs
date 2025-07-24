@@ -29,6 +29,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Queryable;
+using ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 using ArmoniK.Utils;
 
 using Google.Protobuf;
@@ -299,8 +300,7 @@ public class BlobService : IBlobService
            {
              TotalBlobCount = listResultsResponse.Total,
              PageOrder      = blobPagination.Page,
-             Blobs = listResultsResponse.Results.Select(result => result.ToBlobState())
-                                        .ToArray(),
+             Blobs          = listResultsResponse.Results.Select(result => result.ToBlobState()),
            };
   }
 

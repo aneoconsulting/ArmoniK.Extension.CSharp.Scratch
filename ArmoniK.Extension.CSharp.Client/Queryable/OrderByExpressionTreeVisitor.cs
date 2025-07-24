@@ -18,7 +18,17 @@ using System.Linq.Expressions;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
-internal abstract class OrderByExpressionTreeVisitor<TEnumField>
+/// <summary>
+///   Class in charge of the construction of the protobuf instance that describe how the
+///   results of a query should be sorted.
+/// </summary>
+/// <typeparam name="TSortField">The type of the protobuf instance</typeparam>
+internal abstract class OrderByExpressionTreeVisitor<TSortField>
 {
-  public abstract TEnumField Visit(LambdaExpression lambda);
+  /// <summary>
+  ///   Visit the Expression Tree passed as parameter to the OrderBy() extension method.
+  /// </summary>
+  /// <param name="lambda">The Expression Tree of the lambda</param>
+  /// <returns>The protobuf instance.</returns>
+  public abstract TSortField Visit(LambdaExpression lambda);
 }

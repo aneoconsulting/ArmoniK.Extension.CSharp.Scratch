@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,9 +26,12 @@ using ArmoniK.Extension.CSharp.Client.Common.Services;
 
 using Microsoft.Extensions.Logging;
 
-namespace ArmoniK.Extension.CSharp.Client.Queryable;
+namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobStateQuery;
 
-internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+/// <summary>
+///   Specialisation of QueryExecution for queries on BlobState instances.
+/// </summary>
+internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage, BlobState, ResultField, Filters, FiltersAnd, FilterField>
 {
   private readonly IBlobService          blobService_;
   private readonly ILogger<IBlobService> logger_;
@@ -53,12 +57,12 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
                              .ConfigureAwait(false);
   }
 
-  protected override QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField> CreateQueryExpressionTreeVisitor()
+  protected override QueryExpressionTreeVisitor<BlobState, ResultField, Filters, FiltersAnd, FilterField> CreateQueryExpressionTreeVisitor()
     => new BlobStateQueryExpressionTreeVisitor();
 
-  protected override BlobPagination CreatePaginationInstance(Filters            filter,
-                                                             ResultRawEnumField sortCriteria,
-                                                             bool               isAscending)
+  protected override BlobPagination CreatePaginationInstance(Filters     filter,
+                                                             ResultField sortCriteria,
+                                                             bool        isAscending)
     => new()
        {
          Filter   = filter,
@@ -67,18 +71,12 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
          SortDirection = isAscending
                            ? SortDirection.Asc
                            : SortDirection.Desc,
-         SortField = new ResultField
-                     {
-                       ResultRawField = new ResultRawField
-                                        {
-                                          Field = sortCriteria,
-                                        },
-                     },
+         SortField = sortCriteria,
        };
 
   protected override int GetTotalPageElements(BlobPage page)
     => page.TotalBlobCount;
 
-  protected override BlobState[] GetPageElements(BlobPage page)
+  protected override IEnumerable<BlobState> GetPageElements(BlobPage page)
     => page.Blobs;
 }
