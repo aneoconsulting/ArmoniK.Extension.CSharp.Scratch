@@ -28,7 +28,7 @@ namespace ArmoniK.Extension.CSharp.Client.Handles;
 ///   Provides methods for handling operations related to blobs, such as retrieving state, downloading, and uploading
 ///   blob data.
 /// </summary>
-public class BlobHandle
+public partial class BlobHandle
 {
   /// <summary>
   ///   The ArmoniK client used for performing blob operations.

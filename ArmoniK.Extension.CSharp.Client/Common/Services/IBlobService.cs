@@ -26,6 +26,8 @@ using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Client.Handles;
+using ArmoniK.Extension.CSharp.Generators;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 
@@ -87,6 +89,7 @@ public interface IBlobService
   /// <param name="blobInfo">The information of the blob to download.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the blob content as a byte array.</returns>
+  [HandleMethod(HandleType = typeof(BlobHandle))]
   Task<byte[]> DownloadBlobAsync(BlobInfo          blobInfo,
                                  CancellationToken cancellationToken = default);
 
