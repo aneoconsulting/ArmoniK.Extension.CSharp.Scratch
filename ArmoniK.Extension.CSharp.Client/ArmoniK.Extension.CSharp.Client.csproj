@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-  <InternalsVisibleTo Include="Tests" />
+    <InternalsVisibleTo Include="Tests" />
     <PackageReference Include="ArmoniK.Api.Client" Version="3.26.0" />
     <PackageReference Include="IsExternalInit" Version="1.0.3">
       <PrivateAssets>all</PrivateAssets>
@@ -26,5 +26,15 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="protobuf-net" Version="3.2.52" />
   </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\ArmoniK.Extension.CSharp.Generators\ArmoniK.Extension.CSharp.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Debug generated code -->
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
 
 </Project>
