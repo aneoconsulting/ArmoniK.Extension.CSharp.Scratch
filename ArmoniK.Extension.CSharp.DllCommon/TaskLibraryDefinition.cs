@@ -77,6 +77,8 @@ public static class TaskLibraryDefinitionExt
                                   dynamicLibrary.Namespace);
     taskConfiguration.Options.Add($"{dynamicLibrary}.Service",
                                   dynamicLibrary.Service);
+    taskConfiguration.Options.Add("ServiceLibrary",
+                                  dynamicLibrary.ToString());
     return taskConfiguration;
   }
 

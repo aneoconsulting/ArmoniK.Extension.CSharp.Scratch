@@ -101,8 +101,6 @@ public static class ArmoniKServicesExt
                                    x.TaskOptions.Options.Remove(dllBlob.BlobName);
 
                                    x.TaskOptions.AddTaskLibraryDefinition(x.DynamicLibrary);
-                                   x.TaskOptions.Options.Add("ServiceLibrary",
-                                                             x.DynamicLibrary.ToString());
                                    return x;
                                  });
 
