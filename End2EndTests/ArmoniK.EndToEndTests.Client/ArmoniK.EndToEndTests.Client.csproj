@@ -12,8 +12,6 @@
     <PublishDir>../publish/$(MSBuildProjectName)/$(Version)/</PublishDir>
     <PublishUrl>../publish/$(MSBuildProjectName)/$(Version)/</PublishUrl>
     <IsPackable>false</IsPackable>
-    <OutputType>Exe</OutputType>
-    <StartupObject>ArmoniK.EndToEndTests.Client.Program</StartupObject>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
@@ -43,8 +41,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.Client.DllHelper\ArmoniK.Extension.CSharp.Client.DllHelper.csproj" />
-    <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.DllCommon\ArmoniK.Extension.CSharp.DllCommon.csproj" />
-    <ProjectReference Include="..\ArmoniK.EndToEndTests.Common\ArmoniK.EndToEndTests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

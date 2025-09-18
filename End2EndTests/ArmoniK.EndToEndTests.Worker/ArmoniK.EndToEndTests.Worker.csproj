@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.DllWorker\ArmoniK.Extension.CSharp.DllWorker.csproj" />
-    <ProjectReference Include="..\ArmoniK.EndToEndTests.Common\ArmoniK.EndToEndTests.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
