@@ -37,12 +37,6 @@ $deployment = $(wsl kubectl -n armonik get deployments/compute-plane-default -o 
 $sharedVolume = $deployment.spec.template.spec.volumes | Where-Object { $_.name -eq "shared-volume" }
 $destinationPath = $sharedVolume.hostPath.path
 
-# Deploy the worker
-Write-Host ""
-Write-Host "Deploying $zipPath to WSL $destinationPath"
-Copy-Item $zipPath -Destination "\\wsl$\$wslDistrib\home\$wslUser"
-wsl -e bash -c "cd ~ && mv $zipName $destinationPath"
-
 # Get the url of the control plane and set it in appSettings.json of the client
 Write-Host "Fetching the control plane url"
 $localhostPath = (wsl dirname $destinationPath)
@@ -62,7 +56,3 @@ catch{
 $url = $appSettings.Grpc.EndPoint
 Write-Host "Set control plane url $url to $appSettingsPath"
 $appSettings | ConvertTo-Json -Depth 4 | Out-File $appSettingsPath
-
-# Restart computeplane pods
-Write-Host "Restarting compute plane pods"
-wsl kubectl -n armonik delete pod -l partition=default

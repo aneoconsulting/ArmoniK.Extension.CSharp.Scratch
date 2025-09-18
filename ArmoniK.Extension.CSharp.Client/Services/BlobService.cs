@@ -43,10 +43,10 @@ namespace ArmoniK.Extension.CSharp.Client.Services;
 
 public class BlobService : IBlobService
 {
-  private readonly ObjectPool<ChannelBase>             channelPool_;
-  private readonly ILogger<BlobService>                logger_;
-  private readonly ArmoniKQueryable<BlobState>         queryable_;
-  private          ResultsServiceConfigurationResponse serviceConfiguration_;
+  private readonly ObjectPool<ChannelBase>              channelPool_;
+  private readonly ILogger<BlobService>                 logger_;
+  private readonly ArmoniKQueryable<BlobState>          queryable_;
+  private          ResultsServiceConfigurationResponse? serviceConfiguration_;
 
   /// <summary>
   ///   Creates an instance of <see cref="BlobService" /> using the specified GRPC channel and an optional logger factory.
@@ -202,20 +202,18 @@ public class BlobService : IBlobService
     if (serviceConfiguration_ != null && content.Length > serviceConfiguration_.DataChunkMaxSize)
     {
       var blobInfo = CreateBlobsMetadataAsync(session,
-                                              new[]
-                                              {
-                                                name,
-                                              },
+                                              [name],
                                               manualDeletion,
                                               cancellationToken);
       var createdBlobs = await blobInfo.ToListAsync(cancellationToken)
                                        .ConfigureAwait(false);
-      await UploadBlobAsync(createdBlobs.First(),
+      var blob = createdBlobs.First();
+      await UploadBlobAsync(blob,
                             content,
                             blobClient,
                             cancellationToken)
         .ConfigureAwait(false);
-      return createdBlobs.First();
+      return blob;
     }
 
     var blobCreationResponse = await blobClient.CreateResultsAsync(new CreateResultsRequest

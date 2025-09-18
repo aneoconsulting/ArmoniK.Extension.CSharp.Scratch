@@ -17,11 +17,9 @@
 using System.Text;
 
 using ArmoniK.Api.gRPC.V1;
-using ArmoniK.Api.gRPC.V1.Agent;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.DllCommon;
-
-using Google.Protobuf;
+using ArmoniK.Utils;
 
 using Microsoft.Extensions.Logging;
 
@@ -39,12 +37,10 @@ public class PriorityWorker : IWorker
       var strResult = $"Payload is {priority} and TaskOptions.Priority is {taskHandler.TaskOptions.Priority}";
 
       var name = taskHandler.ExpectedResults.Single();
-      var result = new CreateResultsRequest.Types.ResultCreate
-                   {
-                     Name = name,
-                     Data = ByteString.CopyFrom(Encoding.ASCII.GetBytes(strResult)),
-                   };
-      await taskHandler.CreateResultsAsync([result]);
+      logger.LogInformation($"Sending result: {strResult}. Task Id: {taskHandler.TaskId}");
+      taskHandler.SendResult(name,
+                             Encoding.ASCII.GetBytes(strResult))
+                 .WaitSync();
       return new Output
              {
                Ok = new Empty(),

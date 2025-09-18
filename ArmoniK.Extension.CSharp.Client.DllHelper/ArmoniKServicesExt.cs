@@ -32,7 +32,7 @@ public static class ArmoniKServicesExt
   ///   Creates a session and returns <see cref="SessionInfo" />, the session information.
   /// </summary>
   /// <param name="sessionService">An instance of session service.</param>
-  /// <param name="partitionIds">PartitionIds on the </param>
+  /// <param name="partitionIds">Partitions related to the opened session</param>
   /// <param name="dynamicLibraries">A collection of dynamic libraries that the session will handle.</param>
   /// <param name="taskOptions">Default taskOptions of the session</param>
   /// <returns>
@@ -70,11 +70,43 @@ public static class ArmoniKServicesExt
                                                      content,
                                                      manualDeletion,
                                                      cancellationToken);
+    dynamicLibrary.LibraryBlobId = blobInfo.BlobId;
     return new DllBlob(dynamicLibrary)
            {
              BlobId    = blobInfo.BlobId,
              SessionId = session.SessionId,
            };
+  }
+
+  /// <summary>
+  ///   Asynchronously sends a dynamic library blob to a blob service
+  /// </summary>
+  /// <param name="blobService">The blob service to use for uploading the library.</param>
+  /// <param name="session">The session information associated with the blob upload.</param>
+  /// <param name="dynamicLibrary">The dynamic library related to the blob being sent.</param>
+  /// <param name="zipPath">File path to the zipped library.</param>
+  /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>
+  ///   The created <see cref="DllBlob" /> instance with relevant identifiers.
+  /// </returns>
+  public static async Task<DllBlob> SendDllBlobAsync(this IBlobService blobService,
+                                                     SessionInfo       session,
+                                                     DynamicLibrary    dynamicLibrary,
+                                                     string            zipPath,
+                                                     bool              manualDeletion,
+                                                     CancellationToken cancellationToken)
+  {
+    var content = await File.ReadAllBytesAsync(zipPath,
+                                               cancellationToken)
+                            .ConfigureAwait(false);
+    return await SendDllBlobAsync(blobService,
+                                  session,
+                                  dynamicLibrary,
+                                  content,
+                                  manualDeletion,
+                                  cancellationToken)
+             .ConfigureAwait(false);
   }
 
   /// <summary>

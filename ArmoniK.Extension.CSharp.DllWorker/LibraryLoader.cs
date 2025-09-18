@@ -186,7 +186,7 @@ public class LibraryLoader : ILibraryLoader
                                                                out var libraryBytes);
       if (!dllExists || libraryBytes is null)
       {
-        throw new WorkerApiException("No library found on data dependencies.");
+        throw new WorkerApiException($"No library found on data dependencies. (Library BlobId is {dynamicLibrary.LibraryBlobId})");
       }
 
       try

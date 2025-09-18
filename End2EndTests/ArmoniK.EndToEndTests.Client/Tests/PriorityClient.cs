@@ -21,6 +21,8 @@ using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.DllHelper;
+using ArmoniK.Extension.CSharp.Client.DllHelper.Common;
 using ArmoniK.Extension.CSharp.DllCommon;
 using ArmoniK.Utils;
 
@@ -34,11 +36,13 @@ namespace ArmoniK.EndToEndTests.Client.Tests;
 
 public class PriorityClient
 {
-  private Properties        Properties        { get; set; }
-  private TaskConfiguration TaskConfiguration { get; set; }
-  private SessionInfo       Session           { get; set; }
-  private ArmoniKClient     Client            { get; set; }
-
+  public const string                Partition = "dllworker";
+  private      Properties            Properties            { get; set; }
+  private      TaskConfiguration     TaskConfiguration     { get; set; }
+  private      SessionInfo           Session               { get; set; }
+  private      DllBlob               DllBlob               { get; set; }
+  private      TaskLibraryDefinition TaskLibraryDefinition { get; set; }
+  private      ArmoniKClient         Client                { get; set; }
 
   [SetUp]
   public async Task Setup()
@@ -60,36 +64,51 @@ public class PriorityClient
     var properties = new Properties(config);
     TaskConfiguration = new TaskConfiguration(5,
                                               1,
-                                              Environment.GetEnvironmentVariable("PARTITION") ?? "",
+                                              Partition,
                                               TimeSpan.FromSeconds(300));
-    var dynamicLib = new DynamicLibrary
-                     {
-                       Name        = "ArmoniK.EndToEndTests.Worker",
-                       DllFileName = "ArmoniK.EndToEndTests.Worker.dll",
-                       Version     = "1.0.0.0",
-                       PathToFile  = ".",
-                     };
-    var taskLib = new TaskLibraryDefinition(dynamicLib,
-                                            "ArmoniK.EndToEndTests.Worker.Tests",
-                                            "PriorityWorker");
-    TaskConfiguration.AddTaskLibraryDefinition(taskLib);
+    var dynamicLibrary = new DynamicLibrary
+                         {
+                           Name        = "ArmoniK.EndToEndTests.Worker",
+                           DllFileName = "ArmoniK.EndToEndTests.Worker.dll",
+                           Version     = "1.0.0.0",
+                           PathToFile  = @"ArmoniK.EndToEndTests.Worker/1.0.0-100",
+                         };
 
     Client = new ArmoniKClient(properties,
                                loggerFactory,
                                TaskConfiguration);
 
     Session = await Client.SessionService.CreateSessionWithDllAsync(TaskConfiguration,
-                                                                    ["dll"],
-                                                                    new[]
-                                                                    {
-                                                                      dynamicLib,
-                                                                    })
+                                                                    [Partition],
+                                                                    [dynamicLibrary])
                           .ConfigureAwait(false);
 
-    Session = await Client.SessionService.CreateSessionAsync(TaskConfiguration,
-                                                             [""],
-                                                             CancellationToken.None)
+    var filePath = Path.Join(AppContext.BaseDirectory,
+                             @"..\..\..\..\..\packages\ArmoniK.EndToEndTests.Worker-v1.0.0-100.zip");
+    DllBlob = await Client.BlobService.SendDllBlobAsync(Session,
+                                                        dynamicLibrary,
+                                                        filePath,
+                                                        false,
+                                                        CancellationToken.None)
                           .ConfigureAwait(false);
+
+    TaskLibraryDefinition = new TaskLibraryDefinition(dynamicLibrary,
+                                                      "ArmoniK.EndToEndTests.Worker.Tests",
+                                                      "PriorityWorker");
+  }
+
+  [TearDown]
+  public async Task TearDown()
+  {
+    await Client.SessionService.CloseSessionAsync(Session);
+    await Client.SessionService.PurgeSessionAsync(Session);
+    await Client.SessionService.DeleteSessionAsync(Session);
+    Properties            = null;
+    TaskConfiguration     = null;
+    Session               = null;
+    DllBlob               = null;
+    TaskLibraryDefinition = null;
+    Client                = null;
   }
 
   [Test]
@@ -104,32 +123,37 @@ public class PriorityClient
       var options = TaskConfiguration with
                     {
                       Priority = priority,
+                      PartitionId = Partition,
                     };
 
-      var payload = await Client.BlobService.CreateBlobAsync(Session,
-                                                             "GetPriority",
-                                                             BitConverter.GetBytes(priority))
-                                .ConfigureAwait(false);
+      var taskNodes = new List<TaskNodeExt>();
+      for (var i = 0; i < nTasksPerSessionPerPriority; i++)
+      {
+        var payload = Client.BlobService.CreateBlobAsync(Session,
+                                                         "GetPriority",
+                                                         BitConverter.GetBytes(priority))
+                            .WaitSync();
 
-      var taskNodes = Enumerable.Repeat(payload,
-                                        nTasksPerSessionPerPriority)
-                                .Select(blobInfo =>
-                                        {
-                                          var results = Client.BlobService.CreateBlobsMetadataAsync(Session,
-                                                                                                    ["Result" + priority])
-                                                              .ToListAsync()
-                                                              .WaitSync();
-                                          allResults.Add(results[0]);
-                                          return new TaskNode
-                                                 {
-                                                   TaskOptions     = options,
-                                                   Session         = Session,
-                                                   Payload         = blobInfo,
-                                                   ExpectedOutputs = results,
-                                                 };
-                                        });
-      await Client.TasksService.SubmitTasksAsync(Session,
-                                                 taskNodes);
+        var results = Client.BlobService.CreateBlobsMetadataAsync(Session,
+                                                                  ["Result" + priority])
+                            .ToListAsync()
+                            .WaitSync();
+        allResults.Add(results[0]);
+        taskNodes.Add(new TaskNodeExt
+                      {
+                        TaskOptions     = options,
+                        Session         = Session,
+                        Payload         = payload,
+                        ExpectedOutputs = [results[0]],
+                        DynamicLibrary  = TaskLibraryDefinition,
+                      });
+      }
+
+      await Client.TasksService.SubmitTasksWithDllAsync(Session,
+                                                        taskNodes,
+                                                        DllBlob,
+                                                        false,
+                                                        CancellationToken.None);
     }
 
     await Client.EventsService.WaitForBlobsAsync(Session,
