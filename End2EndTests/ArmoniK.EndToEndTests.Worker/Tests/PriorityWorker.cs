@@ -19,7 +19,6 @@ using System.Text;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.DllCommon;
-using ArmoniK.Utils;
 
 using Microsoft.Extensions.Logging;
 
@@ -27,6 +26,9 @@ namespace ArmoniK.EndToEndTests.Worker.Tests;
 
 public class PriorityWorker : IWorker
 {
+  public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
+    => Task.FromResult(HealthCheckResult.Healthy());
+
   public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
                                          ILogger           logger,
                                          CancellationToken cancellationToken)
@@ -38,9 +40,9 @@ public class PriorityWorker : IWorker
 
       var name = taskHandler.ExpectedResults.Single();
       logger.LogInformation($"Sending result: {strResult}. Task Id: {taskHandler.TaskId}");
-      taskHandler.SendResult(name,
-                             Encoding.ASCII.GetBytes(strResult))
-                 .WaitSync();
+      await taskHandler.SendResult(name,
+                                   Encoding.ASCII.GetBytes(strResult))
+                       .ConfigureAwait(false);
       return new Output
              {
                Ok = new Empty(),

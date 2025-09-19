@@ -129,8 +129,6 @@ internal class Program
     Console.WriteLine($"resultId: {result.BlobId}");
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
 
-    dynamicLib.LibraryBlobId = dllBlob.BlobId;
-
     var taskLibraryDefinition = new TaskLibraryDefinition(dynamicLib,
                                                           "LibraryExample",
                                                           "Worker");
