@@ -32,6 +32,16 @@ namespace ArmoniK.Extension.CSharp.Worker;
 public class LibraryWorker : ILibraryWorker
 {
   /// <summary>
+  ///   Reference to the last loaded service for health checking.
+  /// </summary>
+  private IWorker? lastLoadedService_;
+
+  /// <summary>
+  ///   Key of the last loaded service for logging purposes.
+  /// </summary>
+  private string? lastServiceKey_;
+
+  /// <summary>
   ///   Initializes a new instance of the <see cref="LibraryWorker" /> class.
   /// </summary>
   /// <param name="configuration">The configuration settings.</param>
@@ -104,7 +114,15 @@ public class LibraryWorker : ILibraryWorker
         context.EnterContextualReflection();
       }
 
+      var serviceKey = $"{libraryContext}:{dynamicLibrary.Service}";
+
+      Logger.LogDebug("Loading service class: {ServiceKey}",
+                      serviceKey);
       var serviceClass = libraryLoader.GetClassInstance<IWorker>(dynamicLibrary);
+
+      lastLoadedService_ = serviceClass;
+      lastServiceKey_    = serviceKey;
+
       var result = await serviceClass.ExecuteAsync(taskHandler,
                                                    Logger,
                                                    cancellationToken)
@@ -126,6 +144,72 @@ public class LibraryWorker : ILibraryWorker
                          Details = ex.Message,
                        },
              };
+    }
+  }
+
+  /// <summary>
+  ///   Checks the health of the library worker and the last loaded service.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+  /// <returns>A health check result indicating the status of the worker and the last loaded service.</returns>
+  public async Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
+  {
+    try
+    {
+      Logger.LogDebug("Starting library worker health check");
+
+      var testLogger = LoggerFactory.CreateLogger<LibraryWorker>();
+      if (testLogger == null)
+      {
+        return HealthCheckResult.Unhealthy("Cannot create logger instance");
+      }
+
+      testLogger.LogInformation("Health check validation at {Time}",
+                                DateTime.UtcNow);
+
+      if (lastLoadedService_ == null)
+      {
+        Logger.LogDebug("No service has been loaded yet");
+        return HealthCheckResult.Healthy("Library worker infrastructure is operational (no service loaded yet)");
+      }
+
+      try
+      {
+        Logger.LogDebug("Checking health of last loaded service: {ServiceKey}",
+                        lastServiceKey_);
+
+        // Async call to check health of the last loaded service
+        var serviceHealthResult = await lastLoadedService_.CheckHealth(cancellationToken)
+                                                          .ConfigureAwait(false);
+
+
+        if (!serviceHealthResult.IsHealthy)
+        {
+          var errorMessage = $"Service {lastServiceKey_}: {serviceHealthResult.Description}";
+          Logger.LogWarning("Last loaded service is unhealthy: {ErrorMessage}",
+                            errorMessage);
+          return HealthCheckResult.Unhealthy(errorMessage);
+        }
+
+        Logger.LogDebug("Last loaded service {ServiceKey} is healthy",
+                        lastServiceKey_);
+        return HealthCheckResult.Healthy($"Library worker and service {lastServiceKey_} are operational");
+      }
+      catch (Exception ex)
+      {
+        var errorMessage = $"Failed to check health of service {lastServiceKey_}: {ex.Message}";
+        Logger.LogError(ex,
+                        "Health check failed for service {ServiceKey}",
+                        lastServiceKey_);
+        return HealthCheckResult.Unhealthy(errorMessage);
+      }
+    }
+    catch (Exception ex)
+    {
+      Logger?.LogError(ex,
+                       "Library worker health check failed");
+      return HealthCheckResult.Unhealthy("Library worker health check failed",
+                                         ex);
     }
   }
 }

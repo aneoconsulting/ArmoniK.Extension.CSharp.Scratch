@@ -38,4 +38,11 @@ public interface ILibraryWorker
                             ILibraryLoader    libraryLoader,
                             string            libraryContext,
                             CancellationToken cancellationToken);
+
+  /// <summary>
+  ///   Checks the health of the library worker.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+  /// <returns>True if the library worker is healthy; otherwise, false.</returns>
+  Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default);
 }
