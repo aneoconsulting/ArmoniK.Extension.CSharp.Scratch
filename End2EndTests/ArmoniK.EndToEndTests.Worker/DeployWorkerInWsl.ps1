@@ -32,27 +32,23 @@ if (Test-Path $zipPath) {
 Write-Host "Build and publish worker"
 dotnet publish --self-contained -c Release -r linux-x64 -f net8.0 .
 
-# Find the destination folder (should contain path /ArmoniK/infrastructure/quick-deploy/localhost/data)
-$deployment = $(wsl kubectl -n armonik get deployments/compute-plane-default -o json) | ConvertFrom-Json
-$sharedVolume = $deployment.spec.template.spec.volumes | Where-Object { $_.name -eq "shared-volume" }
-$destinationPath = $sharedVolume.hostPath.path
+# Find control-plane IP
+$services = $(wsl kubectl -n armonik get service -o json) | ConvertFrom-Json
+$controlPlaneItem = $services.items | Where-Object { $_.metadata.labels.service -eq "control-plane"}
+$IP = $controlPlaneItem.spec.clusterIP
 
-# Get the url of the control plane and set it in appSettings.json of the client
-Write-Host "Fetching the control plane url"
-$localhostPath = (wsl dirname $destinationPath)
-$armonikOutPut = (wsl cat $localhostPath/generated/armonik-output.json) | ConvertFrom-Json
+# Parse appSettings.json of the client
 $appSettingsPath = "..\ArmoniK.EndToEndTests.Client\appSettings.json"
 try
 {
 	$appSettings = Get-Content $appSettingsPath -Raw | ConvertFrom-Json
-	$appSettings.Grpc.EndPoint = $armonikOutPut.armonik.control_plane_url
+	$appSettings.Grpc.EndPoint = $IP
 }
 catch{
 	Write-Error "Unexpected error (syntax error?) while parsing $appSettingsPath"
 	return 1
 }
 
-# Write the url	
-$url = $appSettings.Grpc.EndPoint
-Write-Host "Set control plane url $url to $appSettingsPath"
+# Write the control-plane IP in appSettings client
+Write-Host "Set control plane IP $IP to $appSettingsPath"
 $appSettings | ConvertTo-Json -Depth 4 | Out-File $appSettingsPath
