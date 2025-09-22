@@ -33,9 +33,7 @@ Write-Host "Build and publish worker"
 dotnet publish --self-contained -c Release -r linux-x64 -f net8.0 .
 
 # Find control-plane IP
-$services = $(wsl kubectl -n armonik get service -o json) | ConvertFrom-Json
-$controlPlaneItem = $services.items | Where-Object { $_.metadata.labels.service -eq "control-plane"}
-$IP = $controlPlaneItem.spec.clusterIP
+$IP = $(wsl kubectl -n armonik get service control-plane -o jsonpath='{.spec.clusterIP}')
 
 # Parse appSettings.json of the client
 $appSettingsPath = "..\ArmoniK.EndToEndTests.Client\appSettings.json"
