@@ -116,20 +116,15 @@ internal class Program
 
     var result = blobInfos[0];
 
-    var content = await File.ReadAllBytesAsync(filePath)
-                            .ConfigureAwait(false);
-
     var dllBlob = await blobService.SendDllBlobAsync(session,
                                                      dynamicLib,
-                                                     content,
+                                                     filePath,
                                                      false,
                                                      CancellationToken.None)
                                    .ConfigureAwait(false);
 
     Console.WriteLine($"resultId: {result.BlobId}");
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
-
-    dynamicLib.LibraryBlobId = dllBlob.BlobId;
 
     var taskLibraryDefinition = new TaskLibraryDefinition(dynamicLib,
                                                           "LibraryExample",

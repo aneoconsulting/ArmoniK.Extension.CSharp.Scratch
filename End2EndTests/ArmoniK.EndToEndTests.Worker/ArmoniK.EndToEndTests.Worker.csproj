@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>1.0.0-100</Version>
+
+    <AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <OutputPath>bin/$(Configuration)/</OutputPath>
+    <PublishDir>../publish/$(MSBuildProjectName)/$(Version)/</PublishDir>
+    <PublishUrl>../publish/$(MSBuildProjectName)/$(Version)/</PublishUrl>
+    <IsPackable>false</IsPackable>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.DllCommon\ArmoniK.Extension.CSharp.DllCommon.csproj" />
+    <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.DllWorker\ArmoniK.Extension.CSharp.DllWorker.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="CreateDirectories" AfterTargets="Publish">
+    <MakeDir Directories="../packages/" />
+  </Target>
+
+  <Target Name="ZipOutputPath" AfterTargets="CreateDirectories">
+    <ZipDirectory SourceDirectory="../publish/" DestinationFile="../packages/$(MSBuildProjectName)-v$(Version).zip" Overwrite="true" />
+  </Target>
+
+</Project>

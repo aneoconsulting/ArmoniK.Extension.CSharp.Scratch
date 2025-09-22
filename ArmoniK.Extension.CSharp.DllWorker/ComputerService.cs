@@ -80,14 +80,21 @@ public class ComputerService : WorkerStreamWrapper
     Output output;
     try
     {
-      await ServiceRequestContext.ExecuteTaskAsync(taskHandler,
-                                                   cancellationToken)
-                                 .ConfigureAwait(false);
-
-      output = new Output
-               {
-                 Ok = new Empty(),
-               };
+      output = await ServiceRequestContext.ExecuteTaskAsync(taskHandler,
+                                                            cancellationToken)
+                                          .ConfigureAwait(false);
+      if (output == null || (output.Ok == null && output.Error == null))
+      {
+        var message = $"Task {taskHandler.TaskId} did not return any status output";
+        Logger.LogError(message);
+        output = new Output
+                 {
+                   Error = new Output.Types.Error
+                           {
+                             Details = message,
+                           },
+                 };
+      }
     }
     catch (WorkerApiException ex)
     {
