@@ -15,10 +15,17 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Client.Handles;
 
@@ -127,4 +134,122 @@ public class SessionHandle
     => await armoniKClient_.SessionService.DeleteSessionAsync(sessionInfo_,
                                                               cancellationToken)
                            .ConfigureAwait(false);
+
+  /// <summary>
+  ///   Submit a task.
+  /// </summary>
+  /// <param name="task">The task to submit</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns></returns>
+  /// <exception cref="ArgumentException">When the task provided is null</exception>
+  public async Task<TaskHandle> SubmitAsync(TaskDefinition    task,
+                                            CancellationToken cancellationToken = default)
+  {
+    _ = task ?? throw new ArgumentException("Task parameter should not be null");
+
+    var inputs = await FetchInputsBlobInfo(task,
+                                           cancellationToken)
+                       .ToListAsync(cancellationToken)
+                       .ConfigureAwait(false);
+    var payload = JsonSerializer.Serialize(inputs.ToDictionary(b => b.BlobName,
+                                                               b => b.BlobId));
+    var payloadBlob = await armoniKClient_.BlobService.CreateBlobAsync(sessionInfo_,
+                                                                       "payload",
+                                                                       Encoding.UTF8.GetBytes(payload)
+                                                                               .AsMemory(),
+                                                                       cancellationToken: cancellationToken)
+                                          .ConfigureAwait(false);
+
+    var taskNode = new TaskNode
+                   {
+                     DataDependencies = inputs,
+                     ExpectedOutputs = await FetchOutputsBlobInfo(task,
+                                                                  cancellationToken)
+                                             .ToListAsync(cancellationToken)
+                                             .ConfigureAwait(false),
+                     Session = sessionInfo_,
+                     Payload = payloadBlob,
+                   };
+    if (task.TaskOptions != null)
+    {
+      taskNode.TaskOptions = task.TaskOptions;
+    }
+
+    var taskInfos = await armoniKClient_.TasksService.SubmitTasksAsync(sessionInfo_,
+                                                                       [taskNode],
+                                                                       cancellationToken: cancellationToken)
+                                        .ConfigureAwait(false);
+    return new TaskHandle(armoniKClient_,
+                          taskInfos.First());
+  }
+
+  private async IAsyncEnumerable<BlobInfo> FetchInputsBlobInfo(TaskDefinition                             task,
+                                                               [EnumeratorCancellation] CancellationToken cancellationToken)
+  {
+    // Return the already available blob infos
+    foreach (var blobHandle in task.InputHandles.Values)
+    {
+      yield return blobHandle.BlobInfo;
+    }
+
+    // Return blobs already created for the same session
+    var blobsOnSameSession = task.InputDefinitions.Values.Where(b => b.BlobHandle != null && b.SessionHandle == this);
+    foreach (var blobDefinition in blobsOnSameSession)
+    {
+      yield return blobDefinition.BlobHandle!.BlobInfo;
+    }
+
+    // new blobs creation, whether they were never created or created on another session
+    var newBlobs = task.InputDefinitions.Where(b => (b.Value.BlobHandle != null && b.Value.SessionHandle != this) || b.Value.BlobHandle == null);
+    foreach (var pair in newBlobs)
+    {
+      var      name           = pair.Key;
+      var      blobDefinition = pair.Value;
+      BlobInfo blobInfo;
+      if (blobDefinition.Data == null)
+      {
+        // Creation of the metadata only as there is no data
+        blobInfo = await armoniKClient_.BlobService.CreateBlobsMetadataAsync(sessionInfo_,
+                                                                             [name],
+                                                                             blobDefinition.ManualDeletion,
+                                                                             cancellationToken)
+                                       .FirstAsync(cancellationToken)
+                                       .ConfigureAwait(false);
+      }
+      else
+      {
+        blobInfo = await armoniKClient_.BlobService.CreateBlobAsync(sessionInfo_,
+                                                                    name,
+                                                                    blobDefinition.Data.Value,
+                                                                    blobDefinition.ManualDeletion,
+                                                                    cancellationToken)
+                                       .ConfigureAwait(false);
+      }
+
+      task.InputDefinitions[name].SessionHandle = this;
+      task.InputDefinitions[name].BlobHandle = new BlobHandle(blobInfo,
+                                                              armoniKClient_);
+      yield return blobInfo;
+    }
+  }
+
+  private async IAsyncEnumerable<BlobInfo> FetchOutputsBlobInfo(TaskDefinition                             task,
+                                                                [EnumeratorCancellation] CancellationToken cancellationToken)
+  {
+    foreach (var pair in task.Outputs)
+    {
+      var name           = pair.Key;
+      var blobDefinition = pair.Value;
+      var blobInfo = await armoniKClient_.BlobService.CreateBlobsMetadataAsync(sessionInfo_,
+                                                                               [name],
+                                                                               blobDefinition.ManualDeletion,
+                                                                               cancellationToken)
+                                         .FirstAsync(cancellationToken)
+                                         .ConfigureAwait(false);
+      task.InputDefinitions[name].SessionHandle = this;
+      task.InputDefinitions[name].BlobHandle = new BlobHandle(blobInfo,
+                                                              armoniKClient_);
+      yield return blobInfo;
+    }
+  }
 }

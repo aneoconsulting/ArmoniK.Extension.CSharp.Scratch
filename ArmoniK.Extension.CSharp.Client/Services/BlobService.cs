@@ -86,8 +86,7 @@ public class BlobService : IBlobService
                                                  {
                                                    Name           = blobName,
                                                    ManualDeletion = manualDeletion,
-                                                 })
-                             .ToList();
+                                                 });
 
     var blobsCreationResponse = await blobClient.CreateResultsMetaDataAsync(new CreateResultsMetaDataRequest
                                                                             {
