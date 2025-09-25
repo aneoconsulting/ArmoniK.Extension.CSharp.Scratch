@@ -126,6 +126,7 @@ public class LibraryWorker : ILibraryWorker
       lastServiceKey_    = serviceKey;
 
       var dataDependencies = new Dictionary<string, byte[]>();
+      var expectedResults  = new Dictionary<string, string>();
 
       try
       {
@@ -136,8 +137,15 @@ public class LibraryWorker : ILibraryWorker
         {
           var name   = pair.Key;
           var blobId = pair.Value;
-          var data   = taskHandler.DataDependencies[blobId];
-          dataDependencies[name] = data;
+          if (taskHandler.ExpectedResults.Contains(blobId))
+          {
+            expectedResults[name] = blobId;
+          }
+          else
+          {
+            var data = taskHandler.DataDependencies[blobId];
+            dataDependencies[name] = data;
+          }
         }
       }
       catch (Exception ex)
@@ -147,7 +155,8 @@ public class LibraryWorker : ILibraryWorker
       }
 
       var result = await serviceClass.ExecuteAsync(new UserTaskHandler(taskHandler,
-                                                                       dataDependencies),
+                                                                       dataDependencies,
+                                                                       expectedResults),
                                                    Logger,
                                                    cancellationToken)
                                      .ConfigureAwait(false);

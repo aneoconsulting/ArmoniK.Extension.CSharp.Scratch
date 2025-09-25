@@ -151,7 +151,12 @@ public class SessionHandle
                                            cancellationToken)
                        .ToListAsync(cancellationToken)
                        .ConfigureAwait(false);
-    var payload = JsonSerializer.Serialize(inputs.ToDictionary(b => b.BlobName,
+    var outputs = await FetchOutputsBlobInfo(task,
+                                             cancellationToken)
+                        .ToListAsync(cancellationToken)
+                        .ConfigureAwait(false);
+    var payload = JsonSerializer.Serialize(inputs.Union(outputs)
+                                                 .ToDictionary(b => b.BlobName,
                                                                b => b.BlobId));
     var payloadBlob = await armoniKClient_.BlobService.CreateBlobAsync(sessionInfo_,
                                                                        "payload",
@@ -163,12 +168,9 @@ public class SessionHandle
     var taskNode = new TaskNode
                    {
                      DataDependencies = inputs,
-                     ExpectedOutputs = await FetchOutputsBlobInfo(task,
-                                                                  cancellationToken)
-                                             .ToListAsync(cancellationToken)
-                                             .ConfigureAwait(false),
-                     Session = sessionInfo_,
-                     Payload = payloadBlob,
+                     ExpectedOutputs  = outputs,
+                     Session          = sessionInfo_,
+                     Payload          = payloadBlob,
                    };
     if (task.TaskOptions != null)
     {

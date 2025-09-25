@@ -23,7 +23,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.EndToEndTests.Worker.Tests;
 
-public class PriorityWorker : IWorker
+public class TaskSdkWorker : IWorker
 {
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
     => Task.FromResult(HealthCheckResult.Healthy());
@@ -32,31 +32,23 @@ public class PriorityWorker : IWorker
                                          ILogger           logger,
                                          CancellationToken cancellationToken)
   {
-    try
-    {
-      var priority  = taskHandler.GetIntDependency("Priority");
-      var strResult = $"Payload is {priority} and TaskOptions.Priority is {taskHandler.TaskOptions.Priority}";
+    var resultString = taskHandler.GetStringDependency("myString");
+    var resultInt    = taskHandler.GetIntDependency("myInt");
+    var resultDouble = taskHandler.GetDoubleDependency("myDouble");
 
-      var name = taskHandler.ExpectedResults.Single()
-                            .Value;
-      logger.LogInformation($"Sending result: {strResult}. Task Id: {taskHandler.TaskId}");
-      await taskHandler.SendResult(name,
-                                   Encoding.ASCII.GetBytes(strResult))
-                       .ConfigureAwait(false);
-      return new Output
-             {
-               Ok = new Empty(),
-             };
-    }
-    catch (Exception ex)
-    {
-      return new Output
-             {
-               Error = new Output.Types.Error
-                       {
-                         Details = ex.Message,
-                       },
-             };
-    }
+    await taskHandler.SendResult("resultString",
+                                 Encoding.ASCII.GetBytes(resultString))
+                     .ConfigureAwait(false);
+    await taskHandler.SendResult("resultInt",
+                                 Encoding.ASCII.GetBytes(resultInt.ToString()))
+                     .ConfigureAwait(false);
+    await taskHandler.SendResult("resultDouble",
+                                 Encoding.ASCII.GetBytes(resultDouble.ToString("F2")))
+                     .ConfigureAwait(false);
+
+    return new Output
+           {
+             Ok = new Empty(),
+           };
   }
 }

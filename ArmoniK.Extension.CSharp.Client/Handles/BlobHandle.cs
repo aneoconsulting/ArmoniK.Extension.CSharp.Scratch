@@ -110,11 +110,21 @@ public class BlobHandle
                           .ConfigureAwait(false);
 
   /// <summary>
+  ///   Asynchronously downloads the data of the blob.
+  /// </summary>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>A task representing the asynchronous operation. The task result contains the blob content as a byte array.</returns>
+  public async Task<byte[]> DownloadBlobDataAsync(CancellationToken cancellationToken)
+    => await ArmoniKClient.BlobService.DownloadBlobAsync(this,
+                                                         cancellationToken)
+                          .ConfigureAwait(false);
+
+  /// <summary>
   ///   Asynchronously downloads the data of the blob in chunks.
   /// </summary>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of byte arrays representing the blob data chunks.</returns>
-  public async IAsyncEnumerable<byte[]> DownloadBlobDataAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+  public async IAsyncEnumerable<byte[]> DownloadBlobDataWithChunksAsync([EnumeratorCancellation] CancellationToken cancellationToken)
   {
     await foreach (var chunk in ArmoniKClient.BlobService.DownloadBlobWithChunksAsync(this,
                                                                                       cancellationToken)

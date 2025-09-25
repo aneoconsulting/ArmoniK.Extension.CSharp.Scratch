@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Text;
+
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Agent;
 using ArmoniK.Api.Worker.Worker;
@@ -26,20 +28,29 @@ namespace ArmoniK.Extension.CSharp.DllCommon;
 public class UserTaskHandler
 {
   private readonly Dictionary<string, byte[]> dataDependencies_;
+  private readonly Dictionary<string, string> expectedResults_;
   private readonly ITaskHandler               taskHandler_;
 
+  /// <summary>
+  ///   Creates a UserTaskHandler
+  /// </summary>
+  /// <param name="taskHandler"></param>
+  /// <param name="dataDependencies"></param>
+  /// <param name="expectedResults"></param>
   public UserTaskHandler(ITaskHandler               taskHandler,
-                         Dictionary<string, byte[]> dataDependencies)
+                         Dictionary<string, byte[]> dataDependencies,
+                         Dictionary<string, string> expectedResults)
   {
     taskHandler_      = taskHandler;
     dataDependencies_ = dataDependencies;
+    expectedResults_  = expectedResults;
   }
 
   /// <summary>Id of the session this task belongs to.</summary>
   public string SessionId
     => taskHandler_.SessionId;
 
-  /// <summary>Id of the task being processed.</summary>
+  /// <summary>Task's id being processed.</summary>
   public string TaskId
     => taskHandler_.TaskId;
 
@@ -54,16 +65,40 @@ public class UserTaskHandler
     => dataDependencies_;
 
   /// <summary>
-  ///   Lists the result blob ids that should be provided or delegated by this task.
+  ///   Result blob ids by name defined by the client.
   /// </summary>
-  public IList<string> ExpectedResults
-    => taskHandler_.ExpectedResults;
+  public IReadOnlyDictionary<string, string> ExpectedResults
+    => expectedResults_;
 
   /// <summary>
   ///   The configuration parameters for the interaction with ArmoniK.
   /// </summary>
   public Configuration Configuration
     => taskHandler_.Configuration;
+
+  /// <summary>
+  ///   Decode a dependency from its raw data
+  /// </summary>
+  /// <param name="name">The input name defined by the client</param>
+  /// <returns>The decoded string</returns>
+  public string GetStringDependency(string name)
+    => Encoding.UTF8.GetString(DataDependencies[name]);
+
+  /// <summary>
+  ///   Decode a dependency from its raw data
+  /// </summary>
+  /// <param name="name">The input name defined by the client</param>
+  /// <returns>The decoded integer</returns>
+  public int GetIntDependency(string name)
+    => BitConverter.ToInt32(DataDependencies[name]);
+
+  /// <summary>
+  ///   Decode a dependency from its raw data
+  /// </summary>
+  /// <param name="name">The input name defined by the client</param>
+  /// <returns>The decoded double</returns>
+  public double GetDoubleDependency(string name)
+    => BitConverter.ToDouble(DataDependencies[name]);
 
   /// <summary>This method allows to create subtasks.</summary>
   /// <param name="tasks">Lists the tasks to submit</param>

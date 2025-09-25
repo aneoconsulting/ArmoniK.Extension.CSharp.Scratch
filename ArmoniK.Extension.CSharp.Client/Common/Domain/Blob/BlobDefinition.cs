@@ -110,4 +110,15 @@ public class BlobDefinition
                                        bool manualDeletion = false)
     => new(BitConverter.GetBytes(content),
            manualDeletion);
+
+  /// <summary>
+  ///   Creates a BlobDefinition from a double
+  /// </summary>
+  /// <param name="content">The raw data</param>
+  /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
+  /// <returns></returns>
+  public static BlobDefinition FromDouble(double content,
+                                          bool   manualDeletion = false)
+    => new(BitConverter.GetBytes(content),
+           manualDeletion);
 }
