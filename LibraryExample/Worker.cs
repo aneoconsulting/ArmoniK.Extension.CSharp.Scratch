@@ -17,7 +17,6 @@
 using System.Text;
 
 using ArmoniK.Api.gRPC.V1;
-using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.DllCommon;
 
 using Microsoft.Extensions.Logging;
@@ -38,7 +37,7 @@ public class Worker : IWorker
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing a successful output.</returns>
   /// <exception cref="InvalidOperationException">Thrown when no expected results are found (Single() fails).</exception>
-  public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
+  public async Task<Output> ExecuteAsync(UserTaskHandler   taskHandler,
                                          ILogger           logger,
                                          CancellationToken cancellationToken)
   {

@@ -15,7 +15,6 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1;
-using ArmoniK.Api.Worker.Worker;
 
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +32,7 @@ public interface IWorker
   /// <param name="logger">The logger instance for recording execution information.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the execution output.</returns>
-  Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
+  Task<Output> ExecuteAsync(UserTaskHandler   taskHandler,
                             ILogger           logger,
                             CancellationToken cancellationToken);
 

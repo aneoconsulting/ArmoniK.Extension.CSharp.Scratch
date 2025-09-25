@@ -15,6 +15,8 @@
 // limitations under the License.
 
 using System.Runtime.Loader;
+using System.Text;
+using System.Text.Json;
 
 using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
@@ -123,7 +125,29 @@ public class LibraryWorker : ILibraryWorker
       lastLoadedService_ = serviceClass;
       lastServiceKey_    = serviceKey;
 
-      var result = await serviceClass.ExecuteAsync(taskHandler,
+      var dataDependencies = new Dictionary<string, byte[]>();
+
+      try
+      {
+        // Decoding of the payload
+        var payload     = Encoding.UTF8.GetString(taskHandler.Payload);
+        var name2BlobId = JsonSerializer.Deserialize<Dictionary<string, string>>(payload);
+        foreach (var pair in name2BlobId)
+        {
+          var name   = pair.Key;
+          var blobId = pair.Value;
+          var data   = taskHandler.DataDependencies[blobId];
+          dataDependencies[name] = data;
+        }
+      }
+      catch (Exception ex)
+      {
+        Logger.LogError("Could not decode payload: " + ex.Message);
+        throw;
+      }
+
+      var result = await serviceClass.ExecuteAsync(new UserTaskHandler(taskHandler,
+                                                                       dataDependencies),
                                                    Logger,
                                                    cancellationToken)
                                      .ConfigureAwait(false);
