@@ -201,10 +201,7 @@ public class BlobService : IBlobService
     if (serviceConfiguration_ != null && content.Length > serviceConfiguration_.DataChunkMaxSize)
     {
       var blobInfo = CreateBlobsMetadataAsync(session,
-                                              new[]
-                                              {
-                                                name,
-                                              },
+                                              [name],
                                               manualDeletion,
                                               cancellationToken);
       var createdBlobs = await blobInfo.ToListAsync(cancellationToken)

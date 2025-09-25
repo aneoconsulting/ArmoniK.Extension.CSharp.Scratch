@@ -72,11 +72,18 @@ public static class TaskLibraryDefinitionExt
   public static TaskConfiguration AddTaskLibraryDefinition(this TaskConfiguration taskConfiguration,
                                                            TaskLibraryDefinition  dynamicLibrary)
   {
-    taskConfiguration.AddDynamicLibrary(dynamicLibrary);
-    taskConfiguration.Options.Add($"{dynamicLibrary}.Namespace",
-                                  dynamicLibrary.Namespace);
-    taskConfiguration.Options.Add($"{dynamicLibrary}.Service",
-                                  dynamicLibrary.Service);
+    // Check that the library was not already added
+    if (!taskConfiguration.Options.ContainsKey($"{dynamicLibrary}.Name"))
+    {
+      taskConfiguration.AddDynamicLibrary(dynamicLibrary);
+      taskConfiguration.Options.Add($"{dynamicLibrary}.Namespace",
+                                    dynamicLibrary.Namespace);
+      taskConfiguration.Options.Add($"{dynamicLibrary}.Service",
+                                    dynamicLibrary.Service);
+      taskConfiguration.Options.Add("ServiceLibrary",
+                                    dynamicLibrary.ToString());
+    }
+
     return taskConfiguration;
   }
 

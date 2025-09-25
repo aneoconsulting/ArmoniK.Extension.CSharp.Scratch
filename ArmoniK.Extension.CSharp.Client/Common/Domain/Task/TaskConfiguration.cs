@@ -46,11 +46,11 @@ public record TaskConfiguration
   /// <param name="partitionId">The partition identifier for task segregation.</param>
   /// <param name="maxDuration">The maximum duration allowed for the task to complete.</param>
   /// <param name="options">Optional additional key-value pairs for further customization.</param>
-  public TaskConfiguration(int                        maxRetries,
-                           int                        priority,
-                           string                     partitionId,
-                           TimeSpan                   maxDuration,
-                           Dictionary<string, string> options = null)
+  public TaskConfiguration(int                         maxRetries,
+                           int                         priority,
+                           string                      partitionId,
+                           TimeSpan                    maxDuration,
+                           Dictionary<string, string>? options = null)
   {
     MaxRetries  = maxRetries;
     Priority    = priority;
