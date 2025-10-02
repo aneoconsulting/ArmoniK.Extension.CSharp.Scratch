@@ -132,25 +132,26 @@ public class LibraryWorker : ILibraryWorker
       {
         // Decoding of the payload
         var payload     = Encoding.UTF8.GetString(taskHandler.Payload);
-        var name2BlobId = JsonSerializer.Deserialize<Dictionary<string, string>>(payload);
-        foreach (var pair in name2BlobId)
+        var name2BlobId = JsonSerializer.Deserialize<Payload>(payload);
+        foreach (var pair in name2BlobId.Inputs)
         {
           var name   = pair.Key;
           var blobId = pair.Value;
-          if (taskHandler.ExpectedResults.Contains(blobId))
-          {
-            expectedResults[name] = blobId;
-          }
-          else
-          {
-            var data = taskHandler.DataDependencies[blobId];
-            dataDependencies[name] = data;
-          }
+          var data   = taskHandler.DataDependencies[blobId];
+          dataDependencies[name] = data;
+        }
+
+        foreach (var pair in name2BlobId.Outputs)
+        {
+          var name   = pair.Key;
+          var blobId = pair.Value;
+          expectedResults[name] = blobId;
         }
       }
       catch (Exception ex)
       {
-        Logger.LogError("Could not decode payload: " + ex.Message);
+        Logger.LogError(ex,
+                        "Could not decode payload: " + ex.Message);
         throw;
       }
 

@@ -57,29 +57,41 @@ public class PriorityClient : ClientBase
                                                                         BitConverter.GetBytes(priority))
                                            .ConfigureAwait(false);
 
-        var payload = JsonSerializer.Serialize(new Dictionary<string, string>
-                                               {
-                                                 {
-                                                   "Priority", priorityBlobInfo.BlobId
-                                                 },
-                                               });
-        var payloadBlobId = await Client.BlobService.CreateBlobAsync(Session,
-                                                                     "Payload",
-                                                                     Encoding.ASCII.GetBytes(payload))
-                                        .ConfigureAwait(false);
-
+        var resultName = "Result" + priority;
         var results = await Client.BlobService.CreateBlobsMetadataAsync(Session,
-                                                                        ["Result" + priority])
+                                                                        [resultName])
                                   .ToListAsync()
                                   .ConfigureAwait(false);
+
+        var payload = new Payload(new Dictionary<string, string>
+                                  {
+                                    {
+                                      "Priority", priorityBlobInfo.BlobId
+                                    },
+                                  },
+                                  new Dictionary<string, string>
+                                  {
+                                    {
+                                      resultName, results[0].BlobId
+                                    },
+                                  });
+
+        var payloadJson = JsonSerializer.Serialize(payload);
+
+        var payloadBlobId = await Client.BlobService.CreateBlobAsync(Session,
+                                                                     "Payload",
+                                                                     Encoding.ASCII.GetBytes(payloadJson))
+                                        .ConfigureAwait(false);
+
         allResults.Add(results[0]);
         taskNodes.Add(new TaskNodeExt
                       {
-                        TaskOptions     = options,
-                        Session         = Session,
-                        Payload         = payloadBlobId,
-                        ExpectedOutputs = [results[0]],
-                        DynamicLibrary  = TaskLibraryDefinition,
+                        TaskOptions      = options,
+                        Session          = Session,
+                        Payload          = payloadBlobId,
+                        DataDependencies = [priorityBlobInfo],
+                        ExpectedOutputs  = [results[0]],
+                        DynamicLibrary   = TaskLibraryDefinition,
                       });
       }
 

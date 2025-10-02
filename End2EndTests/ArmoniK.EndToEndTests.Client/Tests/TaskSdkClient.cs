@@ -36,6 +36,12 @@ public class TaskSdkClient : ClientBase
   [Test]
   public async Task TaskSdk()
   {
+    var options = TaskConfiguration with
+                  {
+                    Priority = 1,
+                    PartitionId = Partition,
+                  };
+
     var taskDefinition = new TaskDefinition().WithInput("myString",
                                                         BlobDefinition.FromString("Hello world!"))
                                              .WithInput("myInt",
@@ -44,7 +50,8 @@ public class TaskSdkClient : ClientBase
                                                         BlobDefinition.FromDouble(3.14))
                                              .WithOutput("resultString")
                                              .WithOutput("resultInt")
-                                             .WithOutput("resultDouble");
+                                             .WithOutput("resultDouble")
+                                             .WithAdditionalTaskOptions(options);
     var taskHandle = await SessionHandle.SubmitAsync(taskDefinition)
                                         .ConfigureAwait(false);
 

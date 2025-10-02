@@ -19,13 +19,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+
+using Newtonsoft.Json;
 
 namespace ArmoniK.Extension.CSharp.Client.Handles;
 
@@ -155,12 +156,16 @@ public class SessionHandle
                                              cancellationToken)
                         .ToListAsync(cancellationToken)
                         .ConfigureAwait(false);
-    var payload = JsonSerializer.Serialize(inputs.Union(outputs)
-                                                 .ToDictionary(b => b.BlobName,
-                                                               b => b.BlobId));
+
+    var payload = new Payload(inputs.ToDictionary(b => b.BlobName,
+                                                  b => b.BlobId),
+                              outputs.ToDictionary(b => b.BlobName,
+                                                   b => b.BlobId));
+
+    var payloadJson = JsonConvert.SerializeObject(payload);
     var payloadBlob = await armoniKClient_.BlobService.CreateBlobAsync(sessionInfo_,
                                                                        "payload",
-                                                                       Encoding.UTF8.GetBytes(payload)
+                                                                       Encoding.UTF8.GetBytes(payloadJson)
                                                                                .AsMemory(),
                                                                        cancellationToken: cancellationToken)
                                           .ConfigureAwait(false);
@@ -248,10 +253,23 @@ public class SessionHandle
                                                                                cancellationToken)
                                          .FirstAsync(cancellationToken)
                                          .ConfigureAwait(false);
-      task.InputDefinitions[name].SessionHandle = this;
-      task.InputDefinitions[name].BlobHandle = new BlobHandle(blobInfo,
-                                                              armoniKClient_);
+      task.Outputs[name].SessionHandle = this;
+      task.Outputs[name].BlobHandle = new BlobHandle(blobInfo,
+                                                     armoniKClient_);
       yield return blobInfo;
     }
+  }
+
+  private class Payload
+  {
+    public Payload(IReadOnlyDictionary<string, string> inputs,
+                   IReadOnlyDictionary<string, string> outputs)
+    {
+      Inputs  = inputs;
+      Outputs = outputs;
+    }
+
+    public IReadOnlyDictionary<string, string> Inputs  { get; }
+    public IReadOnlyDictionary<string, string> Outputs { get; }
   }
 }

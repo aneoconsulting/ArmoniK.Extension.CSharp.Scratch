@@ -27,23 +27,21 @@ namespace ArmoniK.Extension.CSharp.DllCommon;
 /// </summary>
 public class UserTaskHandler
 {
-  private readonly Dictionary<string, byte[]> dataDependencies_;
-  private readonly Dictionary<string, string> expectedResults_;
-  private readonly ITaskHandler               taskHandler_;
+  private readonly ITaskHandler taskHandler_;
 
   /// <summary>
   ///   Creates a UserTaskHandler
   /// </summary>
   /// <param name="taskHandler"></param>
-  /// <param name="dataDependencies"></param>
-  /// <param name="expectedResults"></param>
-  public UserTaskHandler(ITaskHandler               taskHandler,
-                         Dictionary<string, byte[]> dataDependencies,
-                         Dictionary<string, string> expectedResults)
+  /// <param name="inputs"></param>
+  /// <param name="outputs"></param>
+  public UserTaskHandler(ITaskHandler                        taskHandler,
+                         IReadOnlyDictionary<string, byte[]> inputs,
+                         IReadOnlyDictionary<string, string> outputs)
   {
-    taskHandler_      = taskHandler;
-    dataDependencies_ = dataDependencies;
-    expectedResults_  = expectedResults;
+    taskHandler_ = taskHandler;
+    Inputs       = inputs;
+    Outputs      = outputs;
   }
 
   /// <summary>Id of the session this task belongs to.</summary>
@@ -61,14 +59,12 @@ public class UserTaskHandler
   /// <summary>
   ///   The data required to compute the task. The key is the name defined by the client, the value is the raw data.
   /// </summary>
-  public IReadOnlyDictionary<string, byte[]> DataDependencies
-    => dataDependencies_;
+  public IReadOnlyDictionary<string, byte[]> Inputs { get; }
 
   /// <summary>
   ///   Result blob ids by name defined by the client.
   /// </summary>
-  public IReadOnlyDictionary<string, string> ExpectedResults
-    => expectedResults_;
+  public IReadOnlyDictionary<string, string> Outputs { get; }
 
   /// <summary>
   ///   The configuration parameters for the interaction with ArmoniK.
@@ -82,7 +78,7 @@ public class UserTaskHandler
   /// <param name="name">The input name defined by the client</param>
   /// <returns>The decoded string</returns>
   public string GetStringDependency(string name)
-    => Encoding.UTF8.GetString(DataDependencies[name]);
+    => Encoding.UTF8.GetString(Inputs[name]);
 
   /// <summary>
   ///   Decode a dependency from its raw data
@@ -90,7 +86,7 @@ public class UserTaskHandler
   /// <param name="name">The input name defined by the client</param>
   /// <returns>The decoded integer</returns>
   public int GetIntDependency(string name)
-    => BitConverter.ToInt32(DataDependencies[name]);
+    => BitConverter.ToInt32(Inputs[name]);
 
   /// <summary>
   ///   Decode a dependency from its raw data
@@ -98,7 +94,7 @@ public class UserTaskHandler
   /// <param name="name">The input name defined by the client</param>
   /// <returns>The decoded double</returns>
   public double GetDoubleDependency(string name)
-    => BitConverter.ToDouble(DataDependencies[name]);
+    => BitConverter.ToDouble(Inputs[name]);
 
   /// <summary>This method allows to create subtasks.</summary>
   /// <param name="tasks">Lists the tasks to submit</param>

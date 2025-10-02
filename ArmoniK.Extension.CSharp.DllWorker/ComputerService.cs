@@ -73,9 +73,9 @@ public class ComputerService : WorkerStreamWrapper
     using var scopedLog = Logger.BeginNamedScope("Execute task",
                                                  ("Session", taskHandler.SessionId),
                                                  ("TaskId", taskHandler.TaskId));
-    Logger.LogTrace("DataDependencies {DataDependencies}",
+    Logger.LogTrace("Inputs {Inputs}",
                     taskHandler.DataDependencies.Keys);
-    Logger.LogTrace("ExpectedResults {ExpectedResults}",
+    Logger.LogTrace("Outputs {Outputs}",
                     taskHandler.ExpectedResults);
     Output output;
     try

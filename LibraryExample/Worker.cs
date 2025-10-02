@@ -41,7 +41,7 @@ public class Worker : IWorker
                                          ILogger           logger,
                                          CancellationToken cancellationToken)
   {
-    var resultId = taskHandler.ExpectedResults.Single()
+    var resultId = taskHandler.Outputs.Single()
                               .Value;
 
     logger.LogWarning("Sending the following resultId: {resultId}",

@@ -108,4 +108,17 @@ public class ClientBase
     TaskLibraryDefinition = null;
     Client                = null;
   }
+
+  protected class Payload
+  {
+    public Payload(IReadOnlyDictionary<string, string> inputs,
+                   IReadOnlyDictionary<string, string> outputs)
+    {
+      Inputs  = inputs;
+      Outputs = outputs;
+    }
+
+    public IReadOnlyDictionary<string, string> Inputs  { get; }
+    public IReadOnlyDictionary<string, string> Outputs { get; }
+  }
 }

@@ -37,7 +37,7 @@ public class PriorityWorker : IWorker
       var priority  = taskHandler.GetIntDependency("Priority");
       var strResult = $"Payload is {priority} and TaskOptions.Priority is {taskHandler.TaskOptions.Priority}";
 
-      var name = taskHandler.ExpectedResults.Single()
+      var name = taskHandler.Outputs.Single()
                             .Value;
       logger.LogInformation($"Sending result: {strResult}. Task Id: {taskHandler.TaskId}");
       await taskHandler.SendResult(name,
@@ -50,6 +50,8 @@ public class PriorityWorker : IWorker
     }
     catch (Exception ex)
     {
+      logger.LogError(ex,
+                      ex.Message);
       return new Output
              {
                Error = new Output.Types.Error
