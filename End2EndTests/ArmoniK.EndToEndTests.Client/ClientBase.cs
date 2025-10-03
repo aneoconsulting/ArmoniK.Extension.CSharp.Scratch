@@ -16,12 +16,12 @@
 
 using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.DllHelper;
-using ArmoniK.Extension.CSharp.Client.DllHelper.Common;
 using ArmoniK.Extension.CSharp.Client.Handles;
-using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Client.Services;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -41,6 +41,7 @@ public class ClientBase
   protected       DllBlob               DllBlob               { get; set; }
   protected       TaskLibraryDefinition TaskLibraryDefinition { get; set; }
   protected       ArmoniKClient         Client                { get; set; }
+  protected       DynamicLibrary        WorkerLibrary         { get; set; }
 
   protected async Task SetupBaseAsync(string workerName)
   {
@@ -63,13 +64,13 @@ public class ClientBase
                                               1,
                                               Partition,
                                               TimeSpan.FromSeconds(300));
-    var dynamicLibrary = new DynamicLibrary
-                         {
-                           Name        = "ArmoniK.EndToEndTests.Worker",
-                           DllFileName = "ArmoniK.EndToEndTests.Worker.dll",
-                           Version     = "1.0.0.0",
-                           PathToFile  = @"ArmoniK.EndToEndTests.Worker/1.0.0-100",
-                         };
+    WorkerLibrary = new DynamicLibrary
+                    {
+                      Name        = "ArmoniK.EndToEndTests.Worker",
+                      DllFileName = "ArmoniK.EndToEndTests.Worker.dll",
+                      Version     = "1.0.0.0",
+                      PathToFile  = @"ArmoniK.EndToEndTests.Worker/1.0.0-100",
+                    };
 
     Client = new ArmoniKClient(properties,
                                loggerFactory,
@@ -77,7 +78,7 @@ public class ClientBase
 
     Session = await Client.SessionService.CreateSessionWithDllAsync(TaskConfiguration,
                                                                     [Partition],
-                                                                    [dynamicLibrary])
+                                                                    [WorkerLibrary])
                           .ConfigureAwait(false);
     SessionHandle = new SessionHandle(Session,
                                       Client);
@@ -85,15 +86,16 @@ public class ClientBase
     var filePath = Path.Join(AppContext.BaseDirectory,
                              @"..\..\..\..\..\packages\ArmoniK.EndToEndTests.Worker-v1.0.0-100.zip");
     DllBlob = await Client.BlobService.SendDllBlobAsync(Session,
-                                                        dynamicLibrary,
+                                                        WorkerLibrary,
                                                         filePath,
                                                         false,
                                                         CancellationToken.None)
                           .ConfigureAwait(false);
 
-    TaskLibraryDefinition = new TaskLibraryDefinition(dynamicLibrary,
+    TaskLibraryDefinition = new TaskLibraryDefinition(WorkerLibrary,
                                                       "ArmoniK.EndToEndTests.Worker.Tests",
-                                                      workerName);
+                                                      workerName,
+                                                      DllBlob);
   }
 
   protected async Task TearDownBaseAsync()

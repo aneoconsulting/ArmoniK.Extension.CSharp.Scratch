@@ -36,14 +36,15 @@ public class TaskSdkWorker : IWorker
     var resultInt    = taskHandler.GetIntDependency("myInt");
     var resultDouble = taskHandler.GetDoubleDependency("myDouble");
 
-    await taskHandler.SendResult("resultString",
-                                 Encoding.ASCII.GetBytes(resultString))
+    // Send the input as results as is.
+    await taskHandler.SendResultByNameAsync("resultString",
+                                            Encoding.ASCII.GetBytes(resultString))
                      .ConfigureAwait(false);
-    await taskHandler.SendResult("resultInt",
-                                 Encoding.ASCII.GetBytes(resultInt.ToString()))
+    await taskHandler.SendResultByNameAsync("resultInt",
+                                            Encoding.ASCII.GetBytes(resultInt.ToString()))
                      .ConfigureAwait(false);
-    await taskHandler.SendResult("resultDouble",
-                                 Encoding.ASCII.GetBytes(resultDouble.ToString("F2")))
+    await taskHandler.SendResultByNameAsync("resultDouble",
+                                            Encoding.ASCII.GetBytes(resultDouble.ToString("F2")))
                      .ConfigureAwait(false);
 
     return new Output

@@ -19,6 +19,7 @@ using System.Collections.Generic;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Handles;
+using ArmoniK.Extension.CSharp.Client.Library;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
@@ -46,6 +47,23 @@ public class TaskDefinition
   ///   Additional task options
   /// </summary>
   public TaskConfiguration? TaskOptions { get; private set; }
+
+  /// <summary>
+  ///   The library that implements the task
+  /// </summary>
+  public TaskLibraryDefinition? WorkerLibrary { get; private set; }
+
+  /// <summary>
+  ///   Set the worker library information.
+  ///   Mandatory when ArmoniK SDK is used on worker side.
+  /// </summary>
+  /// <param name="workerLibrary">The worker dynamic library</param>
+  /// <returns>The TaskDefinition</returns>
+  public TaskDefinition WithLibrary(TaskLibraryDefinition workerLibrary)
+  {
+    WorkerLibrary = workerLibrary;
+    return this;
+  }
 
   /// <summary>
   ///   Add an output of another task as input to the task (when the parameter is a BlobDeclaration)

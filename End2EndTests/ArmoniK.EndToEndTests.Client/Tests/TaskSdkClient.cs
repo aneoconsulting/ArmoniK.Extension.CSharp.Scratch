@@ -25,7 +25,7 @@ public class TaskSdkClient : ClientBase
 {
   [SetUp]
   public async Task SetupAsync()
-    => await SetupBaseAsync("TaskSdk")
+    => await SetupBaseAsync("TaskSdkWorker")
          .ConfigureAwait(false);
 
   [TearDown]
@@ -36,13 +36,15 @@ public class TaskSdkClient : ClientBase
   [Test]
   public async Task TaskSdk()
   {
-    var options = TaskConfiguration with
-                  {
-                    Priority = 1,
-                    PartitionId = Partition,
-                  };
-
-    var taskDefinition = new TaskDefinition().WithInput("myString",
+    var filePath = Path.Join(AppContext.BaseDirectory,
+                             @"..\..\..\..\..\packages\ArmoniK.EndToEndTests.Worker-v1.0.0-100.zip");
+    await SessionHandle.SendDllBlobAsync(WorkerLibrary,
+                                         filePath,
+                                         false,
+                                         CancellationToken.None)
+                       .ConfigureAwait(false);
+    var taskDefinition = new TaskDefinition().WithLibrary(TaskLibraryDefinition)
+                                             .WithInput("myString",
                                                         BlobDefinition.FromString("Hello world!"))
                                              .WithInput("myInt",
                                                         BlobDefinition.FromInt(404))
@@ -51,7 +53,7 @@ public class TaskSdkClient : ClientBase
                                              .WithOutput("resultString")
                                              .WithOutput("resultInt")
                                              .WithOutput("resultDouble")
-                                             .WithAdditionalTaskOptions(options);
+                                             .WithAdditionalTaskOptions(TaskConfiguration);
     var taskHandle = await SessionHandle.SubmitAsync(taskDefinition)
                                         .ConfigureAwait(false);
 

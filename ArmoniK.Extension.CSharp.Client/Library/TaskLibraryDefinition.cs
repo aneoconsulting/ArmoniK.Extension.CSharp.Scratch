@@ -15,12 +15,13 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
-namespace ArmoniK.Extension.CSharp.DllCommon;
+namespace ArmoniK.Extension.CSharp.Client.Library;
 
 /// <summary>
-///   Represents a task library definition which extends the DynamicLibrary class.
+///   Represents a task library definition which extends the WorkerLibrary class.
 ///   It is used for defining which namespace and service the tasks will consume from the dll
 /// </summary>
 public record TaskLibraryDefinition : DynamicLibrary
@@ -31,13 +32,16 @@ public record TaskLibraryDefinition : DynamicLibrary
   /// <param name="dll">The dynamic library instance.</param>
   /// <param name="space">Namespace of the application.</param>
   /// <param name="service">Service name of the application (class name).</param>
+  /// <param name="blob">The dll blob.</param>
   public TaskLibraryDefinition(DynamicLibrary dll,
                                string         space,
-                               string         service)
+                               string         service,
+                               DllBlob?       blob = null)
     : base(dll)
   {
     Namespace = space;
     Service   = service;
+    DllBlob   = blob;
   }
 
   /// <summary>
@@ -49,6 +53,11 @@ public record TaskLibraryDefinition : DynamicLibrary
   ///   Service name of the application.
   /// </summary>
   public string Service { get; init; }
+
+  /// <summary>
+  ///   The Dll blob
+  /// </summary>
+  public DllBlob? DllBlob { get; init; }
 
   /// <summary>
   ///   Returns a string representation of the TaskLibraryDefinition instance.

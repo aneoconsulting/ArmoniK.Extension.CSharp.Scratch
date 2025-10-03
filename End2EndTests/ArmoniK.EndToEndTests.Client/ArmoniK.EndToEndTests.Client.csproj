@@ -40,10 +40,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.Client.DllHelper\ArmoniK.Extension.CSharp.Client.DllHelper.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
@@ -51,6 +47,10 @@
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.Client\ArmoniK.Extension.CSharp.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

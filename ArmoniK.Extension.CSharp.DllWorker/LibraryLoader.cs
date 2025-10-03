@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 
 using ArmoniK.Api.Worker.Worker;
+using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.DllCommon;
 using ArmoniK.Extension.CSharp.Worker;
 

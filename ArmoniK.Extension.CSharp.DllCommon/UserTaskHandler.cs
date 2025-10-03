@@ -104,12 +104,13 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns></returns>
-  public Task<CreateTaskReply> CreateTasksAsync(IEnumerable<TaskRequest> tasks,
-                                                TaskOptions?             taskOptions       = null,
-                                                CancellationToken?       cancellationToken = null)
-    => taskHandler_.CreateTasksAsync(tasks,
-                                     taskOptions,
-                                     cancellationToken);
+  public async Task<CreateTaskReply> CreateTasksAsync(IEnumerable<TaskRequest> tasks,
+                                                      TaskOptions?             taskOptions       = null,
+                                                      CancellationToken?       cancellationToken = null)
+    => await taskHandler_.CreateTasksAsync(tasks,
+                                           taskOptions,
+                                           cancellationToken)
+                         .ConfigureAwait(false);
 
   /// <summary>
   ///   NOT IMPLEMENTED
@@ -121,10 +122,11 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns></returns>
-  public Task<byte[]> RequestResource(string             key,
-                                      CancellationToken? cancellationToken = null)
-    => RequestResource(key,
-                       cancellationToken);
+  public async Task<byte[]> RequestResource(string             key,
+                                            CancellationToken? cancellationToken = null)
+    => await RequestResource(key,
+                             cancellationToken)
+         .ConfigureAwait(false);
 
   /// <summary>
   ///   NOT IMPLEMENTED
@@ -136,10 +138,11 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns></returns>
-  public Task<byte[]> RequestCommonData(string             key,
-                                        CancellationToken? cancellationToken = null)
-    => RequestCommonData(key,
-                         cancellationToken);
+  public async Task<byte[]> RequestCommonData(string             key,
+                                              CancellationToken? cancellationToken = null)
+    => await RequestCommonData(key,
+                               cancellationToken)
+         .ConfigureAwait(false);
 
   /// <summary>
   ///   NOT IMPLEMENTED
@@ -151,10 +154,11 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns></returns>
-  public Task<byte[]> RequestDirectData(string             key,
-                                        CancellationToken? cancellationToken = null)
-    => taskHandler_.RequestDirectData(key,
-                                      cancellationToken);
+  public async Task<byte[]> RequestDirectData(string             key,
+                                              CancellationToken? cancellationToken = null)
+    => await taskHandler_.RequestDirectData(key,
+                                            cancellationToken)
+                         .ConfigureAwait(false);
 
   /// <summary>Send the results computed by the task</summary>
   /// <param name="key">The key identifier of the result.</param>
@@ -164,12 +168,31 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns></returns>
-  public Task SendResult(string             key,
-                         byte[]             data,
-                         CancellationToken? cancellationToken = null)
-    => taskHandler_.SendResult(key,
-                               data,
-                               cancellationToken);
+  public async Task SendResult(string             key,
+                               byte[]             data,
+                               CancellationToken? cancellationToken = null)
+    => await taskHandler_.SendResult(key,
+                                     data,
+                                     cancellationToken)
+                         .ConfigureAwait(false);
+
+  /// <summary>
+  ///   Send the results computed by the task
+  /// </summary>
+  /// <param name="name">Name of the result defined by the client</param>
+  /// <param name="data">The raw data</param>
+  /// <param name="cancellationToken">
+  ///   Token used to cancel the execution of the method.
+  ///   If null, the cancellation token of the task handler is used
+  /// </param>
+  /// <returns></returns>
+  public async Task SendResultByNameAsync(string             name,
+                                          byte[]             data,
+                                          CancellationToken? cancellationToken = null)
+    => await SendResult(Outputs[name],
+                        data,
+                        cancellationToken)
+         .ConfigureAwait(false);
 
   /// <summary>Create results metadata</summary>
   /// <param name="results">The collection of results to be created</param>
@@ -178,10 +201,11 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns>The result creation response</returns>
-  public Task<CreateResultsMetaDataResponse> CreateResultsMetaDataAsync(IEnumerable<CreateResultsMetaDataRequest.Types.ResultCreate> results,
-                                                                        CancellationToken?                                           cancellationToken = null)
-    => taskHandler_.CreateResultsMetaDataAsync(results,
-                                               cancellationToken);
+  public async Task<CreateResultsMetaDataResponse> CreateResultsMetaDataAsync(IEnumerable<CreateResultsMetaDataRequest.Types.ResultCreate> results,
+                                                                              CancellationToken?                                           cancellationToken = null)
+    => await taskHandler_.CreateResultsMetaDataAsync(results,
+                                                     cancellationToken)
+                         .ConfigureAwait(false);
 
   /// <summary>Submit tasks with existing payloads (results)</summary>
   /// <param name="taskCreations">The requests to create tasks</param>
@@ -191,12 +215,13 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns>The task submission response</returns>
-  public Task<SubmitTasksResponse> SubmitTasksAsync(IEnumerable<SubmitTasksRequest.Types.TaskCreation> taskCreations,
-                                                    TaskOptions?                                       submissionTaskOptions,
-                                                    CancellationToken?                                 cancellationToken = null)
-    => taskHandler_.SubmitTasksAsync(taskCreations,
-                                     submissionTaskOptions,
-                                     cancellationToken);
+  public async Task<SubmitTasksResponse> SubmitTasksAsync(IEnumerable<SubmitTasksRequest.Types.TaskCreation> taskCreations,
+                                                          TaskOptions?                                       submissionTaskOptions,
+                                                          CancellationToken?                                 cancellationToken = null)
+    => await taskHandler_.SubmitTasksAsync(taskCreations,
+                                           submissionTaskOptions,
+                                           cancellationToken)
+                         .ConfigureAwait(false);
 
   /// <summary>
   ///   Create results from metadata and data in an unique request
@@ -207,8 +232,9 @@ public class UserTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns>The task submission response</returns>
-  public Task<CreateResultsResponse> CreateResultsAsync(IEnumerable<CreateResultsRequest.Types.ResultCreate> results,
-                                                        CancellationToken?                                   cancellationToken = null)
-    => taskHandler_.CreateResultsAsync(results,
-                                       cancellationToken);
+  public async Task<CreateResultsResponse> CreateResultsAsync(IEnumerable<CreateResultsRequest.Types.ResultCreate> results,
+                                                              CancellationToken?                                   cancellationToken = null)
+    => await taskHandler_.CreateResultsAsync(results,
+                                             cancellationToken)
+                         .ConfigureAwait(false);
 }

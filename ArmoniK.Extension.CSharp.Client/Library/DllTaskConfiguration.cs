@@ -14,13 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.DllCommon;
 
 using Google.Protobuf.Collections;
 
-namespace ArmoniK.Extension.CSharp.Client.DllHelper.Common;
+namespace ArmoniK.Extension.CSharp.Client.Library;
 
 /// <summary>
 ///   Provides a specialized configuration for tasks that use dynamic libraries. This configuration extends the basic

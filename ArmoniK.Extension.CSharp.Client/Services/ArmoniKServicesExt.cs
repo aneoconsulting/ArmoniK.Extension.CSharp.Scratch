@@ -14,13 +14,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.DllHelper.Common;
-using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.Client.Library;
 
-namespace ArmoniK.Extension.CSharp.Client.DllHelper;
+namespace ArmoniK.Extension.CSharp.Client.Services;
 
 /// <summary>
 ///   Provides extension methods for handling dynamic library usage on ArmoniK's environment.
@@ -44,7 +51,8 @@ public static class ArmoniKServicesExt
                                                                   IEnumerable<DynamicLibrary> dynamicLibraries)
     => await sessionService.CreateSessionAsync(new DllTasksConfiguration(dynamicLibraries,
                                                                          taskOptions),
-                                               partitionIds);
+                                               partitionIds)
+                           .ConfigureAwait(false);
 
   /// <summary>
   ///   Asynchronously sends a dynamic library blob to a blob service
@@ -69,7 +77,8 @@ public static class ArmoniKServicesExt
                                                      dynamicLibrary.ToString(),
                                                      content,
                                                      manualDeletion,
-                                                     cancellationToken);
+                                                     cancellationToken)
+                                    .ConfigureAwait(false);
     dynamicLibrary.LibraryBlobId = blobInfo.BlobId;
     return new DllBlob(dynamicLibrary)
            {
@@ -97,9 +106,7 @@ public static class ArmoniKServicesExt
                                                      bool              manualDeletion,
                                                      CancellationToken cancellationToken)
   {
-    var content = await File.ReadAllBytesAsync(zipPath,
-                                               cancellationToken)
-                            .ConfigureAwait(false);
+    var content = File.ReadAllBytes(zipPath);
     return await SendDllBlobAsync(blobService,
                                   session,
                                   dynamicLibrary,
@@ -139,12 +146,13 @@ public static class ArmoniKServicesExt
     var result = await taskService.SubmitTasksAsync(session,
                                                     taskNodes,
                                                     manualDeletion,
-                                                    cancellationToken);
+                                                    cancellationToken)
+                                  .ConfigureAwait(false);
     return result;
   }
 }
 
 public record TaskNodeExt : TaskNode
 {
-  public required TaskLibraryDefinition DynamicLibrary { get; init; }
+  public TaskLibraryDefinition DynamicLibrary { get; init; }
 }

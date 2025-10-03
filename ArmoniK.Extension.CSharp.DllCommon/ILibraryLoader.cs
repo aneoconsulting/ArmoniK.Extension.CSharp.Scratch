@@ -17,6 +17,7 @@
 using System.Runtime.Loader;
 
 using ArmoniK.Api.Worker.Worker;
+using ArmoniK.Extension.CSharp.Client.Library;
 
 namespace ArmoniK.Extension.CSharp.DllCommon;
 

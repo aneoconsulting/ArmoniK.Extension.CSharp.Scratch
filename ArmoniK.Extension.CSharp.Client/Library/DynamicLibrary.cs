@@ -14,10 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Collections.Generic;
+
 using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
-namespace ArmoniK.Extension.CSharp.DllCommon;
+namespace ArmoniK.Extension.CSharp.Client.Library;
 
 /// <summary>
 ///   Represents the configuration of an application, including its name, version, namespace, service, and engine type.

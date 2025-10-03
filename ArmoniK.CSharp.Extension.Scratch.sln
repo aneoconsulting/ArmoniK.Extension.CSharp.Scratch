@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UsageExample", "UsageExampl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{E6CDD175-48B3-407D-A305-EA8BB5562DD7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArmoniK.Extension.CSharp.Client.DllHelper", "ArmoniK.Extension.CSharp.Client.DllHelper\ArmoniK.Extension.CSharp.Client.DllHelper.csproj", "{633A7267-5798-4B40-8F24-AD1C9B115B9C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArmoniK.Extension.CSharp.DllCommon", "ArmoniK.Extension.CSharp.DllCommon\ArmoniK.Extension.CSharp.DllCommon.csproj", "{09069AFD-BA76-4064-AD1E-1D9620EF8367}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArmoniK.Extension.CSharp.DllWorker", "ArmoniK.Extension.CSharp.DllWorker\ArmoniK.Extension.CSharp.DllWorker.csproj", "{9839F1CC-7F46-455B-A63A-EC6A25F92507}"
@@ -43,10 +41,6 @@ Global
 		{E6CDD175-48B3-407D-A305-EA8BB5562DD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6CDD175-48B3-407D-A305-EA8BB5562DD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6CDD175-48B3-407D-A305-EA8BB5562DD7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{633A7267-5798-4B40-8F24-AD1C9B115B9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{633A7267-5798-4B40-8F24-AD1C9B115B9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{633A7267-5798-4B40-8F24-AD1C9B115B9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{633A7267-5798-4B40-8F24-AD1C9B115B9C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{09069AFD-BA76-4064-AD1E-1D9620EF8367}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{09069AFD-BA76-4064-AD1E-1D9620EF8367}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{09069AFD-BA76-4064-AD1E-1D9620EF8367}.Release|Any CPU.ActiveCfg = Release|Any CPU

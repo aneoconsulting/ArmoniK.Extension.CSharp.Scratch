@@ -18,7 +18,7 @@ using System.Text;
 using System.Text.Json;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.DllHelper;
+using ArmoniK.Extension.CSharp.Client.Services;
 
 namespace ArmoniK.EndToEndTests.Client.Tests;
 

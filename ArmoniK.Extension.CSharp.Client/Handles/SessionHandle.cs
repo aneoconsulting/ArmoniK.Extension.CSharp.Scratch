@@ -25,6 +25,8 @@ using System.Threading.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Client.Services;
 
 using Newtonsoft.Json;
 
@@ -137,6 +139,27 @@ public class SessionHandle
                            .ConfigureAwait(false);
 
   /// <summary>
+  ///   Asynchronously sends a dynamic library blob to a blob service
+  /// </summary>
+  /// <param name="dynamicLibrary">The dynamic library related to the blob being sent.</param>
+  /// <param name="zipPath">File path to the zipped library.</param>
+  /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>
+  ///   The created <see cref="DllBlob" /> instance with relevant identifiers.
+  /// </returns>
+  public async Task<DllBlob> SendDllBlobAsync(DynamicLibrary    dynamicLibrary,
+                                              string            zipPath,
+                                              bool              manualDeletion,
+                                              CancellationToken cancellationToken)
+    => await armoniKClient_.BlobService.SendDllBlobAsync(sessionInfo_,
+                                                         dynamicLibrary,
+                                                         zipPath,
+                                                         manualDeletion,
+                                                         cancellationToken)
+                           .ConfigureAwait(false);
+
+  /// <summary>
   ///   Submit a task.
   /// </summary>
   /// <param name="task">The task to submit</param>
@@ -170,17 +193,24 @@ public class SessionHandle
                                                                        cancellationToken: cancellationToken)
                                           .ConfigureAwait(false);
 
+    var taskConfiguration = task.TaskOptions ?? new TaskConfiguration();
+    if (task.WorkerLibrary != null)
+    {
+      taskConfiguration.AddTaskLibraryDefinition(task.WorkerLibrary);
+      if (task.WorkerLibrary.DllBlob != null)
+      {
+        inputs.Add(task.WorkerLibrary.DllBlob);
+      }
+    }
+
     var taskNode = new TaskNode
                    {
                      DataDependencies = inputs,
                      ExpectedOutputs  = outputs,
                      Session          = sessionInfo_,
                      Payload          = payloadBlob,
+                     TaskOptions      = taskConfiguration,
                    };
-    if (task.TaskOptions != null)
-    {
-      taskNode.TaskOptions = task.TaskOptions;
-    }
 
     var taskInfos = await armoniKClient_.TasksService.SubmitTasksAsync(sessionInfo_,
                                                                        [taskNode],
