@@ -21,7 +21,7 @@ using System.Text.Json;
 using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
-using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.DllCommon;
 
 using Microsoft.Extensions.Configuration;

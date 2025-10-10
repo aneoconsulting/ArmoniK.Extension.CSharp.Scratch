@@ -82,12 +82,8 @@ internal class Program
                        PathToFile  = "publish",
                      };
 
-    var session = await client.SessionService.CreateSessionWithDllAsync(defaultTaskOptions,
-                                                                        ["dll"],
-                                                                        new[]
-                                                                        {
-                                                                          dynamicLib,
-                                                                        })
+    var session = await client.SessionService.CreateSessionAsync(defaultTaskOptions,
+                                                                 ["dll"])
                               .ConfigureAwait(false);
 
     Console.WriteLine($"sessionId: {session.SessionId}");
@@ -128,20 +124,19 @@ internal class Program
 
     var taskLibraryDefinition = new TaskLibraryDefinition(dynamicLib,
                                                           "LibraryExample",
-                                                          "Worker");
+                                                          "Worker",
+                                                          dllBlob);
+    defaultTaskOptions.AddTaskLibraryDefinition(taskLibraryDefinition);
 
     var task = await tasksService.SubmitTasksWithDllAsync(session,
                                                           new List<TaskNodeExt>
                                                           {
                                                             new()
                                                             {
-                                                              Payload = payload,
-                                                              ExpectedOutputs = new[]
-                                                                                {
-                                                                                  result,
-                                                                                },
-                                                              TaskOptions    = defaultTaskOptions,
-                                                              DynamicLibrary = taskLibraryDefinition,
+                                                              Payload         = payload,
+                                                              ExpectedOutputs = [result],
+                                                              TaskOptions     = defaultTaskOptions,
+                                                              DynamicLibrary  = taskLibraryDefinition,
                                                             },
                                                           },
                                                           dllBlob,

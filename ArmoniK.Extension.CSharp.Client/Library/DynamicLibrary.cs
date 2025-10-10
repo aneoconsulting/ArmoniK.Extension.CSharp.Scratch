@@ -14,12 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
-using ArmoniK.Api.gRPC.V1;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-
 namespace ArmoniK.Extension.CSharp.Client.Library;
 
 /// <summary>
@@ -58,78 +52,4 @@ public record DynamicLibrary
   /// <returns>A string that represents the current DynamicLibrary.</returns>
   public override string ToString()
     => $"{Name}-{Version}";
-}
-
-/// <summary>
-///   Provides extension methods for handling DynamicLibrary instances within TaskConfiguration and TaskOptions.
-/// </summary>
-public static class DynamicLibraryExt
-{
-  /// <summary>
-  ///   Adds a DynamicLibrary to the TaskConfiguration.
-  /// </summary>
-  /// <param name="taskConfiguration">The task configuration to add to.</param>
-  /// <param name="dynamicLibrary">The DynamicLibrary to add.</param>
-  /// <returns>The updated TaskConfiguration.</returns>
-  public static TaskConfiguration AddDynamicLibrary(this TaskConfiguration taskConfiguration,
-                                                    DynamicLibrary         dynamicLibrary)
-  {
-    taskConfiguration.Options.Add($"{dynamicLibrary}.Name",
-                                  dynamicLibrary.Name);
-    taskConfiguration.Options.Add($"{dynamicLibrary}.PathToFile",
-                                  dynamicLibrary.PathToFile);
-    taskConfiguration.Options.Add($"{dynamicLibrary}.DllFileName",
-                                  dynamicLibrary.DllFileName);
-    taskConfiguration.Options.Add($"{dynamicLibrary}.Version",
-                                  dynamicLibrary.Version);
-    taskConfiguration.Options.Add($"{dynamicLibrary}.LibraryBlobId",
-                                  dynamicLibrary.LibraryBlobId);
-    return taskConfiguration;
-  }
-
-  /// <summary>
-  ///   Retrieves the service library from the TaskOptions.
-  /// </summary>
-  /// <param name="taskOptions">The task options to retrieve from.</param>
-  /// <returns>The value of the service library option.</returns>
-  public static string? GetServiceLibrary(this TaskOptions taskOptions)
-  {
-    taskOptions.Options.TryGetValue("ServiceLibrary",
-                                    out var value);
-    return value;
-  }
-
-  /// <summary>
-  ///   Retrieves a DynamicLibrary from the TaskOptions.
-  /// </summary>
-  /// <param name="taskOptions">The task options to retrieve from.</param>
-  /// <param name="libraryName">The name of the library.</param>
-  /// <returns>The DynamicLibrary associated with the specified library name.</returns>
-  public static DynamicLibrary GetDynamicLibrary(this TaskOptions taskOptions,
-                                                 string           libraryName)
-  {
-    if (taskOptions.Options.TryGetValue($"{libraryName}.Name",
-                                        out var name))
-    {
-      taskOptions.Options.TryGetValue($"{libraryName}.PathToFile",
-                                      out var pathToFile);
-      taskOptions.Options.TryGetValue($"{libraryName}.DllFileName",
-                                      out var dllFileName);
-      taskOptions.Options.TryGetValue($"{libraryName}.Version",
-                                      out var version);
-      taskOptions.Options.TryGetValue($"{libraryName}.LibraryBlobId",
-                                      out var libraryId);
-
-      return new DynamicLibrary
-             {
-               Name          = name,
-               DllFileName   = dllFileName ?? string.Empty,
-               PathToFile    = pathToFile  ?? string.Empty,
-               Version       = version     ?? string.Empty,
-               LibraryBlobId = libraryId   ?? string.Empty,
-             };
-    }
-
-    throw new KeyNotFoundException($"Could not find library {libraryName}");
-  }
 }

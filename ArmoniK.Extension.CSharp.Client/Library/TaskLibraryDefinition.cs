@@ -14,9 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Client.Library;
 
@@ -65,54 +63,4 @@ public record TaskLibraryDefinition : DynamicLibrary
   /// <returns>A string that represents the current TaskLibraryDefinition.</returns>
   public override string ToString()
     => $"{Name}-{Version}";
-}
-
-/// <summary>
-///   Provides extension methods for TaskLibraryDefinition.
-/// </summary>
-public static class TaskLibraryDefinitionExt
-{
-  /// <summary>
-  ///   Adds a TaskLibraryDefinition to the TaskConfiguration.
-  /// </summary>
-  /// <param name="taskConfiguration">The task configuration to add to.</param>
-  /// <param name="dynamicLibrary">The TaskLibraryDefinition to add.</param>
-  /// <returns>The updated TaskConfiguration.</returns>
-  public static TaskConfiguration AddTaskLibraryDefinition(this TaskConfiguration taskConfiguration,
-                                                           TaskLibraryDefinition  dynamicLibrary)
-  {
-    // Check that the library was not already added
-    if (!taskConfiguration.Options.ContainsKey($"{dynamicLibrary}.Name"))
-    {
-      taskConfiguration.AddDynamicLibrary(dynamicLibrary);
-      taskConfiguration.Options.Add($"{dynamicLibrary}.Namespace",
-                                    dynamicLibrary.Namespace);
-      taskConfiguration.Options.Add($"{dynamicLibrary}.Service",
-                                    dynamicLibrary.Service);
-      taskConfiguration.Options.Add("ServiceLibrary",
-                                    dynamicLibrary.ToString());
-    }
-
-    return taskConfiguration;
-  }
-
-  /// <summary>
-  ///   Retrieves a TaskLibraryDefinition from the TaskOptions.
-  /// </summary>
-  /// <param name="taskOptions">The task options to retrieve from.</param>
-  /// <param name="libraryName">The name of the library.</param>
-  /// <returns>The TaskLibraryDefinition associated with the specified library name.</returns>
-  public static TaskLibraryDefinition GetTaskLibraryDefinition(this TaskOptions taskOptions,
-                                                               string           libraryName)
-  {
-    var dll = taskOptions.GetDynamicLibrary(libraryName);
-    taskOptions.Options.TryGetValue($"{libraryName}.Namespace",
-                                    out var serviceNamespace);
-
-    taskOptions.Options.TryGetValue($"{libraryName}.Service",
-                                    out var service);
-    return new TaskLibraryDefinition(dll,
-                                     serviceNamespace ?? string.Empty,
-                                     service          ?? string.Empty);
-  }
 }

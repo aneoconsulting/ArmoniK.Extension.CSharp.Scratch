@@ -36,25 +36,6 @@ namespace ArmoniK.Extension.CSharp.Client.Services;
 public static class ArmoniKServicesExt
 {
   /// <summary>
-  ///   Creates a session and returns <see cref="SessionInfo" />, the session information.
-  /// </summary>
-  /// <param name="sessionService">An instance of session service.</param>
-  /// <param name="partitionIds">Partitions related to the opened session</param>
-  /// <param name="dynamicLibraries">A collection of dynamic libraries that the session will handle.</param>
-  /// <param name="taskOptions">Default taskOptions of the session</param>
-  /// <returns>
-  ///   A task that represents the asynchronous creation of a session.
-  /// </returns>
-  public static async Task<SessionInfo> CreateSessionWithDllAsync(this ISessionService        sessionService,
-                                                                  TaskConfiguration           taskOptions,
-                                                                  IEnumerable<string>         partitionIds,
-                                                                  IEnumerable<DynamicLibrary> dynamicLibraries)
-    => await sessionService.CreateSessionAsync(new DllTasksConfiguration(dynamicLibraries,
-                                                                         taskOptions),
-                                               partitionIds)
-                           .ConfigureAwait(false);
-
-  /// <summary>
   ///   Asynchronously sends a dynamic library blob to a blob service
   /// </summary>
   /// <param name="blobService">The blob service to use for uploading the library.</param>

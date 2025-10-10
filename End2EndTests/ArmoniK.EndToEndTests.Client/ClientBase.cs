@@ -76,9 +76,8 @@ public class ClientBase
                                loggerFactory,
                                TaskConfiguration);
 
-    Session = await Client.SessionService.CreateSessionWithDllAsync(TaskConfiguration,
-                                                                    [Partition],
-                                                                    [WorkerLibrary])
+    Session = await Client.SessionService.CreateSessionAsync(TaskConfiguration,
+                                                             [Partition])
                           .ConfigureAwait(false);
     SessionHandle = new SessionHandle(Session,
                                       Client);
