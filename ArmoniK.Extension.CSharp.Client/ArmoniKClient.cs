@@ -15,7 +15,6 @@
 // limitations under the License.
 
 using System;
-using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -55,9 +54,10 @@ public class ArmoniKClient
                        ILoggerFactory    loggerFactory,
                        TaskConfiguration taskConfiguration)
   {
-    Properties    = properties    ?? throw new ArgumentNullException(nameof(properties));
-    LoggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-    logger_       = loggerFactory.CreateLogger<ArmoniKClient>();
+    Properties              = properties        ?? throw new ArgumentNullException(nameof(properties));
+    LoggerFactory           = loggerFactory     ?? throw new ArgumentNullException(nameof(loggerFactory));
+    DefaulTaskConfiguration = taskConfiguration ?? throw new ArgumentNullException(nameof(taskConfiguration));
+    logger_                 = loggerFactory.CreateLogger<ArmoniKClient>();
 
     var services = new ServiceCollection();
     services.AddSingleton(BuildBlobService)
@@ -86,6 +86,11 @@ public class ArmoniKClient
   public ObjectPool<ChannelBase> ChannelPool
     => channelPool_ ??= ClientServiceConnector.ControlPlaneConnectionPool(Properties,
                                                                           LoggerFactory);
+
+  /// <summary>
+  ///   The default TaskConfiguration
+  /// </summary>
+  public TaskConfiguration DefaulTaskConfiguration { get; init; }
 
   /// <summary>
   ///   Gets the blob service
@@ -148,11 +153,13 @@ public class ArmoniKClient
   private ISessionService BuildSessionsService(IServiceProvider provider)
     => new SessionService(ChannelPool,
                           Properties,
+                          this,
                           LoggerFactory);
 
   private ITasksService BuildTasksService(IServiceProvider provider)
     => new TasksService(ChannelPool,
                         BlobService,
+                        this,
                         LoggerFactory);
 
   private IVersionsService BuildVersionsService(IServiceProvider provider)
@@ -164,25 +171,28 @@ public class ArmoniKClient
   /// </summary>
   /// <param name="blobInfo">The blob information.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the blob handle instance.</returns>
-  public Task<BlobHandle> GetBlobHandle(BlobInfo blobInfo)
-    => Task.FromResult(new BlobHandle(blobInfo,
-                                      this));
+  public BlobHandle GetBlobHandle(BlobInfo blobInfo)
+    => new(blobInfo,
+           this);
 
   /// <summary>
   ///   Gets a task handle for the specified task information.
   /// </summary>
   /// <param name="taskInfos">The task information.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the task handle instance.</returns>
-  public Task<TaskHandle> GetTaskHandle(TaskInfos taskInfos)
-    => Task.FromResult(new TaskHandle(this,
-                                      taskInfos));
+  public TaskHandle GetTaskHandle(TaskInfos taskInfos)
+    => new(this,
+           taskInfos);
 
   /// <summary>
   ///   Gets a session handle for the specified session information.
   /// </summary>
   /// <param name="session">The session information.</param>
+  /// <param name="taskConfiguration">The TaskConfiguration, when null the DefaultTaskConfiguration is used</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the session handle instance.</returns>
-  public Task<SessionHandle> GetSessionHandle(SessionInfo session)
-    => Task.FromResult(new SessionHandle(session,
-                                         this));
+  public SessionHandle GetSessionHandle(SessionInfo        session,
+                                        TaskConfiguration? taskConfiguration = null)
+    => new(session,
+           this,
+           taskConfiguration ?? DefaulTaskConfiguration);
 }

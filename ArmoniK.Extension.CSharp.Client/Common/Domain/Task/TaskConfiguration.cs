@@ -90,40 +90,11 @@ public record TaskConfiguration
   /// </summary>
   /// <param name="dynamicLibrary">The DynamicLibrary to add.</param>
   /// <returns>The updated TaskConfiguration.</returns>
-  internal TaskConfiguration AddDynamicLibrary(DynamicLibrary dynamicLibrary)
+  public TaskConfiguration AddDynamicLibrary(DynamicLibrary dynamicLibrary)
   {
-    Options.Add($"{dynamicLibrary}.Name",
-                dynamicLibrary.Name);
-    Options.Add($"{dynamicLibrary}.PathToFile",
-                dynamicLibrary.PathToFile);
-    Options.Add($"{dynamicLibrary}.DllFileName",
-                dynamicLibrary.DllFileName);
-    Options.Add($"{dynamicLibrary}.Version",
-                dynamicLibrary.Version);
-    Options.Add($"{dynamicLibrary}.LibraryBlobId",
-                dynamicLibrary.LibraryBlobId);
-    return this;
-  }
-
-  /// <summary>
-  ///   Adds a TaskLibraryDefinition to the TaskConfiguration.
-  /// </summary>
-  /// <param name="dynamicLibrary">The TaskLibraryDefinition to add.</param>
-  /// <returns>The updated TaskConfiguration.</returns>
-  public TaskConfiguration AddTaskLibraryDefinition(TaskLibraryDefinition dynamicLibrary)
-  {
-    // Check that the library was not already added
-    if (!Options.ContainsKey($"{dynamicLibrary}.Name"))
-    {
-      AddDynamicLibrary(dynamicLibrary);
-      Options.Add($"{dynamicLibrary}.Namespace",
-                  dynamicLibrary.Namespace);
-      Options.Add($"{dynamicLibrary}.Service",
-                  dynamicLibrary.Service);
-      Options.Add("ServiceLibrary",
-                  dynamicLibrary.ToString());
-    }
-
+    Options[nameof(DynamicLibrary.LibraryPath)]   = dynamicLibrary.LibraryPath;
+    Options[nameof(DynamicLibrary.Symbol)]        = dynamicLibrary.Symbol;
+    Options[nameof(DynamicLibrary.LibraryBlobId)] = dynamicLibrary.LibraryBlobId;
     return this;
   }
 

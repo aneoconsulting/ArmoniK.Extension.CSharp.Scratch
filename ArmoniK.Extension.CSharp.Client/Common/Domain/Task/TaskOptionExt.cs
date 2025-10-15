@@ -14,9 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Generic;
-
 using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Library;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
@@ -27,68 +26,52 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 public static class TaskOptionExt
 {
   /// <summary>
-  ///   Retrieves a TaskLibraryDefinition from the TaskOptions.
+  ///   Get a DynamicLibrary from the TaskOptions.
   /// </summary>
-  /// <param name="taskOptions">The task options to retrieve from.</param>
-  /// <param name="libraryName">The name of the library.</param>
-  /// <returns>The TaskLibraryDefinition associated with the specified library name.</returns>
-  public static TaskLibraryDefinition GetTaskLibraryDefinition(this TaskOptions taskOptions,
-                                                               string           libraryName)
-  {
-    var dll = taskOptions.GetDynamicLibrary(libraryName);
-    taskOptions.Options.TryGetValue($"{libraryName}.Namespace",
-                                    out var serviceNamespace);
-
-    taskOptions.Options.TryGetValue($"{libraryName}.Service",
-                                    out var service);
-    return new TaskLibraryDefinition(dll,
-                                     serviceNamespace ?? string.Empty,
-                                     service          ?? string.Empty);
-  }
-
-  /// <summary>
-  ///   Retrieves a DynamicLibrary from the TaskOptions.
-  /// </summary>
-  /// <param name="taskOptions">The task options to retrieve from.</param>
-  /// <param name="libraryName">The name of the library.</param>
+  /// <param name="taskOptions">The task options to get the parameters from.</param>
   /// <returns>The DynamicLibrary associated with the specified library name.</returns>
-  public static DynamicLibrary GetDynamicLibrary(this TaskOptions taskOptions,
-                                                 string           libraryName)
+  public static DynamicLibrary GetDynamicLibrary(this TaskOptions taskOptions)
   {
-    if (taskOptions.Options.TryGetValue($"{libraryName}.Name",
-                                        out var name))
+    if (!taskOptions.Options.TryGetValue(nameof(DynamicLibrary.LibraryPath),
+                                         out var libraryFile))
     {
-      taskOptions.Options.TryGetValue($"{libraryName}.PathToFile",
-                                      out var pathToFile);
-      taskOptions.Options.TryGetValue($"{libraryName}.DllFileName",
-                                      out var dllFileName);
-      taskOptions.Options.TryGetValue($"{libraryName}.Version",
-                                      out var version);
-      taskOptions.Options.TryGetValue($"{libraryName}.LibraryBlobId",
-                                      out var libraryId);
-
-      return new DynamicLibrary
-             {
-               Name          = name,
-               DllFileName   = dllFileName ?? string.Empty,
-               PathToFile    = pathToFile  ?? string.Empty,
-               Version       = version     ?? string.Empty,
-               LibraryBlobId = libraryId   ?? string.Empty,
-             };
+      throw new ArmoniKSdkException($"TaskOptions do not comply with ArmoniK SDK convention, key '{nameof(DynamicLibrary.LibraryPath)}' missing");
     }
 
-    throw new KeyNotFoundException($"Could not find library {libraryName}");
+    if (!taskOptions.Options.TryGetValue(nameof(DynamicLibrary.Symbol),
+                                         out var symbol))
+    {
+      throw new ArmoniKSdkException($"TaskOptions do not comply with ArmoniK SDK convention, key '{nameof(DynamicLibrary.Symbol)}' missing");
+    }
+
+    if (!taskOptions.Options.TryGetValue(nameof(DynamicLibrary.LibraryBlobId),
+                                         out var libraryId))
+    {
+      throw new ArmoniKSdkException($"TaskOptions do not comply with ArmoniK SDK convention, key '{nameof(DynamicLibrary.LibraryBlobId)}' missing");
+    }
+
+    return new DynamicLibrary
+           {
+             LibraryPath   = libraryFile ?? string.Empty,
+             Symbol        = symbol      ?? string.Empty,
+             LibraryBlobId = libraryId   ?? string.Empty,
+           };
   }
 
   /// <summary>
-  ///   Retrieves the service library from the TaskOptions.
+  ///   Get the convention version from the TaskOptions.
   /// </summary>
-  /// <param name="taskOptions">The task options to retrieve from.</param>
-  /// <returns>The value of the service library option.</returns>
-  public static string? GetServiceLibrary(this TaskOptions taskOptions)
+  /// <param name="taskOptions">The task options to get the parameter from.</param>
+  /// <returns>The convention version option.</returns>
+  /// <exception cref="ArmoniKSdkException">When the key "ConventionVersion" is not found</exception>
+  public static string GetConventionVersion(this TaskOptions taskOptions)
   {
-    taskOptions.Options.TryGetValue("ServiceLibrary",
-                                    out var value);
+    if (!taskOptions.Options.TryGetValue(nameof(DynamicLibrary.ConventionVersion),
+                                         out var value))
+    {
+      throw new ArmoniKSdkException($"TaskOptions do not comply with ArmoniK SDK convention, key '{nameof(DynamicLibrary.ConventionVersion)}' missing");
+    }
+
     return value;
   }
 }

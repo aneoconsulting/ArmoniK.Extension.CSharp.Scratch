@@ -23,6 +23,7 @@ using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Utils;
 
 using Grpc.Core;
@@ -31,8 +32,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
+/// <inheritdoc />
 public class SessionService : ISessionService
 {
+  private readonly ArmoniKClient           armoniKClient_;
   private readonly ObjectPool<ChannelBase> channel_;
   private readonly ILogger<SessionService> logger_;
 
@@ -47,39 +50,23 @@ public class SessionService : ISessionService
   ///   resources.
   /// </param>
   /// <param name="properties">A collection of configuration properties used to configure the session service.</param>
+  /// <param name="armoniKClient">The ArmoniK client.</param>
   /// <param name="loggerFactory">
   ///   An optional factory for creating loggers, which can be used to enable logging within the
   ///   session service. If null, logging will be disabled.
   /// </param>
   public SessionService(ObjectPool<ChannelBase> channel,
                         Properties              properties,
+                        ArmoniKClient           armoniKClient,
                         ILoggerFactory          loggerFactory)
   {
-    properties_ = properties;
-    logger_     = loggerFactory.CreateLogger<SessionService>();
-    channel_    = channel;
+    properties_    = properties;
+    logger_        = loggerFactory.CreateLogger<SessionService>();
+    channel_       = channel;
+    armoniKClient_ = armoniKClient;
   }
 
-  public async Task<SessionInfo> CreateSessionAsync(TaskConfiguration   taskOptions,
-                                                    IEnumerable<string> partitionIds,
-                                                    CancellationToken   cancellationToken = default)
-  {
-    await using var channel = await channel_.GetAsync(cancellationToken)
-                                            .ConfigureAwait(false);
-    var sessionClient = new Sessions.SessionsClient(channel);
-    var createSessionReply = await sessionClient.CreateSessionAsync(new CreateSessionRequest
-                                                                    {
-                                                                      DefaultTaskOption = taskOptions.ToTaskOptions(),
-                                                                      PartitionIds =
-                                                                      {
-                                                                        partitionIds,
-                                                                      },
-                                                                    })
-                                                .ConfigureAwait(false);
-
-    return new SessionInfo(createSessionReply.SessionId);
-  }
-
+  /// <inheritdoc />
   public async Task CancelSessionAsync(SessionInfo       session,
                                        CancellationToken cancellationToken = default)
   {
@@ -93,6 +80,7 @@ public class SessionService : ISessionService
                        .ConfigureAwait(false);
   }
 
+  /// <inheritdoc />
   public async Task CloseSessionAsync(SessionInfo       session,
                                       CancellationToken cancellationToken = default)
   {
@@ -106,6 +94,7 @@ public class SessionService : ISessionService
                        .ConfigureAwait(false);
   }
 
+  /// <inheritdoc />
   public async Task PauseSessionAsync(SessionInfo       session,
                                       CancellationToken cancellationToken = default)
   {
@@ -119,6 +108,7 @@ public class SessionService : ISessionService
                        .ConfigureAwait(false);
   }
 
+  /// <inheritdoc />
   public async Task StopSubmissionAsync(SessionInfo       session,
                                         CancellationToken cancellationToken = default)
   {
@@ -132,6 +122,7 @@ public class SessionService : ISessionService
                        .ConfigureAwait(false);
   }
 
+  /// <inheritdoc />
   public async Task ResumeSessionAsync(SessionInfo       session,
                                        CancellationToken cancellationToken = default)
   {
@@ -145,6 +136,7 @@ public class SessionService : ISessionService
                        .ConfigureAwait(false);
   }
 
+  /// <inheritdoc />
   public async Task PurgeSessionAsync(SessionInfo       session,
                                       CancellationToken cancellationToken = default)
   {
@@ -158,6 +150,7 @@ public class SessionService : ISessionService
                        .ConfigureAwait(false);
   }
 
+  /// <inheritdoc />
   public async Task DeleteSessionAsync(SessionInfo       session,
                                        CancellationToken cancellationToken = default)
   {
@@ -169,5 +162,29 @@ public class SessionService : ISessionService
                                              SessionId = session.SessionId,
                                            })
                        .ConfigureAwait(false);
+  }
+
+  /// <inheritdoc />
+  public async Task<SessionHandle> CreateSessionAsync(IEnumerable<string> partitionIds,
+                                                      TaskConfiguration?  taskOptions       = null,
+                                                      CancellationToken   cancellationToken = default)
+  {
+    await using var channel = await channel_.GetAsync(cancellationToken)
+                                            .ConfigureAwait(false);
+    var sessionClient = new Sessions.SessionsClient(channel);
+    taskOptions ??= armoniKClient_.DefaulTaskConfiguration;
+    var createSessionReply = await sessionClient.CreateSessionAsync(new CreateSessionRequest
+                                                                    {
+                                                                      DefaultTaskOption = taskOptions.ToTaskOptions(),
+                                                                      PartitionIds =
+                                                                      {
+                                                                        partitionIds,
+                                                                      },
+                                                                    })
+                                                .ConfigureAwait(false);
+
+    return new SessionHandle(new SessionInfo(createSessionReply.SessionId),
+                             armoniKClient_,
+                             taskOptions);
   }
 }

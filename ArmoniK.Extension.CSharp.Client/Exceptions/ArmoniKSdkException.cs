@@ -14,19 +14,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace ArmoniK.Extension.CSharp.Worker;
+using System;
+
+namespace ArmoniK.Extension.CSharp.Client.Exceptions;
 
 /// <summary>
-///   General Worker API Exception
+///   Any exception raised by the ArmoniK SDK
 /// </summary>
-public class WorkerApiException : Exception
+public class ArmoniKSdkException : Exception
 {
-  private readonly string message_ = "WorkerApi Exception during call function";
+  private readonly string message_ = "An ArmoniK Exception was thrown";
 
   /// <summary>
-  ///   The ctor of WorkerApiException
+  ///   The ctor of ArmoniKSdkException
   /// </summary>
-  public WorkerApiException()
+  public ArmoniKSdkException()
   {
   }
 
@@ -34,14 +36,14 @@ public class WorkerApiException : Exception
   ///   Th ctor to instantiate new thrown Exception with message
   /// </summary>
   /// <param name="message">The message that will be print in the exception</param>
-  public WorkerApiException(string message)
+  public ArmoniKSdkException(string message)
     => message_ = message;
 
   /// <summary>
   ///   The ctor to instantiate new thrown Exception with previous exception
   /// </summary>
   /// <param name="e">The previous exception</param>
-  public WorkerApiException(Exception e)
+  public ArmoniKSdkException(Exception e)
     : base(e.Message,
            e)
     => message_ = $"{message_} with InnerException {e.GetType()} message : {e.Message}";
@@ -51,8 +53,8 @@ public class WorkerApiException : Exception
   /// </summary>
   /// <param name="message">The new message that will override the one from the previous exception</param>
   /// <param name="e">The previous exception</param>
-  public WorkerApiException(string            message,
-                            ArgumentException e)
+  public ArmoniKSdkException(string            message,
+                             ArgumentException e)
     : base(message,
            e)
     => message_ = message;
@@ -62,8 +64,8 @@ public class WorkerApiException : Exception
   /// </summary>
   /// <param name="message">The new message that will override the one from the previous exception</param>
   /// <param name="e">The previous exception</param>
-  public WorkerApiException(string    message,
-                            Exception e)
+  public ArmoniKSdkException(string    message,
+                             Exception e)
     : base(message,
            e)
     => message_ = message;

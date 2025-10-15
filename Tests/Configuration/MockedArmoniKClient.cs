@@ -132,11 +132,13 @@ internal sealed class MockedArmoniKClient
   private ISessionService BuildSessionsService(IServiceProvider provider)
     => new SessionService(ChannelPool,
                           Properties,
+                          this,
                           LoggerFactory);
 
   private ITasksService BuildTasksService(IServiceProvider provider)
     => new TasksService(ChannelPool,
                         BlobService,
+                        this,
                         LoggerFactory);
 
   private IVersionsService BuildVersionsService(IServiceProvider provider)

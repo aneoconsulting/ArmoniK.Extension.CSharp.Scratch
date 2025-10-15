@@ -15,10 +15,7 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,8 +25,6 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.Client.Services;
 
-using Newtonsoft.Json;
-
 namespace ArmoniK.Extension.CSharp.Client.Handles;
 
 /// <summary>
@@ -38,19 +33,23 @@ namespace ArmoniK.Extension.CSharp.Client.Handles;
 /// </summary>
 public class SessionHandle
 {
-  private readonly ArmoniKClient armoniKClient_;
-  private readonly SessionInfo   sessionInfo_;
+  private readonly ArmoniKClient     armoniKClient_;
+  private readonly TaskConfiguration defaultTaskConfiguration_;
+  private readonly SessionInfo       sessionInfo_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="SessionHandle" /> class.
   /// </summary>
   /// <param name="session">The session information for managing session-related operations.</param>
   /// <param name="armoniKClient">The ArmoniK client used to perform operations on the session.</param>
-  public SessionHandle(SessionInfo   session,
-                       ArmoniKClient armoniKClient)
+  /// <param name="defaultTaskConfiguration">The default configuration for all tasks created on this session.</param>
+  public SessionHandle(SessionInfo        session,
+                       ArmoniKClient      armoniKClient,
+                       TaskConfiguration? defaultTaskConfiguration = null)
   {
-    armoniKClient_ = armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient));
-    sessionInfo_   = session       ?? throw new ArgumentNullException(nameof(session));
+    armoniKClient_            = armoniKClient            ?? throw new ArgumentNullException(nameof(armoniKClient));
+    sessionInfo_              = session                  ?? throw new ArgumentNullException(nameof(session));
+    defaultTaskConfiguration_ = defaultTaskConfiguration ?? armoniKClient.DefaulTaskConfiguration;
   }
 
   /// <summary>
@@ -62,18 +61,6 @@ public class SessionHandle
   /// <exception cref="ArgumentNullException">Thrown when sessionHandle is null.</exception>
   public static implicit operator SessionInfo(SessionHandle sessionHandle)
     => sessionHandle?.sessionInfo_ ?? throw new ArgumentNullException(nameof(sessionHandle));
-
-  /// <summary>
-  ///   Creates a SessionHandle from SessionInfo and ArmoniKClient.
-  /// </summary>
-  /// <param name="sessionInfo">The SessionInfo to wrap.</param>
-  /// <param name="armoniKClient">The ArmoniK client for operations.</param>
-  /// <returns>A new SessionHandle instance.</returns>
-  /// <exception cref="ArgumentNullException">Thrown when sessionInfo or armoniKClient is null.</exception>
-  public static SessionHandle FromSessionInfo(SessionInfo   sessionInfo,
-                                              ArmoniKClient armoniKClient)
-    => new(sessionInfo   ?? throw new ArgumentNullException(nameof(sessionInfo)),
-           armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient)));
 
   /// <summary>
   ///   Cancels the session asynchronously.
@@ -171,135 +158,12 @@ public class SessionHandle
   {
     _ = task ?? throw new ArgumentException("Task parameter should not be null");
 
-    var inputs = await FetchInputsBlobInfo(task,
-                                           cancellationToken)
-                       .ToListAsync(cancellationToken)
-                       .ConfigureAwait(false);
-    var outputs = await FetchOutputsBlobInfo(task,
-                                             cancellationToken)
-                        .ToListAsync(cancellationToken)
-                        .ConfigureAwait(false);
-
-    var payload = new Payload(inputs.ToDictionary(b => b.BlobName,
-                                                  b => b.BlobId),
-                              outputs.ToDictionary(b => b.BlobName,
-                                                   b => b.BlobId));
-
-    var payloadJson = JsonConvert.SerializeObject(payload);
-    var payloadBlob = await armoniKClient_.BlobService.CreateBlobAsync(sessionInfo_,
-                                                                       "payload",
-                                                                       Encoding.UTF8.GetBytes(payloadJson)
-                                                                               .AsMemory(),
-                                                                       cancellationToken: cancellationToken)
-                                          .ConfigureAwait(false);
-
-    var taskConfiguration = task.TaskOptions ?? new TaskConfiguration();
-    if (task.WorkerLibrary != null)
-    {
-      taskConfiguration.AddTaskLibraryDefinition(task.WorkerLibrary);
-      if (task.WorkerLibrary.DllBlob != null)
-      {
-        inputs.Add(task.WorkerLibrary.DllBlob);
-      }
-    }
-
-    var taskNode = new TaskNode
-                   {
-                     DataDependencies = inputs,
-                     ExpectedOutputs  = outputs,
-                     Session          = sessionInfo_,
-                     Payload          = payloadBlob,
-                     TaskOptions      = taskConfiguration,
-                   };
-
     var taskInfos = await armoniKClient_.TasksService.SubmitTasksAsync(sessionInfo_,
-                                                                       [taskNode],
-                                                                       cancellationToken: cancellationToken)
+                                                                       [task],
+                                                                       defaultTaskConfiguration_,
+                                                                       cancellationToken)
                                         .ConfigureAwait(false);
     return new TaskHandle(armoniKClient_,
                           taskInfos.First());
-  }
-
-  private async IAsyncEnumerable<BlobInfo> FetchInputsBlobInfo(TaskDefinition                             task,
-                                                               [EnumeratorCancellation] CancellationToken cancellationToken)
-  {
-    // Return the already available blob infos
-    foreach (var blobHandle in task.InputHandles.Values)
-    {
-      yield return blobHandle.BlobInfo;
-    }
-
-    // Return blobs already created for the same session
-    var blobsOnSameSession = task.InputDefinitions.Values.Where(b => b.BlobHandle != null && b.SessionHandle == this);
-    foreach (var blobDefinition in blobsOnSameSession)
-    {
-      yield return blobDefinition.BlobHandle!.BlobInfo;
-    }
-
-    // new blobs creation, whether they were never created or created on another session
-    var newBlobs = task.InputDefinitions.Where(b => (b.Value.BlobHandle != null && b.Value.SessionHandle != this) || b.Value.BlobHandle == null);
-    foreach (var pair in newBlobs)
-    {
-      var      name           = pair.Key;
-      var      blobDefinition = pair.Value;
-      BlobInfo blobInfo;
-      if (blobDefinition.Data == null)
-      {
-        // Creation of the metadata only as there is no data
-        blobInfo = await armoniKClient_.BlobService.CreateBlobsMetadataAsync(sessionInfo_,
-                                                                             [name],
-                                                                             blobDefinition.ManualDeletion,
-                                                                             cancellationToken)
-                                       .FirstAsync(cancellationToken)
-                                       .ConfigureAwait(false);
-      }
-      else
-      {
-        blobInfo = await armoniKClient_.BlobService.CreateBlobAsync(sessionInfo_,
-                                                                    name,
-                                                                    blobDefinition.Data.Value,
-                                                                    blobDefinition.ManualDeletion,
-                                                                    cancellationToken)
-                                       .ConfigureAwait(false);
-      }
-
-      task.InputDefinitions[name].SessionHandle = this;
-      task.InputDefinitions[name].BlobHandle = new BlobHandle(blobInfo,
-                                                              armoniKClient_);
-      yield return blobInfo;
-    }
-  }
-
-  private async IAsyncEnumerable<BlobInfo> FetchOutputsBlobInfo(TaskDefinition                             task,
-                                                                [EnumeratorCancellation] CancellationToken cancellationToken)
-  {
-    foreach (var pair in task.Outputs)
-    {
-      var name           = pair.Key;
-      var blobDefinition = pair.Value;
-      var blobInfo = await armoniKClient_.BlobService.CreateBlobsMetadataAsync(sessionInfo_,
-                                                                               [name],
-                                                                               blobDefinition.ManualDeletion,
-                                                                               cancellationToken)
-                                         .FirstAsync(cancellationToken)
-                                         .ConfigureAwait(false);
-      task.Outputs[name].SessionHandle = this;
-      task.Outputs[name].BlobHandle = new BlobHandle(blobInfo,
-                                                     armoniKClient_);
-      yield return blobInfo;
-    }
-  }
-
-  private class Payload
-  {
-    public Payload(IReadOnlyDictionary<string, string> inputs,
-                   IReadOnlyDictionary<string, string> outputs)
-    {
-      Inputs  = inputs;
-      Outputs = outputs;
-    }
-
-    public IReadOnlyDictionary<string, string> Inputs  { get; }
-    public IReadOnlyDictionary<string, string> Outputs { get; }
   }
 }

@@ -18,6 +18,7 @@ using System;
 using System.IO;
 using System.Text;
 
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Handles;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -49,7 +50,7 @@ public class BlobDefinition
   /// </summary>
   public BlobHandle? BlobHandle { get; internal set; } = null;
 
-  internal SessionHandle? SessionHandle { get; set; }
+  internal SessionInfo? SessionInfo { get; set; }
 
   internal static BlobDefinition CreateOutputBlobDefinition(bool manualDeletion)
     => new(null,

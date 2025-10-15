@@ -94,8 +94,8 @@ public class SessionHandleTests
   [Test]
   public void FromSessionInfoCreatesSessionHandleCorrectly()
   {
-    var sessionHandle = SessionHandle.FromSessionInfo(mockSessionInfo_!,
-                                                      mockedArmoniKClient_!);
+    var sessionHandle = new SessionHandle(mockSessionInfo_!,
+                                          mockedArmoniKClient_!);
 
     Assert.Multiple(() =>
                     {
@@ -109,15 +109,15 @@ public class SessionHandleTests
 
   [Test]
   public void FromSessionInfoThrowsArgumentNullExceptionWhenSessionInfoIsNull()
-    => Assert.That(() => SessionHandle.FromSessionInfo(null!,
-                                                       mockedArmoniKClient_!),
+    => Assert.That(() => new SessionHandle(null!,
+                                           mockedArmoniKClient_!),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
-                         .EqualTo("sessionInfo"));
+                         .EqualTo("session"));
 
   [Test]
   public void FromSessionInfoThrowsArgumentNullExceptionWhenClientIsNull()
-    => Assert.That(() => SessionHandle.FromSessionInfo(mockSessionInfo_!,
-                                                       null!),
+    => Assert.That(() => new SessionHandle(mockSessionInfo_!,
+                                           null!),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                          .EqualTo("armoniKClient"));
 
@@ -141,7 +141,8 @@ public class SessionHandleTests
     var cancellationTokenSource = new CancellationTokenSource();
     cancellationTokenSource.Cancel();
 
-    Assert.That(async () => await sessionHandle.CancelSessionAsync(cancellationTokenSource.Token),
+    Assert.That(async () => await sessionHandle.CancelSessionAsync(cancellationTokenSource.Token)
+                                               .ConfigureAwait(false),
                 Throws.InstanceOf<OperationCanceledException>());
   }
 
@@ -154,7 +155,8 @@ public class SessionHandleTests
     var cancellationTokenSource = new CancellationTokenSource();
     cancellationTokenSource.Cancel();
 
-    Assert.That(async () => await sessionHandle.CloseSessionAsync(cancellationTokenSource.Token),
+    Assert.That(async () => await sessionHandle.CloseSessionAsync(cancellationTokenSource.Token)
+                                               .ConfigureAwait(false),
                 Throws.InstanceOf<OperationCanceledException>());
   }
 

@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
+
 namespace ArmoniK.Extension.CSharp.Client.Library;
 
 /// <summary>
@@ -22,24 +24,14 @@ namespace ArmoniK.Extension.CSharp.Client.Library;
 public record DynamicLibrary
 {
   /// <summary>
-  ///   FileName of the Dll.
+  ///   The current version of the SDK
   /// </summary>
-  public string Name { get; init; } = string.Empty;
+  public const string ConventionVersion = "v1";
 
   /// <summary>
-  ///   FileName of the Dll.
+  ///   Path to the library to load from the zip file.
   /// </summary>
-  public string DllFileName { get; init; } = string.Empty;
-
-  /// <summary>
-  ///   Version of the application.
-  /// </summary>
-  public string PathToFile { get; init; } = string.Empty;
-
-  /// <summary>
-  ///   Version of the application.
-  /// </summary>
-  public string Version { get; init; } = string.Empty;
+  public string LibraryPath { get; init; } = string.Empty;
 
   /// <summary>
   ///   Library Blob Identifier.
@@ -47,9 +39,19 @@ public record DynamicLibrary
   public string LibraryBlobId { get; set; } = string.Empty;
 
   /// <summary>
+  ///   Symbol used to execute the task (full name of the class implementing the IWorker interface).
+  /// </summary>
+  public string Symbol { get; init; } = string.Empty;
+
+  /// <summary>
+  ///   The Dll blob
+  /// </summary>
+  internal DllBlob? DllBlob { get; set; }
+
+  /// <summary>
   ///   Returns a string representation of the DynamicLibrary instance.
   /// </summary>
   /// <returns>A string that represents the current DynamicLibrary.</returns>
   public override string ToString()
-    => $"{Name}-{Version}";
+    => Symbol;
 }

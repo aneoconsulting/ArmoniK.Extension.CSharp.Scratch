@@ -15,10 +15,9 @@
 // limitations under the License.
 
 using System.Text;
-using System.Text.Json;
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Services;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Handles;
 
 namespace ArmoniK.EndToEndTests.Client.Tests;
 
@@ -39,7 +38,7 @@ public class PriorityClient : ClientBase
   {
     var nTasksPerSessionPerPriority = 5;
 
-    var allResults = new List<BlobInfo>();
+    var allTasks = new List<TaskDefinition>();
     foreach (var priority in Enumerable.Range(1,
                                               5))
     {
@@ -49,61 +48,38 @@ public class PriorityClient : ClientBase
                       PartitionId = Partition,
                     };
 
-      var taskNodes = new List<TaskNodeExt>();
+      var taskDefinitions = new List<TaskDefinition>();
       for (var i = 0; i < nTasksPerSessionPerPriority; i++)
       {
-        var priorityBlobInfo = await Client.BlobService.CreateBlobAsync(Session,
+        var priorityBlobInfo = await Client.BlobService.CreateBlobAsync(SessionHandle,
                                                                         "Priority",
                                                                         BitConverter.GetBytes(priority))
                                            .ConfigureAwait(false);
+        var priorityBlobHandle = new BlobHandle(priorityBlobInfo,
+                                                Client);
 
         var resultName = "Result" + priority;
-        var results = await Client.BlobService.CreateBlobsMetadataAsync(Session,
-                                                                        [resultName])
-                                  .ToListAsync()
-                                  .ConfigureAwait(false);
-
-        var payload = new Payload(new Dictionary<string, string>
-                                  {
-                                    {
-                                      "Priority", priorityBlobInfo.BlobId
-                                    },
-                                  },
-                                  new Dictionary<string, string>
-                                  {
-                                    {
-                                      resultName, results[0].BlobId
-                                    },
-                                  });
-
-        var payloadJson = JsonSerializer.Serialize(payload);
-
-        var payloadBlobId = await Client.BlobService.CreateBlobAsync(Session,
-                                                                     "Payload",
-                                                                     Encoding.ASCII.GetBytes(payloadJson))
-                                        .ConfigureAwait(false);
-
-        allResults.Add(results[0]);
-        taskNodes.Add(new TaskNodeExt
-                      {
-                        TaskOptions      = options,
-                        Session          = Session,
-                        Payload          = payloadBlobId,
-                        DataDependencies = [priorityBlobInfo],
-                        ExpectedOutputs  = [results[0]],
-                        DynamicLibrary   = TaskLibraryDefinition,
-                      });
+        var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
+                                                 .WithInput("Priority",
+                                                            priorityBlobHandle)
+                                                 .WithOutput(resultName)
+                                                 .WithTaskOptions(options);
+        taskDefinitions.Add(taskDefinition);
       }
 
-      await Client.TasksService.SubmitTasksWithDllAsync(Session,
-                                                        taskNodes,
-                                                        DllBlob,
-                                                        false,
-                                                        CancellationToken.None)
-                  .ConfigureAwait(false);
+      allTasks.AddRange(taskDefinitions);
+      foreach (var taskDefinition in taskDefinitions)
+      {
+        await SessionHandle.SubmitAsync(taskDefinition)
+                           .ConfigureAwait(false);
+      }
+
+      taskDefinitions.Clear();
     }
 
-    await Client.EventsService.WaitForBlobsAsync(Session,
+    var allResults = allTasks.SelectMany(t => t.Outputs.Values.Select(o => o.BlobHandle!.BlobInfo))
+                             .ToList();
+    await Client.EventsService.WaitForBlobsAsync(SessionHandle,
                                                  allResults,
                                                  CancellationToken.None)
                 .ConfigureAwait(false);

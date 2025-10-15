@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Handles;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 
@@ -31,13 +32,13 @@ public interface ISessionService
   /// <summary>
   ///   Asynchronously creates a new session.
   /// </summary>
-  /// <param name="taskOptions">Default task options for the session</param>
   /// <param name="partitionIds">Partitions related to opened session</param>
+  /// <param name="taskOptions">Default task options for the session, when null uses the default task options of the client</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains the created session information.</returns>
-  Task<SessionInfo> CreateSessionAsync(TaskConfiguration   taskOptions,
-                                       IEnumerable<string> partitionIds,
-                                       CancellationToken   cancellationToken = default);
+  /// <returns>A task representing the asynchronous operation. The task result contains the created session handle.</returns>
+  Task<SessionHandle> CreateSessionAsync(IEnumerable<string> partitionIds,
+                                         TaskConfiguration?  taskOptions       = null,
+                                         CancellationToken   cancellationToken = default);
 
   /// <summary>
   ///   Asynchronously cancels a specified session.

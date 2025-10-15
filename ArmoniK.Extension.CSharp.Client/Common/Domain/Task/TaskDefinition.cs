@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
 using System.Collections.Generic;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -44,35 +43,38 @@ public class TaskDefinition
   public Dictionary<string, BlobDefinition> Outputs { get; } = new();
 
   /// <summary>
-  ///   Additional task options
+  ///   Task options
   /// </summary>
-  public TaskConfiguration? TaskOptions { get; private set; }
+  public TaskConfiguration? TaskOptions { get; internal set; }
 
   /// <summary>
   ///   The library that implements the task
   /// </summary>
-  public TaskLibraryDefinition? WorkerLibrary { get; private set; }
+  public DynamicLibrary? WorkerLibrary { get; private set; }
+
+  /// <summary>
+  ///   The payload BlobInfo
+  /// </summary>
+  internal BlobInfo? Payload { get; set; }
 
   /// <summary>
   ///   Set the worker library information.
   ///   Mandatory when ArmoniK SDK is used on worker side.
   /// </summary>
   /// <param name="workerLibrary">The worker dynamic library</param>
-  /// <returns>The TaskDefinition</returns>
-  public TaskDefinition WithLibrary(TaskLibraryDefinition workerLibrary)
+  /// <returns>The TaskDefinition updated</returns>
+  public TaskDefinition WithLibrary(DynamicLibrary workerLibrary)
   {
     WorkerLibrary = workerLibrary;
     return this;
   }
 
   /// <summary>
-  ///   Add an output of another task as input to the task (when the parameter is a BlobDeclaration)
-  ///   Add Input blob with its data (when the parameter is a BlobDefinition)
+  ///   Add an input blob when the blob was not already created
   /// </summary>
   /// <param name="name">The name of the input blob</param>
-  /// <param name="blobDeclaration">The blob defined as an output of another task</param>
-  /// <returns>The TaskDefinition</returns>
-  /// <exception cref="InvalidOperationException">When the task was already submitted</exception>
+  /// <param name="blobDeclaration">The blob definition</param>
+  /// <returns>The TaskDefinition updated</returns>
   public TaskDefinition WithInput(string         name,
                                   BlobDefinition blobDeclaration)
   {
@@ -82,12 +84,25 @@ public class TaskDefinition
   }
 
   /// <summary>
+  ///   Add an input blob when the blob was already created
+  /// </summary>
+  /// <param name="name">The name of the input blob</param>
+  /// <param name="blobHandle">The blob handle</param>
+  /// <returns>The TaskDefinition updated</returns>
+  public TaskDefinition WithInput(string     name,
+                                  BlobHandle blobHandle)
+  {
+    InputHandles.Add(name,
+                     blobHandle);
+    return this;
+  }
+
+  /// <summary>
   ///   Add a new output to the task
   /// </summary>
   /// <param name="outputName">The name of the output blob</param>
   /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
-  /// <returns>The TaskDefinition</returns>
-  /// <exception cref="InvalidOperationException">When the task was already submitted</exception>
+  /// <returns>The TaskDefinition updated</returns>
   public TaskDefinition WithOutput(string outputName,
                                    bool   manualDeletion = false)
   {
@@ -98,12 +113,11 @@ public class TaskDefinition
   }
 
   /// <summary>
-  ///   Add TaskOption to the task
+  ///   Add specific TaskOption to the task
   /// </summary>
-  /// <param name="taskOptions"></param>
-  /// <returns></returns>
-  /// <exception cref="InvalidOperationException"></exception>
-  public TaskDefinition WithAdditionalTaskOptions(TaskConfiguration taskOptions)
+  /// <param name="taskOptions">The task options</param>
+  /// <returns>The TaskDefinition updated</returns>
+  public TaskDefinition WithTaskOptions(TaskConfiguration taskOptions)
   {
     TaskOptions = taskOptions;
     return this;

@@ -61,11 +61,12 @@ public static class ArmoniKServicesExt
                                                      cancellationToken)
                                     .ConfigureAwait(false);
     dynamicLibrary.LibraryBlobId = blobInfo.BlobId;
-    return new DllBlob(dynamicLibrary)
-           {
-             BlobId    = blobInfo.BlobId,
-             SessionId = session.SessionId,
-           };
+    dynamicLibrary.DllBlob = new DllBlob(dynamicLibrary)
+                             {
+                               BlobId    = blobInfo.BlobId,
+                               SessionId = session.SessionId,
+                             };
+    return dynamicLibrary.DllBlob;
   }
 
   /// <summary>
@@ -120,7 +121,7 @@ public static class ArmoniKServicesExt
                                    //avoid injection of dlls which were already defined in the session taskOptions
                                    x.TaskOptions.Options.Remove(dllBlob.BlobName);
 
-                                   x.TaskOptions.AddTaskLibraryDefinition(x.DynamicLibrary);
+                                   x.TaskOptions.AddDynamicLibrary(x.DynamicLibrary);
                                    return x;
                                  });
 
@@ -135,5 +136,5 @@ public static class ArmoniKServicesExt
 
 public record TaskNodeExt : TaskNode
 {
-  public TaskLibraryDefinition DynamicLibrary { get; init; }
+  public DynamicLibrary DynamicLibrary { get; init; }
 }

@@ -58,6 +58,7 @@ public class PartitionsService : IPartitionsService
     channel_ = channel;
   }
 
+  /// <inheritdoc />
   public async Task<Partition> GetPartitionAsync(string            partitionId,
                                                  CancellationToken cancellationToken)
   {

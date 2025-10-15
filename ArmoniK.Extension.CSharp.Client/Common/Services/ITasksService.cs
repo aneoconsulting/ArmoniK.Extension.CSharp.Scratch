@@ -34,7 +34,7 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 public interface ITasksService
 {
   /// <summary>
-  ///   Asynchronously submits a collection of tasks for a given session.
+  ///   DEPRECATED. Asynchronously submits a collection of tasks for a given session.
   /// </summary>
   /// <param name="session">The session information to which the tasks belong.</param>
   /// <param name="taskNodes">The tasks to be submitted.</param>
@@ -45,6 +45,19 @@ public interface ITasksService
                                                 IEnumerable<TaskNode> taskNodes,
                                                 bool                  manualDeletion    = false,
                                                 CancellationToken     cancellationToken = default);
+
+  /// <summary>
+  ///   Asynchronously submits a collection of tasks for a given session.
+  /// </summary>
+  /// <param name="session">The session information to which the tasks belong.</param>
+  /// <param name="taskDefinitions">The task definitions.</param>
+  /// <param name="defaultTaskConfiguration">The default configuration.</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
+  Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
+                                                IEnumerable<TaskDefinition> taskDefinitions,
+                                                TaskConfiguration           defaultTaskConfiguration,
+                                                CancellationToken           cancellationToken = default);
 
   /// <summary>
   ///   Asynchronously lists tasks based on pagination options.

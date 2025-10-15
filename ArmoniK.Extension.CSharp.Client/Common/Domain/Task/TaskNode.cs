@@ -24,7 +24,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 /// <summary>
-///   Contains details about data dependencies, payloads, and session-specific configurations for a task.
+///   DEPRECATED. Contains details about data dependencies, payloads, and session-specific configurations for a task.
 /// </summary>
 public record TaskNode
 {

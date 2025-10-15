@@ -36,14 +36,7 @@ public class TaskSdkClient : ClientBase
   [Test]
   public async Task TaskSdk()
   {
-    var filePath = Path.Join(AppContext.BaseDirectory,
-                             @"..\..\..\..\..\packages\ArmoniK.EndToEndTests.Worker-v1.0.0-100.zip");
-    await SessionHandle.SendDllBlobAsync(WorkerLibrary,
-                                         filePath,
-                                         false,
-                                         CancellationToken.None)
-                       .ConfigureAwait(false);
-    var taskDefinition = new TaskDefinition().WithLibrary(TaskLibraryDefinition)
+    var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
                                              .WithInput("myString",
                                                         BlobDefinition.FromString("Hello world!"))
                                              .WithInput("myInt",
@@ -53,11 +46,11 @@ public class TaskSdkClient : ClientBase
                                              .WithOutput("resultString")
                                              .WithOutput("resultInt")
                                              .WithOutput("resultDouble")
-                                             .WithAdditionalTaskOptions(TaskConfiguration);
+                                             .WithTaskOptions(TaskConfiguration);
     var taskHandle = await SessionHandle.SubmitAsync(taskDefinition)
                                         .ConfigureAwait(false);
 
-    await Client.EventsService.WaitForBlobsAsync(Session,
+    await Client.EventsService.WaitForBlobsAsync(SessionHandle,
                                                  taskDefinition.Outputs.Values.Select(b => b.BlobHandle!.BlobInfo)
                                                                .ToList(),
                                                  CancellationToken.None);

@@ -44,8 +44,22 @@ public interface IBlobService
   ///   Asynchronously creates metadata for multiple blobs in a given session.
   /// </summary>
   /// <param name="session">The session information in which the blobs are created.</param>
+  /// <param name="names">
+  ///   The names of the blobs to create metadata for and whether
+  ///   the blob should be deleted manually or not
+  /// </param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>An asynchronous enumerable of blob information objects.</returns>
+  IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                     session,
+                                                      IEnumerable<(string name, bool manualDeletion)> names,
+                                                      CancellationToken                               cancellationToken = default);
+
+  /// <summary>
+  ///   Asynchronously creates metadata for multiple blobs in a given session.
+  /// </summary>
+  /// <param name="session">The session information in which the blobs are created.</param>
   /// <param name="names">The names of the blobs to create metadata for.</param>
-  /// <param name="manualDeletion">Whether the blob should be deleted manually or not.</param>
+  /// <param name="manualDeletion">Whether the blobs should be deleted manually or not.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
   IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo         session,
@@ -163,10 +177,9 @@ public static class BlobServiceExt
     => blobService.CreateBlobsMetadataAsync(session,
                                             Enumerable.Range(0,
                                                              quantity)
-                                                      .Select(_ => Guid.NewGuid()
-                                                                       .ToString())
+                                                      .Select(_ => (Guid.NewGuid()
+                                                                        .ToString(), manualDeletion))
                                                       .ToList(),
-                                            manualDeletion,
                                             cancellationToken);
 
   /// <summary>
