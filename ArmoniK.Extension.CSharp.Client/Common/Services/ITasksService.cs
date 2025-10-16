@@ -34,19 +34,6 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 public interface ITasksService
 {
   /// <summary>
-  ///   DEPRECATED. Asynchronously submits a collection of tasks for a given session.
-  /// </summary>
-  /// <param name="session">The session information to which the tasks belong.</param>
-  /// <param name="taskNodes">The tasks to be submitted.</param>
-  /// <param name="manualDeletion">Whether the blobs should be deleted manually.</param>
-  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
-  Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
-                                                IEnumerable<TaskNode> taskNodes,
-                                                bool                  manualDeletion    = false,
-                                                CancellationToken     cancellationToken = default);
-
-  /// <summary>
   ///   Asynchronously submits a collection of tasks for a given session.
   /// </summary>
   /// <param name="session">The session information to which the tasks belong.</param>
