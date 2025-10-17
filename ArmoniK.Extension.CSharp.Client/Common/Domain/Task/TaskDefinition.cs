@@ -45,7 +45,7 @@ public class TaskDefinition
   /// <summary>
   ///   Task options
   /// </summary>
-  public TaskConfiguration? TaskOptions { get; internal set; }
+  public TaskConfiguration TaskOptions { get; internal set; } = new();
 
   /// <summary>
   ///   The library that implements the task

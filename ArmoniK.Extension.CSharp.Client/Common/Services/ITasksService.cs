@@ -51,12 +51,10 @@ public interface ITasksService
   /// </summary>
   /// <param name="session">The session information to which the tasks belong.</param>
   /// <param name="taskDefinitions">The task definitions.</param>
-  /// <param name="defaultTaskConfiguration">The default configuration.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
   Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
                                                 IEnumerable<TaskDefinition> taskDefinitions,
-                                                TaskConfiguration           defaultTaskConfiguration,
                                                 CancellationToken           cancellationToken = default);
 
   /// <summary>
