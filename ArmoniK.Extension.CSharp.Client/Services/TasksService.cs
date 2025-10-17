@@ -76,7 +76,6 @@ public class TasksService : ITasksService
   /// <inheritdoc />
   public async Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
                                                              IEnumerable<TaskDefinition> taskDefinitions,
-                                                             TaskConfiguration           defaultTaskConfiguration,
                                                              CancellationToken           cancellationToken = default)
   {
     // Validate each task node
@@ -85,7 +84,10 @@ public class TasksService : ITasksService
       throw new InvalidOperationException("Expected outputs cannot be empty.");
     }
 
-    var taskCreations = new List<SubmitTasksRequest.Types.TaskCreation>();
+    // Input and output blobs creation, payload instance creation, and tasks options update with
+    var payloads     = new List<Payload>();
+    var tasksInputs  = new List<List<BlobInfo>>();
+    var tasksOutputs = new List<List<BlobInfo>>();
     foreach (var task in taskDefinitions)
     {
       var inputs = await FetchInputsBlobInfo(session,
@@ -93,29 +95,19 @@ public class TasksService : ITasksService
                                              cancellationToken)
                          .ToListAsync(cancellationToken)
                          .ConfigureAwait(false);
+      tasksInputs.Add(inputs);
       var outputs = await FetchOutputsBlobInfo(session,
                                                task,
                                                cancellationToken)
                           .ToListAsync(cancellationToken)
                           .ConfigureAwait(false);
+      tasksOutputs.Add(outputs);
 
       var payload = new Payload(inputs.ToDictionary(b => b.BlobName,
                                                     b => b.BlobId),
                                 outputs.ToDictionary(b => b.BlobName,
                                                      b => b.BlobId));
-
-      var payloadJson = JsonConvert.SerializeObject(payload);
-      task.Payload = await blobService_.CreateBlobAsync(session,
-                                                        "payload",
-                                                        Encoding.UTF8.GetBytes(payloadJson)
-                                                                .AsMemory(),
-                                                        cancellationToken: cancellationToken)
-                                       .ConfigureAwait(false);
-      if (task.TaskOptions == null)
-      {
-        task.TaskOptions = defaultTaskConfiguration;
-      }
-
+      payloads.Add(payload);
       if (task.WorkerLibrary != null)
       {
         task.TaskOptions!.AddDynamicLibrary(task.WorkerLibrary);
@@ -125,22 +117,42 @@ public class TasksService : ITasksService
           inputs.Add(task.WorkerLibrary.DllBlob);
         }
       }
+    }
 
+    // Payload blobs creation, creation of TaskCreation instances for submission
+    using var taskEnumerator = taskDefinitions.GetEnumerator();
+    var       index          = 0;
+    var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
+    await foreach (var payloadInfo in blobService_.CreateBlobsAsync(session,
+                                                                    payloads.Select(p => new KeyValuePair<string, ReadOnlyMemory<byte>>("payload",
+                                                                                                                                        Encoding.UTF8
+                                                                                                                                                .GetBytes(JsonConvert
+                                                                                                                                                            .SerializeObject(p)))),
+                                                                    cancellationToken: cancellationToken)
+                                                  .ConfigureAwait(false))
+    {
+      taskEnumerator.MoveNext();
+      var task = taskEnumerator.Current;
+      task!.Payload = payloadInfo;
       taskCreations.Add(new SubmitTasksRequest.Types.TaskCreation
                         {
                           PayloadId = task.Payload!.BlobId,
                           ExpectedOutputKeys =
                           {
-                            outputs.Select(o => o.BlobId),
+                            tasksOutputs[index]
+                              .Select(o => o.BlobId),
                           },
                           DataDependencies =
                           {
-                            inputs.Select(i => i.BlobId),
+                            tasksInputs[index]
+                              .Select(i => i.BlobId),
                           },
                           TaskOptions = task.TaskOptions?.ToTaskOptions(),
                         });
+      index++;
     }
 
+    // Task submission
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);
     var tasksClient = new Tasks.TasksClient(channel);

@@ -20,8 +20,8 @@ using System.Text;
 using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.Client.Services;
 
@@ -80,9 +80,10 @@ internal class Program
                        LibraryPath = "publish/LibraryExample.dll",
                      };
 
-    var sessionHandle = await client.SessionService.CreateSessionAsync(["dllworker"])
-                                    .ConfigureAwait(false);
-    SessionInfo sessionInfo = sessionHandle;
+    var sessionInfo = await client.SessionService.CreateSessionAsync(["dllworker"])
+                                  .ConfigureAwait(false);
+    var sessionHandle = new SessionHandle(sessionInfo,
+                                          client);
 
     Console.WriteLine($"sessionId: {sessionInfo.SessionId}");
 
@@ -92,7 +93,7 @@ internal class Program
 
     var eventsService = client.EventsService;
 
-    var dllBlob = await blobService.SendDllBlobAsync(sessionHandle,
+    var dllBlob = await blobService.SendDllBlobAsync(sessionInfo,
                                                      dynamicLib,
                                                      filePath,
                                                      false,

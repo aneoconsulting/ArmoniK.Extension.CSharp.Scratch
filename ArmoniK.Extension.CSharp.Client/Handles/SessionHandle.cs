@@ -33,23 +33,19 @@ namespace ArmoniK.Extension.CSharp.Client.Handles;
 /// </summary>
 public class SessionHandle
 {
-  private readonly ArmoniKClient     armoniKClient_;
-  private readonly TaskConfiguration defaultTaskConfiguration_;
-  private readonly SessionInfo       sessionInfo_;
+  private readonly ArmoniKClient armoniKClient_;
+  private readonly SessionInfo   sessionInfo_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="SessionHandle" /> class.
   /// </summary>
   /// <param name="session">The session information for managing session-related operations.</param>
   /// <param name="armoniKClient">The ArmoniK client used to perform operations on the session.</param>
-  /// <param name="defaultTaskConfiguration">The default configuration for all tasks created on this session.</param>
-  public SessionHandle(SessionInfo        session,
-                       ArmoniKClient      armoniKClient,
-                       TaskConfiguration? defaultTaskConfiguration = null)
+  public SessionHandle(SessionInfo   session,
+                       ArmoniKClient armoniKClient)
   {
-    armoniKClient_            = armoniKClient            ?? throw new ArgumentNullException(nameof(armoniKClient));
-    sessionInfo_              = session                  ?? throw new ArgumentNullException(nameof(session));
-    defaultTaskConfiguration_ = defaultTaskConfiguration ?? armoniKClient.DefaulTaskConfiguration;
+    armoniKClient_ = armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient));
+    sessionInfo_   = session       ?? throw new ArgumentNullException(nameof(session));
   }
 
   /// <summary>
@@ -160,7 +156,6 @@ public class SessionHandle
 
     var taskInfos = await armoniKClient_.TasksService.SubmitTasksAsync(sessionInfo_,
                                                                        [task],
-                                                                       defaultTaskConfiguration_,
                                                                        cancellationToken)
                                         .ConfigureAwait(false);
     return new TaskHandle(armoniKClient_,

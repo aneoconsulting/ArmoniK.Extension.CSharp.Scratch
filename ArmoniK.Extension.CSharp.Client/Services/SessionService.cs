@@ -23,7 +23,6 @@ using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Utils;
 
 using Grpc.Core;
@@ -165,9 +164,9 @@ public class SessionService : ISessionService
   }
 
   /// <inheritdoc />
-  public async Task<SessionHandle> CreateSessionAsync(IEnumerable<string> partitionIds,
-                                                      TaskConfiguration?  taskOptions       = null,
-                                                      CancellationToken   cancellationToken = default)
+  public async Task<SessionInfo> CreateSessionAsync(IEnumerable<string> partitionIds,
+                                                    TaskConfiguration?  taskOptions       = null,
+                                                    CancellationToken   cancellationToken = default)
   {
     await using var channel = await channel_.GetAsync(cancellationToken)
                                             .ConfigureAwait(false);
@@ -183,8 +182,6 @@ public class SessionService : ISessionService
                                                                     })
                                                 .ConfigureAwait(false);
 
-    return new SessionHandle(new SessionInfo(createSessionReply.SessionId),
-                             armoniKClient_,
-                             taskOptions);
+    return new SessionInfo(createSessionReply.SessionId);
   }
 }

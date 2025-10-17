@@ -69,8 +69,10 @@ public class ClientBase
                                loggerFactory,
                                TaskConfiguration);
 
-    SessionHandle = await Client.SessionService.CreateSessionAsync([Partition])
-                                .ConfigureAwait(false);
+    var sessionInfo = await Client.SessionService.CreateSessionAsync([Partition])
+                                  .ConfigureAwait(false);
+    SessionHandle = new SessionHandle(sessionInfo,
+                                      Client);
 
     var filePath = Path.Join(AppContext.BaseDirectory,
                              @"..\..\..\..\..\packages\ArmoniK.EndToEndTests.Worker-v1.0.0-100.zip");

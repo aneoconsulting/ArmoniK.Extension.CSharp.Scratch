@@ -188,11 +188,8 @@ public class ArmoniKClient
   ///   Gets a session handle for the specified session information.
   /// </summary>
   /// <param name="session">The session information.</param>
-  /// <param name="taskConfiguration">The TaskConfiguration, when null the DefaultTaskConfiguration is used</param>
   /// <returns>A task representing the asynchronous operation. The task result contains the session handle instance.</returns>
-  public SessionHandle GetSessionHandle(SessionInfo        session,
-                                        TaskConfiguration? taskConfiguration = null)
+  public SessionHandle GetSessionHandle(SessionInfo session)
     => new(session,
-           this,
-           taskConfiguration ?? DefaulTaskConfiguration);
+           this);
 }
