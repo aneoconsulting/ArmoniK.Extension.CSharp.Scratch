@@ -84,7 +84,22 @@ public class TasksService : ITasksService
       throw new InvalidOperationException("Expected outputs cannot be empty.");
     }
 
-    // Input and output blobs creation, payload instance creation, and tasks options update with
+    // Create all output blobs
+    var indexOutputs = 0;
+    var allOutputs = taskDefinitions.SelectMany(t => t.Outputs.Select(pair => (pair.Key, pair.Value)))
+                                    .ToList();
+    await foreach (var blobsInfo in blobService_.CreateBlobsMetadataAsync(session,
+                                                                          allOutputs.Select(o => (o.Key, o.Value.ManualDeletion)),
+                                                                          cancellationToken)
+                                                .ConfigureAwait(false))
+    {
+      allOutputs[indexOutputs].Value.BlobHandle = new BlobHandle(blobsInfo,
+                                                                 armoniKClient_);
+      allOutputs[indexOutputs].Value.SessionInfo = session;
+      indexOutputs++;
+    }
+
+    // Input blobs creation, payload instance creation, and tasks options update
     var payloads     = new List<Payload>();
     var tasksInputs  = new List<List<BlobInfo>>();
     var tasksOutputs = new List<List<BlobInfo>>();
@@ -96,11 +111,9 @@ public class TasksService : ITasksService
                          .ToListAsync(cancellationToken)
                          .ConfigureAwait(false);
       tasksInputs.Add(inputs);
-      var outputs = await FetchOutputsBlobInfo(session,
-                                               task,
-                                               cancellationToken)
-                          .ToListAsync(cancellationToken)
-                          .ConfigureAwait(false);
+
+      var outputs = task.Outputs.Values.Select(b => b.BlobHandle!.BlobInfo)
+                        .ToList();
       tasksOutputs.Add(outputs);
 
       var payload = new Payload(inputs.ToDictionary(b => b.BlobName,
@@ -318,52 +331,18 @@ public class TasksService : ITasksService
       yield return blobInfo;
     }
 
-    await foreach (var blobInfo in CreateBlobsMetadataAsync(session,
-                                                            task,
+    if (blobsWithoutData.Any())
+    {
+      var blobsInfo = blobService_.CreateBlobsMetadataAsync(session,
                                                             blobsWithoutData,
-                                                            task.InputDefinitions,
-                                                            cancellationToken)
-                     .ConfigureAwait(false))
-    {
-      yield return blobInfo;
-    }
-  }
-
-  private async IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                     session,
-                                                                    TaskDefinition                                  task,
-                                                                    IEnumerable<(string name, bool manualDeletion)> blobNames,
-                                                                    Dictionary<string, BlobDefinition>              name2BlobDefinition,
-                                                                    [EnumeratorCancellation] CancellationToken      cancellationToken)
-  {
-    if (!blobNames.Any())
-    {
-      yield break;
-    }
-
-    var blobsInfo = blobService_.CreateBlobsMetadataAsync(session,
-                                                          blobNames,
-                                                          cancellationToken);
-    await foreach (var blobInfo in blobsInfo.ConfigureAwait(false))
-    {
-      name2BlobDefinition[blobInfo.BlobName].SessionInfo = session;
-      name2BlobDefinition[blobInfo.BlobName].BlobHandle = new BlobHandle(blobInfo,
-                                                                         armoniKClient_);
-      yield return blobInfo;
-    }
-  }
-
-  private async IAsyncEnumerable<BlobInfo> FetchOutputsBlobInfo(SessionInfo                                session,
-                                                                TaskDefinition                             task,
-                                                                [EnumeratorCancellation] CancellationToken cancellationToken)
-  {
-    await foreach (var blobInfo in CreateBlobsMetadataAsync(session,
-                                                            task,
-                                                            task.Outputs.Select(pair => (pair.Key, pair.Value.ManualDeletion)),
-                                                            task.Outputs,
-                                                            cancellationToken)
-                     .ConfigureAwait(false))
-    {
-      yield return blobInfo;
+                                                            cancellationToken);
+      await foreach (var blobInfo in blobsInfo.ConfigureAwait(false))
+      {
+        task.InputDefinitions[blobInfo.BlobName].SessionInfo = session;
+        task.InputDefinitions[blobInfo.BlobName].BlobHandle = new BlobHandle(blobInfo,
+                                                                             armoniKClient_);
+        yield return blobInfo;
+      }
     }
   }
 
