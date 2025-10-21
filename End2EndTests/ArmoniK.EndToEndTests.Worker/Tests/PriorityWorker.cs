@@ -16,7 +16,6 @@
 
 using System.Text;
 
-using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Extension.CSharp.DllCommon;
 
 using Microsoft.Extensions.Logging;
@@ -28,9 +27,9 @@ public class PriorityWorker : IWorker
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
     => Task.FromResult(HealthCheckResult.Healthy());
 
-  public async Task<Output> ExecuteAsync(UserTaskHandler   taskHandler,
-                                         ILogger           logger,
-                                         CancellationToken cancellationToken)
+  public async Task<TaskResult> ExecuteAsync(SdkTaskHandler    taskHandler,
+                                             ILogger           logger,
+                                             CancellationToken cancellationToken)
   {
     try
     {
@@ -43,22 +42,13 @@ public class PriorityWorker : IWorker
       await taskHandler.SendResult(name,
                                    Encoding.ASCII.GetBytes(strResult))
                        .ConfigureAwait(false);
-      return new Output
-             {
-               Ok = new Empty(),
-             };
+      return TaskResult.Success;
     }
     catch (Exception ex)
     {
       logger.LogError(ex,
                       ex.Message);
-      return new Output
-             {
-               Error = new Output.Types.Error
-                       {
-                         Details = ex.Message,
-                       },
-             };
+      return TaskResult.Failure(ex.Message);
     }
   }
 }

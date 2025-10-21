@@ -119,7 +119,10 @@ public class TaskDefinition
   /// <returns>The TaskDefinition updated</returns>
   public TaskDefinition WithTaskOptions(TaskConfiguration taskOptions)
   {
-    TaskOptions = taskOptions;
+    TaskOptions = taskOptions with
+                  {
+                    Options = new Dictionary<string, string>(taskOptions.Options),
+                  };
     return this;
   }
 }

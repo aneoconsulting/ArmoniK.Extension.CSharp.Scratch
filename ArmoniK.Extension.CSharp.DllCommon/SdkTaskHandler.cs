@@ -25,19 +25,19 @@ namespace ArmoniK.Extension.CSharp.DllCommon;
 /// <summary>
 ///   Allow a worker to create tasks and populate results
 /// </summary>
-public class UserTaskHandler
+public class SdkTaskHandler
 {
   private readonly ITaskHandler taskHandler_;
 
   /// <summary>
-  ///   Creates a UserTaskHandler
+  ///   Creates a SdkTaskHandler
   /// </summary>
   /// <param name="taskHandler"></param>
   /// <param name="inputs"></param>
   /// <param name="outputs"></param>
-  public UserTaskHandler(ITaskHandler                        taskHandler,
-                         IReadOnlyDictionary<string, byte[]> inputs,
-                         IReadOnlyDictionary<string, string> outputs)
+  public SdkTaskHandler(ITaskHandler                        taskHandler,
+                        IReadOnlyDictionary<string, byte[]> inputs,
+                        IReadOnlyDictionary<string, string> outputs)
   {
     taskHandler_ = taskHandler;
     Inputs       = inputs;
