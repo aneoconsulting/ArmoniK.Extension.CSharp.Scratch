@@ -14,13 +14,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.DllHelper.Common;
-using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.Client.Library;
 
-namespace ArmoniK.Extension.CSharp.Client.DllHelper;
+namespace ArmoniK.Extension.CSharp.Client.Services;
 
 /// <summary>
 ///   Provides extension methods for handling dynamic library usage on ArmoniK's environment.
@@ -28,24 +35,6 @@ namespace ArmoniK.Extension.CSharp.Client.DllHelper;
 /// </summary>
 public static class ArmoniKServicesExt
 {
-  /// <summary>
-  ///   Creates a session and returns <see cref="SessionInfo" />, the session information.
-  /// </summary>
-  /// <param name="sessionService">An instance of session service.</param>
-  /// <param name="partitionIds">Partitions related to the opened session</param>
-  /// <param name="dynamicLibraries">A collection of dynamic libraries that the session will handle.</param>
-  /// <param name="taskOptions">Default taskOptions of the session</param>
-  /// <returns>
-  ///   A task that represents the asynchronous creation of a session.
-  /// </returns>
-  public static async Task<SessionInfo> CreateSessionWithDllAsync(this ISessionService        sessionService,
-                                                                  TaskConfiguration           taskOptions,
-                                                                  IEnumerable<string>         partitionIds,
-                                                                  IEnumerable<DynamicLibrary> dynamicLibraries)
-    => await sessionService.CreateSessionAsync(new DllTasksConfiguration(dynamicLibraries,
-                                                                         taskOptions),
-                                               partitionIds);
-
   /// <summary>
   ///   Asynchronously sends a dynamic library blob to a blob service
   /// </summary>
@@ -69,13 +58,15 @@ public static class ArmoniKServicesExt
                                                      dynamicLibrary.ToString(),
                                                      content,
                                                      manualDeletion,
-                                                     cancellationToken);
+                                                     cancellationToken)
+                                    .ConfigureAwait(false);
     dynamicLibrary.LibraryBlobId = blobInfo.BlobId;
-    return new DllBlob(dynamicLibrary)
-           {
-             BlobId    = blobInfo.BlobId,
-             SessionId = session.SessionId,
-           };
+    dynamicLibrary.DllBlob = new DllBlob(dynamicLibrary)
+                             {
+                               BlobId    = blobInfo.BlobId,
+                               SessionId = session.SessionId,
+                             };
+    return dynamicLibrary.DllBlob;
   }
 
   /// <summary>
@@ -97,9 +88,7 @@ public static class ArmoniKServicesExt
                                                      bool              manualDeletion,
                                                      CancellationToken cancellationToken)
   {
-    var content = await File.ReadAllBytesAsync(zipPath,
-                                               cancellationToken)
-                            .ConfigureAwait(false);
+    var content = File.ReadAllBytes(zipPath);
     return await SendDllBlobAsync(blobService,
                                   session,
                                   dynamicLibrary,
@@ -132,19 +121,20 @@ public static class ArmoniKServicesExt
                                    //avoid injection of dlls which were already defined in the session taskOptions
                                    x.TaskOptions.Options.Remove(dllBlob.BlobName);
 
-                                   x.TaskOptions.AddTaskLibraryDefinition(x.DynamicLibrary);
+                                   x.TaskOptions.AddDynamicLibrary(x.DynamicLibrary);
                                    return x;
                                  });
 
     var result = await taskService.SubmitTasksAsync(session,
                                                     taskNodes,
                                                     manualDeletion,
-                                                    cancellationToken);
+                                                    cancellationToken)
+                                  .ConfigureAwait(false);
     return result;
   }
 }
 
 public record TaskNodeExt : TaskNode
 {
-  public required TaskLibraryDefinition DynamicLibrary { get; init; }
+  public DynamicLibrary DynamicLibrary { get; init; }
 }

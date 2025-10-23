@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Extension.CSharp.Client.Library;
 
 using Google.Protobuf.WellKnownTypes;
 
@@ -85,6 +86,19 @@ public record TaskConfiguration
   public TimeSpan MaxDuration { get; init; }
 
   /// <summary>
+  ///   Adds a DynamicLibrary to the TaskConfiguration.
+  /// </summary>
+  /// <param name="dynamicLibrary">The DynamicLibrary to add.</param>
+  /// <returns>The updated TaskConfiguration.</returns>
+  public TaskConfiguration AddDynamicLibrary(DynamicLibrary dynamicLibrary)
+  {
+    Options[nameof(DynamicLibrary.LibraryPath)]   = dynamicLibrary.LibraryPath;
+    Options[nameof(DynamicLibrary.Symbol)]        = dynamicLibrary.Symbol;
+    Options[nameof(DynamicLibrary.LibraryBlobId)] = dynamicLibrary.LibraryBlobId;
+    return this;
+  }
+
+  /// <summary>
   ///   Converts this <see cref="TaskConfiguration" /> instance to a <see cref="TaskOptions" /> suitable for use with task
   ///   submission.
   /// </summary>
@@ -99,7 +113,7 @@ public record TaskConfiguration
                         PartitionId = PartitionId,
                       };
 
-    if (Options == null || !Options.Any())
+    if (!Options.Any())
     {
       return taskOptions;
     }

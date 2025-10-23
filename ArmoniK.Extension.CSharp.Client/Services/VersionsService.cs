@@ -28,6 +28,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
+/// <inheritdoc />
 public class VersionsService : IVersionsService
 {
   private readonly ObjectPool<ChannelBase> channel_;
@@ -50,6 +51,7 @@ public class VersionsService : IVersionsService
     logger_  = loggerFactory.CreateLogger<VersionsService>();
   }
 
+  /// <inheritdoc />
   public async Task<VersionsInfo> GetVersionsAsync(CancellationToken cancellationToken)
   {
     await using var channel = await channel_.GetAsync(cancellationToken)

@@ -15,10 +15,14 @@
 // limitations under the License.
 
 using System.Runtime.Loader;
+using System.Text;
+using System.Text.Json;
 
 using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.DllCommon;
 
 using Microsoft.Extensions.Configuration;
@@ -77,7 +81,7 @@ public class LibraryWorker : ILibraryWorker
   /// <param name="libraryContext">The context of the library to execute the task in.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the output of the executed task.</returns>
-  /// <exception cref="WorkerApiException">Thrown when there is an error in the service library or execution process.</exception>
+  /// <exception cref="ArmoniKSdkException">When there is a compliance error with the ArmoniK SDK conventions.</exception>
   public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
                                          ILibraryLoader    libraryLoader,
                                          string            libraryContext,
@@ -88,23 +92,16 @@ public class LibraryWorker : ILibraryWorker
       using var _ = Logger.BeginPropertyScope(("sessionId", taskHandler.SessionId),
                                               ("taskId", $"{taskHandler.TaskId}"));
 
-      var serviceLibrary = taskHandler.TaskOptions.GetServiceLibrary();
-      if (string.IsNullOrEmpty(serviceLibrary))
+      var conventionVersion = taskHandler.TaskOptions.GetConventionVersion();
+      if (conventionVersion != "v1")
       {
-        throw new WorkerApiException("No ServiceLibrary found");
+        throw new ArmoniKSdkException($"ArmoniK SDK version '{conventionVersion}' not supported.");
       }
 
-      var dynamicLibrary = taskHandler.TaskOptions.GetTaskLibraryDefinition(serviceLibrary);
+      var dynamicLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
 
-      Logger.LogInformation("ServiceLibrary: {serviceLibrary}",
-                            serviceLibrary);
-      Logger.LogInformation("DynamicLibrary.Service: {Service}",
-                            dynamicLibrary.Service);
-
-      if (string.IsNullOrEmpty(dynamicLibrary.Service))
-      {
-        throw new WorkerApiException("No ServiceLibrary found");
-      }
+      Logger.LogInformation("DynamicLibrary.Symbol: {Service}",
+                            dynamicLibrary.Symbol);
 
       Logger.LogInformation("Entering Context");
 
@@ -114,7 +111,7 @@ public class LibraryWorker : ILibraryWorker
         context.EnterContextualReflection();
       }
 
-      var serviceKey = $"{libraryContext}:{dynamicLibrary.Service}";
+      var serviceKey = $"{libraryContext}:{dynamicLibrary.Symbol}";
 
       Logger.LogDebug("Loading service class: {ServiceKey}",
                       serviceKey);
@@ -123,7 +120,39 @@ public class LibraryWorker : ILibraryWorker
       lastLoadedService_ = serviceClass;
       lastServiceKey_    = serviceKey;
 
-      var result = await serviceClass.ExecuteAsync(taskHandler,
+      var dataDependencies = new Dictionary<string, byte[]>();
+      var expectedResults  = new Dictionary<string, string>();
+
+      try
+      {
+        // Decoding of the payload
+        var payload     = Encoding.UTF8.GetString(taskHandler.Payload);
+        var name2BlobId = JsonSerializer.Deserialize<Payload>(payload);
+        foreach (var pair in name2BlobId.Inputs)
+        {
+          var name   = pair.Key;
+          var blobId = pair.Value;
+          var data   = taskHandler.DataDependencies[blobId];
+          dataDependencies[name] = data;
+        }
+
+        foreach (var pair in name2BlobId.Outputs)
+        {
+          var name   = pair.Key;
+          var blobId = pair.Value;
+          expectedResults[name] = blobId;
+        }
+      }
+      catch (Exception ex)
+      {
+        Logger.LogError(ex,
+                        "Could not decode payload: " + ex.Message);
+        throw;
+      }
+
+      var result = await serviceClass.ExecuteAsync(new SdkTaskHandler(taskHandler,
+                                                                      dataDependencies,
+                                                                      expectedResults),
                                                    Logger,
                                                    cancellationToken)
                                      .ConfigureAwait(false);
@@ -131,7 +160,21 @@ public class LibraryWorker : ILibraryWorker
       Logger.LogInformation("Got the following result from the execution: {result}",
                             result);
 
-      return result;
+      if (result.IsSuccess)
+      {
+        return new Output
+               {
+                 Ok = new Empty(),
+               };
+      }
+
+      return new Output
+             {
+               Error = new Output.Types.Error
+                       {
+                         Details = result.ErrorMessage,
+                       },
+             };
     }
     catch (Exception ex)
     {

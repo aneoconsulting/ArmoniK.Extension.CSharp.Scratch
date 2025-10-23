@@ -26,6 +26,7 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 /// <summary>
 ///   Contains details about data dependencies, payloads, and session-specific configurations for a task.
 /// </summary>
+[Obsolete]
 public record TaskNode
 {
   /// <summary>

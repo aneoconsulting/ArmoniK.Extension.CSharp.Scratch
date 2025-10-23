@@ -17,6 +17,7 @@
 using System.Runtime.Loader;
 
 using ArmoniK.Api.Worker.Worker;
+using ArmoniK.Extension.CSharp.Client.Library;
 
 namespace ArmoniK.Extension.CSharp.DllCommon;
 
@@ -40,7 +41,7 @@ public interface ILibraryLoader : IDisposable
   /// <typeparam name="T">Type that the created instance must be convertible to.</typeparam>
   /// <param name="dynamicLibrary">The dynamic library definition.</param>
   /// <returns>An instance of the class specified by <paramref name="dynamicLibrary" />.</returns>
-  T GetClassInstance<T>(TaskLibraryDefinition dynamicLibrary)
+  T GetClassInstance<T>(DynamicLibrary dynamicLibrary)
     where T : class;
 
   /// <summary>

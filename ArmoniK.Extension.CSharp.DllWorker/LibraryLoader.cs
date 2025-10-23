@@ -20,8 +20,10 @@ using System.Reflection;
 using System.Runtime.Loader;
 
 using ArmoniK.Api.Worker.Worker;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Exceptions;
+using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.DllCommon;
-using ArmoniK.Extension.CSharp.Worker;
 
 namespace ArmoniK.Extension.CSharp.DllWorker;
 
@@ -51,7 +53,7 @@ public class LibraryLoader : ILibraryLoader
   /// </summary>
   /// <param name="libraryContextKey">The key of the library context.</param>
   /// <returns>The assembly load context associated with the specified key.</returns>
-  /// <exception cref="WorkerApiException">Thrown when the key is not found in the dictionary.</exception>
+  /// <exception cref="ArmoniKSdkException">Thrown when the key is not found in the dictionary.</exception>
   public AssemblyLoadContext GetAssemblyLoadContext(string libraryContextKey)
   {
     var exists = assemblyLoadContexts_.TryGetValue(libraryContextKey,
@@ -59,7 +61,7 @@ public class LibraryLoader : ILibraryLoader
     if (!exists)
     {
       logger_.LogError($"AssemblyLoadContexts does not have key {libraryContextKey}");
-      throw new WorkerApiException("No key found on AssemblyLoadContexts dictionary");
+      throw new ArmoniKSdkException("No key found on AssemblyLoadContexts dictionary");
     }
 
     return value.loadContext;
@@ -72,70 +74,12 @@ public class LibraryLoader : ILibraryLoader
     => Dispose();
 
   /// <summary>
-  ///   Gets an instance of a class from the dynamic library.
-  /// </summary>
-  /// <typeparam name="T">Type that the created instance must be convertible to.</typeparam>
-  /// <param name="dynamicLibrary">The dynamic library definition.</param>
-  /// <returns>An instance of the class specified by <paramref name="dynamicLibrary" />.</returns>
-  /// <exception cref="WorkerApiException">Thrown when there is an error loading the class instance.</exception>
-  public T GetClassInstance<T>(TaskLibraryDefinition dynamicLibrary)
-    where T : class
-  {
-    try
-    {
-      assemblyLoadContexts_.TryGetValue(dynamicLibrary.ToString(),
-                                        out var assembly);
-      using (assembly.loadContext.EnterContextualReflection())
-      {
-        // Create an instance of a class from the assembly.
-        var classType = assembly.assembly.GetType($"{dynamicLibrary.Namespace}.{dynamicLibrary.Service}");
-        logger_.LogInformation("Types found in the assembly: {assemblyTypes}",
-                               string.Join(",",
-                                           assembly.assembly.GetTypes()
-                                                   .Select(x => x.ToString())));
-        if (classType is null)
-        {
-          var message = $"Type {dynamicLibrary.Namespace}.{dynamicLibrary.Service} could not be loaded";
-          logger_.LogError(message);
-          throw new WorkerApiException(message);
-        }
-
-        logger_.LogInformation($"Type {dynamicLibrary.Namespace}.{dynamicLibrary.Service}: {classType} loaded");
-
-        var serviceContainer = Activator.CreateInstance(classType);
-        if (serviceContainer is null)
-        {
-          var message = $"Could not create an instance of type {classType.Name} (default constructor missing?)";
-          logger_.LogError(message);
-          throw new WorkerApiException(message);
-        }
-
-        var typedServiceContainer = serviceContainer as T;
-        if (typedServiceContainer is null)
-        {
-          var message = $"The type {classType.Name} is not convertible to {typeof(T)}";
-          logger_.LogError(message);
-          throw new WorkerApiException(message);
-        }
-
-        return typedServiceContainer;
-      }
-    }
-    catch (Exception e)
-    {
-      logger_.LogError("Error loading class instance: {errorMessage}",
-                       e.Message);
-      throw new WorkerApiException(e);
-    }
-  }
-
-  /// <summary>
   ///   Loads a library asynchronously based on the task handler and cancellation token provided.
   /// </summary>
   /// <param name="taskHandler">The task handler containing the task options.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the name of the dynamic library loaded.</returns>
-  /// <exception cref="WorkerApiException">Thrown when there is an error loading the library.</exception>
+  /// <exception cref="ArmoniKSdkException">Thrown when there is an error loading the library.</exception>
   public async Task<string> LoadLibraryAsync(ITaskHandler      taskHandler,
                                              CancellationToken cancellationToken)
   {
@@ -145,14 +89,8 @@ public class LibraryLoader : ILibraryLoader
       logger_.LogInformation("Nb of current loaded assemblies: {nbAssemblyLoadContexts}",
                              assemblyLoadContexts_.Count);
 
-      var taskLibrary = taskHandler.TaskOptions.GetServiceLibrary();
-      if (string.IsNullOrEmpty(taskLibrary))
-      {
-        throw new KeyNotFoundException("Task option 'ServiceLibrary' not found");
-      }
-
       // Get the data about the dynamic library
-      var dynamicLibrary = taskHandler.TaskOptions.GetTaskLibraryDefinition(taskLibrary);
+      var dynamicLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
 
       var filename = $"{dynamicLibrary}.zip";
 
@@ -160,19 +98,9 @@ public class LibraryLoader : ILibraryLoader
 
       var destinationPath = @"/tmp/assemblies";
 
-      var pathToDllFile = dynamicLibrary.PathToFile;
+      var libraryPath = dynamicLibrary.LibraryPath;
 
-      var dllFileName = dynamicLibrary.DllFileName;
-
-      logger_.LogInformation("Starting Dynamic loading - TaskLibrary: {taskLibrary}, FileName: {filename}, FilePath: {filePath}, DestinationToUnZip:{destinationPath}, PathToDllFile:{pathToDllFile}, DllFileName: {dllFileName}, Namespace: {dynamicLibrary.Namespace}, Service: {dynamicLibrary.Service}",
-                             taskLibrary,
-                             filename,
-                             filePath,
-                             destinationPath,
-                             pathToDllFile,
-                             dllFileName,
-                             dynamicLibrary.Namespace,
-                             dynamicLibrary.Service);
+      logger_.LogInformation($"Starting Dynamic loading - FileName: {filename}, FilePath: {filePath}, DestinationToUnZip:{destinationPath}, LibraryPath:{libraryPath}, Symbol: {dynamicLibrary.Symbol}");
 
       // if the context is already loaded
       if (assemblyLoadContexts_.ContainsKey(dynamicLibrary.ToString()))
@@ -186,7 +114,7 @@ public class LibraryLoader : ILibraryLoader
                                                                out var libraryBytes);
       if (!dllExists || libraryBytes is null)
       {
-        throw new WorkerApiException($"No library found on data dependencies. (Library BlobId is {dynamicLibrary.LibraryBlobId})");
+        throw new ArmoniKSdkException($"No library found on data dependencies. (Library BlobId is {dynamicLibrary.LibraryBlobId})");
       }
 
       try
@@ -204,18 +132,17 @@ public class LibraryLoader : ILibraryLoader
       }
       catch (Exception ex)
       {
-        throw new WorkerApiException(ex);
+        throw new ArmoniKSdkException(ex);
       }
 
       logger_.LogInformation("Extracting from archive {localZip}",
                              Path.Join(filePath,
                                        filename));
 
-      var extractedPath = ExtractArchive(filename,
-                                         filePath,
-                                         destinationPath,
-                                         pathToDllFile,
-                                         dllFileName);
+      var extractedFilePath = ExtractArchive(filename,
+                                             filePath,
+                                             destinationPath,
+                                             libraryPath);
 
       var zipFile = Path.Join(filePath,
                               filename);
@@ -224,19 +151,17 @@ public class LibraryLoader : ILibraryLoader
 
       logger_.LogInformation("Package {dynamicLibrary} successfully extracted from {localAssembly}",
                              dynamicLibrary,
-                             extractedPath);
+                             extractedFilePath);
 
       logger_.LogInformation("Trying to load: {dllPath}",
-                             Path.Join(extractedPath,
-                                       dllFileName));
+                             extractedFilePath);
 
-      var assembly = loadContext.LoadFromAssemblyPath(Path.Join(extractedPath,
-                                                                dllFileName));
+      var assembly = loadContext.LoadFromAssemblyPath(extractedFilePath);
 
       if (!assemblyLoadContexts_.TryAdd(dynamicLibrary.ToString(),
                                         (assembly, loadContext)))
       {
-        throw new WorkerApiException($"Unable to add load context {dynamicLibrary}");
+        throw new ArmoniKSdkException($"Unable to add load context {dynamicLibrary}");
       }
 
       logger_.LogInformation("Nb of current loaded assemblies: {nbAssemblyLoadContexts}",
@@ -247,7 +172,65 @@ public class LibraryLoader : ILibraryLoader
     catch (Exception ex)
     {
       logger_.LogError(ex.Message);
-      throw new WorkerApiException(ex);
+      throw new ArmoniKSdkException(ex);
+    }
+  }
+
+  /// <summary>
+  ///   Gets an instance of a class from the dynamic library.
+  /// </summary>
+  /// <typeparam name="T">Type that the created instance must be convertible to.</typeparam>
+  /// <param name="dynamicLibrary">The dynamic library definition.</param>
+  /// <returns>An instance of the class specified by <paramref name="dynamicLibrary" />.</returns>
+  /// <exception cref="ArmoniKSdkException">Thrown when there is an error loading the class instance.</exception>
+  public T GetClassInstance<T>(DynamicLibrary dynamicLibrary)
+    where T : class
+  {
+    try
+    {
+      assemblyLoadContexts_.TryGetValue(dynamicLibrary.ToString(),
+                                        out var assembly);
+      using (assembly.loadContext.EnterContextualReflection())
+      {
+        // Create an instance of a class from the assembly.
+        var classType = assembly.assembly.GetType($"{dynamicLibrary.Symbol}");
+        logger_.LogInformation("Types found in the assembly: {assemblyTypes}",
+                               string.Join(",",
+                                           assembly.assembly.GetTypes()
+                                                   .Select(x => x.ToString())));
+        if (classType is null)
+        {
+          var message = $"Type {dynamicLibrary.Symbol} could not be loaded";
+          logger_.LogError(message);
+          throw new ArmoniKSdkException(message);
+        }
+
+        logger_.LogInformation($"Type {dynamicLibrary.Symbol}: {classType} loaded");
+
+        var serviceContainer = Activator.CreateInstance(classType);
+        if (serviceContainer is null)
+        {
+          var message = $"Could not create an instance of type {classType.Name} (default constructor missing?)";
+          logger_.LogError(message);
+          throw new ArmoniKSdkException(message);
+        }
+
+        var typedServiceContainer = serviceContainer as T;
+        if (typedServiceContainer is null)
+        {
+          var message = $"The type {classType.Name} is not convertible to {typeof(T)}";
+          logger_.LogError(message);
+          throw new ArmoniKSdkException(message);
+        }
+
+        return typedServiceContainer;
+      }
+    }
+    catch (Exception e)
+    {
+      logger_.LogError("Error loading class instance: {errorMessage}",
+                       e.Message);
+      throw new ArmoniKSdkException(e);
     }
   }
 
@@ -268,21 +251,19 @@ public class LibraryLoader : ILibraryLoader
   /// <param name="filename">The name of the ZIP file.</param>
   /// <param name="filePath">The path to the ZIP file.</param>
   /// <param name="destinationPath">The destination path to extract the files to.</param>
-  /// <param name="pathToDllFile">The path to the DLL file within the extracted files.</param>
-  /// <param name="dllFileName">The name of the DLL file.</param>
+  /// <param name="libraryPath">The path to the DLL file within the extracted files.</param>
   /// <param name="overwrite">Whether to overwrite existing files.</param>
   /// <returns>The path to the DLL file within the destination directory.</returns>
-  /// <exception cref="WorkerApiException">Thrown when the extraction fails or the file is not a ZIP file.</exception>
+  /// <exception cref="ArmoniKSdkException">Thrown when the extraction fails or the file is not a ZIP file.</exception>
   public string ExtractArchive(string filename,
                                string filePath,
                                string destinationPath,
-                               string pathToDllFile,
-                               string dllFileName,
+                               string libraryPath,
                                bool   overwrite = false)
   {
     if (!IsZipFile(filename))
     {
-      throw new WorkerApiException("Cannot yet extract or manage raw data other than zip archive");
+      throw new ArmoniKSdkException("Cannot yet extract or manage raw data other than zip archive");
     }
 
     var originFile = Path.Join(filePath,
@@ -294,8 +275,7 @@ public class LibraryLoader : ILibraryLoader
     }
 
     var dllFile = Path.Join(destinationPath,
-                            pathToDllFile,
-                            dllFileName);
+                            libraryPath);
 
     var temporaryDirectory = Path.Join(destinationPath,
                                        $"zip-{Guid.NewGuid()}");
@@ -320,7 +300,7 @@ public class LibraryLoader : ILibraryLoader
       }
       catch (Exception e)
       {
-        throw new WorkerApiException(e);
+        throw new ArmoniKSdkException(e);
       }
     }
     else
@@ -332,11 +312,10 @@ public class LibraryLoader : ILibraryLoader
     {
       logger_.LogError("Dll should in the following folder {dllFile}",
                        dllFile);
-      throw new WorkerApiException($"Fail to find assembly {dllFile}");
+      throw new ArmoniKSdkException($"Fail to find assembly {dllFile}");
     }
 
-    return Path.Join(destinationPath,
-                     pathToDllFile);
+    return dllFile;
   }
 
   /// <summary>
@@ -344,7 +323,7 @@ public class LibraryLoader : ILibraryLoader
   /// </summary>
   /// <param name="sourceDirectory">The source directory.</param>
   /// <param name="destinationDirectory">The destination directory.</param>
-  /// <exception cref="WorkerApiException">Thrown when there is an error moving the directory content.</exception>
+  /// <exception cref="ArmoniKSdkException">Thrown when there is an error moving the directory content.</exception>
   public void MoveDirectoryContent(string sourceDirectory,
                                    string destinationDirectory)
   {

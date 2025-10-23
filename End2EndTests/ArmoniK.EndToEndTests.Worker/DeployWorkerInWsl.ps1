@@ -33,20 +33,23 @@ Write-Host "Build and publish worker"
 dotnet publish --self-contained -c Release -r linux-x64 -f net8.0 .
 
 # Find control-plane IP
-$IP = $(wsl kubectl -n armonik get service control-plane -o jsonpath='{.spec.clusterIP}')
+$IP = $(wsl kubectl -n armonik get service ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+$ingress = $(wsl kubectl -n armonik get service ingress -o json) | ConvertFrom-Json
+$port = $ingress.spec.ports[-1].port
+$url = "http://" + $IP + ":" + $port
 
 # Parse appSettings.json of the client
 $appSettingsPath = "..\ArmoniK.EndToEndTests.Client\appSettings.json"
 try
 {
 	$appSettings = Get-Content $appSettingsPath -Raw | ConvertFrom-Json
-	$appSettings.Grpc.EndPoint = $IP
+	$appSettings.Grpc.EndPoint = $url
 }
 catch{
 	Write-Error "Unexpected error (syntax error?) while parsing $appSettingsPath"
 	return 1
 }
 
-# Write the control-plane IP in appSettings client
-Write-Host "Set control plane IP $IP to $appSettingsPath"
+# Write the control-plane url in appSettings client
+Write-Host "Set control plane url $url to $appSettingsPath"
 $appSettings | ConvertTo-Json -Depth 4 | Out-File $appSettingsPath

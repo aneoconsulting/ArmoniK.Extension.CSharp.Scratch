@@ -29,6 +29,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
+/// <inheritdoc />
 public class HealthCheckService : IHealthCheckService
 {
   private readonly ObjectPool<ChannelBase>     channelPool_;
@@ -53,6 +54,7 @@ public class HealthCheckService : IHealthCheckService
     logger_      = loggerFactory.CreateLogger<HealthCheckService>();
   }
 
+  /// <inheritdoc />
   public async IAsyncEnumerable<Health> GetHealthAsync([EnumeratorCancellation] CancellationToken cancellationToken)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)

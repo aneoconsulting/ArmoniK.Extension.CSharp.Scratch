@@ -21,8 +21,8 @@ using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.DllHelper;
-using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Client.Services;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -76,18 +76,11 @@ internal class Program
 
     var dynamicLib = new DynamicLibrary
                      {
-                       Name        = "MyDll",
-                       DllFileName = "LibraryExample.dll",
-                       Version     = "1.1",
-                       PathToFile  = "publish",
+                       Symbol      = "LibraryExample.Worker",
+                       LibraryPath = "publish/LibraryExample.dll",
                      };
 
-    var session = await client.SessionService.CreateSessionWithDllAsync(defaultTaskOptions,
-                                                                        ["dll"],
-                                                                        new[]
-                                                                        {
-                                                                          dynamicLib,
-                                                                        })
+    var session = await client.SessionService.CreateSessionAsync(["dll"])
                               .ConfigureAwait(false);
 
     Console.WriteLine($"sessionId: {session.SessionId}");
@@ -106,10 +99,7 @@ internal class Program
     Console.WriteLine($"payloadId: {payload.BlobId}");
 
     var results = blobService.CreateBlobsMetadataAsync(session,
-                                                       new[]
-                                                       {
-                                                         "Result",
-                                                       });
+                                                       [("Result", false)]);
 
     var blobInfos = await results.ToListAsync()
                                  .ConfigureAwait(false);
@@ -126,22 +116,17 @@ internal class Program
     Console.WriteLine($"resultId: {result.BlobId}");
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
 
-    var taskLibraryDefinition = new TaskLibraryDefinition(dynamicLib,
-                                                          "LibraryExample",
-                                                          "Worker");
+    defaultTaskOptions.AddDynamicLibrary(dynamicLib);
 
     var task = await tasksService.SubmitTasksWithDllAsync(session,
                                                           new List<TaskNodeExt>
                                                           {
                                                             new()
                                                             {
-                                                              Payload = payload,
-                                                              ExpectedOutputs = new[]
-                                                                                {
-                                                                                  result,
-                                                                                },
-                                                              TaskOptions    = defaultTaskOptions,
-                                                              DynamicLibrary = taskLibraryDefinition,
+                                                              Payload         = payload,
+                                                              ExpectedOutputs = [result],
+                                                              TaskOptions     = defaultTaskOptions,
+                                                              DynamicLibrary  = dynamicLib,
                                                             },
                                                           },
                                                           dllBlob,

@@ -63,7 +63,8 @@ public class BlobServiceTests
     var results = client.BlobService.CreateBlobsMetadataAsync(new SessionInfo("sessionId"),
                                                               ["blobName"]);
 
-    var blobInfos = await results.ToListAsync();
+    var blobInfos = await results.ToListAsync()
+                                 .ConfigureAwait(false);
     Assert.That(blobInfos,
                 Is.EqualTo(new BlobInfo[]
                            {

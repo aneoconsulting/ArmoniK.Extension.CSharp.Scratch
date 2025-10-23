@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -41,10 +42,22 @@ public interface ITasksService
   /// <param name="manualDeletion">Whether the blobs should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
+  [Obsolete]
   Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo           session,
                                                 IEnumerable<TaskNode> taskNodes,
                                                 bool                  manualDeletion    = false,
                                                 CancellationToken     cancellationToken = default);
+
+  /// <summary>
+  ///   Asynchronously submits a collection of tasks for a given session.
+  /// </summary>
+  /// <param name="session">The session information to which the tasks belong.</param>
+  /// <param name="taskDefinitions">The task definitions.</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
+  Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
+                                                IEnumerable<TaskDefinition> taskDefinitions,
+                                                CancellationToken           cancellationToken = default);
 
   /// <summary>
   ///   Asynchronously lists tasks based on pagination options.

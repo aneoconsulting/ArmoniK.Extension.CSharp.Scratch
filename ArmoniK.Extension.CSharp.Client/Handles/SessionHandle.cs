@@ -15,10 +15,15 @@
 // limitations under the License.
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Client.Services;
 
 namespace ArmoniK.Extension.CSharp.Client.Handles;
 
@@ -52,18 +57,6 @@ public class SessionHandle
   /// <exception cref="ArgumentNullException">Thrown when sessionHandle is null.</exception>
   public static implicit operator SessionInfo(SessionHandle sessionHandle)
     => sessionHandle?.sessionInfo_ ?? throw new ArgumentNullException(nameof(sessionHandle));
-
-  /// <summary>
-  ///   Creates a SessionHandle from SessionInfo and ArmoniKClient.
-  /// </summary>
-  /// <param name="sessionInfo">The SessionInfo to wrap.</param>
-  /// <param name="armoniKClient">The ArmoniK client for operations.</param>
-  /// <returns>A new SessionHandle instance.</returns>
-  /// <exception cref="ArgumentNullException">Thrown when sessionInfo or armoniKClient is null.</exception>
-  public static SessionHandle FromSessionInfo(SessionInfo   sessionInfo,
-                                              ArmoniKClient armoniKClient)
-    => new(sessionInfo   ?? throw new ArgumentNullException(nameof(sessionInfo)),
-           armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient)));
 
   /// <summary>
   ///   Cancels the session asynchronously.
@@ -127,4 +120,45 @@ public class SessionHandle
     => await armoniKClient_.SessionService.DeleteSessionAsync(sessionInfo_,
                                                               cancellationToken)
                            .ConfigureAwait(false);
+
+  /// <summary>
+  ///   Asynchronously sends a dynamic library blob to a blob service
+  /// </summary>
+  /// <param name="dynamicLibrary">The dynamic library related to the blob being sent.</param>
+  /// <param name="zipPath">File path to the zipped library.</param>
+  /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>
+  ///   The created <see cref="DllBlob" /> instance with relevant identifiers.
+  /// </returns>
+  public async Task<DllBlob> SendDllBlobAsync(DynamicLibrary    dynamicLibrary,
+                                              string            zipPath,
+                                              bool              manualDeletion,
+                                              CancellationToken cancellationToken)
+    => await armoniKClient_.BlobService.SendDllBlobAsync(sessionInfo_,
+                                                         dynamicLibrary,
+                                                         zipPath,
+                                                         manualDeletion,
+                                                         cancellationToken)
+                           .ConfigureAwait(false);
+
+  /// <summary>
+  ///   Submit a task.
+  /// </summary>
+  /// <param name="task">The task to submit</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns></returns>
+  /// <exception cref="ArgumentException">When the task provided is null</exception>
+  public async Task<TaskHandle> SubmitAsync(TaskDefinition    task,
+                                            CancellationToken cancellationToken = default)
+  {
+    _ = task ?? throw new ArgumentException("Task parameter should not be null");
+
+    var taskInfos = await armoniKClient_.TasksService.SubmitTasksAsync(sessionInfo_,
+                                                                       [task],
+                                                                       cancellationToken)
+                                        .ConfigureAwait(false);
+    return new TaskHandle(armoniKClient_,
+                          taskInfos.First());
+  }
 }

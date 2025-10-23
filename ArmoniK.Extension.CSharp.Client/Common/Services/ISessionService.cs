@@ -31,12 +31,12 @@ public interface ISessionService
   /// <summary>
   ///   Asynchronously creates a new session.
   /// </summary>
-  /// <param name="taskOptions">Default task options for the session</param>
   /// <param name="partitionIds">Partitions related to opened session</param>
+  /// <param name="taskOptions">Default task options for the session, when null uses the default task options of the client</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains the created session information.</returns>
-  Task<SessionInfo> CreateSessionAsync(TaskConfiguration   taskOptions,
-                                       IEnumerable<string> partitionIds,
+  /// <returns>A task representing the asynchronous operation. The task result contains the created session info.</returns>
+  Task<SessionInfo> CreateSessionAsync(IEnumerable<string> partitionIds,
+                                       TaskConfiguration?  taskOptions       = null,
                                        CancellationToken   cancellationToken = default);
 
   /// <summary>

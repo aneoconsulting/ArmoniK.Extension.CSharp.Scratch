@@ -20,7 +20,7 @@ using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Worker;
 using ArmoniK.Api.Worker.Worker;
-using ArmoniK.Extension.CSharp.Worker;
+using ArmoniK.Extension.CSharp.Client.Exceptions;
 
 using Grpc.Core;
 
@@ -73,9 +73,9 @@ public class ComputerService : WorkerStreamWrapper
     using var scopedLog = Logger.BeginNamedScope("Execute task",
                                                  ("Session", taskHandler.SessionId),
                                                  ("TaskId", taskHandler.TaskId));
-    Logger.LogTrace("DataDependencies {DataDependencies}",
+    Logger.LogTrace("Inputs {Inputs}",
                     taskHandler.DataDependencies.Keys);
-    Logger.LogTrace("ExpectedResults {ExpectedResults}",
+    Logger.LogTrace("Outputs {Outputs}",
                     taskHandler.ExpectedResults);
     Output output;
     try
@@ -96,10 +96,10 @@ public class ComputerService : WorkerStreamWrapper
                  };
       }
     }
-    catch (WorkerApiException ex)
+    catch (ArmoniKSdkException ex)
     {
       Logger.LogError(ex,
-                      "WorkerAPIException failure while executing task");
+                      "ArmoniKSdkException failure while executing task");
 
       return new Output
              {

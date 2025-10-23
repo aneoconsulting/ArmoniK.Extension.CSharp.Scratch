@@ -42,8 +42,7 @@ public class SessionServiceTests
                              };
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
 
-    var result = await client.SessionService.CreateSessionAsync(client.TaskOptions,
-                                                                defaultPartitionsIds_)
+    var result = await client.SessionService.CreateSessionAsync(defaultPartitionsIds_)
                              .ConfigureAwait(false);
     Assert.That(result.SessionId,
                 Is.EqualTo("12345"));

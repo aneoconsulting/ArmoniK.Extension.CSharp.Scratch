@@ -32,6 +32,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
+/// <inheritdoc />
 public class EventsService : IEventsService
 {
   private readonly ObjectPool<ChannelBase> channel_;
@@ -57,6 +58,7 @@ public class EventsService : IEventsService
     logger_  = loggerFactory.CreateLogger<EventsService>();
   }
 
+  /// <inheritdoc />
   public async Task WaitForBlobsAsync(SessionInfo           session,
                                       ICollection<BlobInfo> blobInfos,
                                       CancellationToken     cancellationToken = default)

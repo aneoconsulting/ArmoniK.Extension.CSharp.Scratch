@@ -22,7 +22,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.EndToEndTests.Worker.Tests;
 
-public class PriorityWorker : IWorker
+public class TaskSdkWorker : IWorker
 {
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
     => Task.FromResult(HealthCheckResult.Healthy());
@@ -31,24 +31,21 @@ public class PriorityWorker : IWorker
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
-    try
-    {
-      var priority  = taskHandler.GetIntDependency("Priority");
-      var strResult = $"Payload is {priority} and TaskOptions.Priority is {taskHandler.TaskOptions.Priority}";
+    var resultString = taskHandler.GetStringDependency("myString");
+    var resultInt    = taskHandler.GetIntDependency("myInt");
+    var resultDouble = taskHandler.GetDoubleDependency("myDouble");
 
-      var name = taskHandler.Outputs.Single()
-                            .Value;
-      logger.LogInformation($"Sending result: {strResult}. Task Id: {taskHandler.TaskId}");
-      await taskHandler.SendResult(name,
-                                   Encoding.ASCII.GetBytes(strResult))
-                       .ConfigureAwait(false);
-      return TaskResult.Success;
-    }
-    catch (Exception ex)
-    {
-      logger.LogError(ex,
-                      ex.Message);
-      return TaskResult.Failure(ex.Message);
-    }
+    // Send the input as results as is.
+    await taskHandler.SendResultByNameAsync("resultString",
+                                            Encoding.ASCII.GetBytes(resultString))
+                     .ConfigureAwait(false);
+    await taskHandler.SendResultByNameAsync("resultInt",
+                                            Encoding.ASCII.GetBytes(resultInt.ToString()))
+                     .ConfigureAwait(false);
+    await taskHandler.SendResultByNameAsync("resultDouble",
+                                            Encoding.ASCII.GetBytes(resultDouble.ToString("F2")))
+                     .ConfigureAwait(false);
+
+    return TaskResult.Success;
   }
 }

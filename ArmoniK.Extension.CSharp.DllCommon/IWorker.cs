@@ -14,9 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Api.gRPC.V1;
-using ArmoniK.Api.Worker.Worker;
-
 using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.DllCommon;
@@ -33,9 +30,9 @@ public interface IWorker
   /// <param name="logger">The logger instance for recording execution information.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the execution output.</returns>
-  Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
-                            ILogger           logger,
-                            CancellationToken cancellationToken);
+  Task<TaskResult> ExecuteAsync(SdkTaskHandler    taskHandler,
+                                ILogger           logger,
+                                CancellationToken cancellationToken);
 
   /// <summary>
   ///   Checks the health of the component.
