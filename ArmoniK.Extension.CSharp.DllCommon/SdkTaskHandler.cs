@@ -25,26 +25,26 @@ namespace ArmoniK.Extension.CSharp.DllCommon;
 /// <summary>
 ///   Allow a worker to create tasks and populate results
 /// </summary>
-public class UserTaskHandler
+public class SdkTaskHandler
 {
   private readonly ITaskHandler taskHandler_;
 
   /// <summary>
-  ///   Creates a UserTaskHandler
+  ///   Creates a SdkTaskHandler
   /// </summary>
-  /// <param name="taskHandler"></param>
-  /// <param name="inputs"></param>
-  /// <param name="outputs"></param>
-  public UserTaskHandler(ITaskHandler                        taskHandler,
-                         IReadOnlyDictionary<string, byte[]> inputs,
-                         IReadOnlyDictionary<string, string> outputs)
+  /// <param name="taskHandler">The task handler</param>
+  /// <param name="inputs">Input's Dictionary. The key is the name defined by the client, the value is the raw data.</param>
+  /// <param name="outputs">Output's Dictionary. The key is the name defined by the client, the value is the blob id.</param>
+  public SdkTaskHandler(ITaskHandler                        taskHandler,
+                        IReadOnlyDictionary<string, byte[]> inputs,
+                        IReadOnlyDictionary<string, string> outputs)
   {
     taskHandler_ = taskHandler;
     Inputs       = inputs;
     Outputs      = outputs;
   }
 
-  /// <summary>Id of the session this task belongs to.</summary>
+  /// <summary>Session's id this task belongs to.</summary>
   public string SessionId
     => taskHandler_.SessionId;
 
@@ -103,7 +103,7 @@ public class UserTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns></returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the task submission response</returns>
   public async Task<CreateTaskReply> CreateTasksAsync(IEnumerable<TaskRequest> tasks,
                                                       TaskOptions?             taskOptions       = null,
                                                       CancellationToken?       cancellationToken = null)
@@ -121,28 +121,28 @@ public class UserTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns></returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the requested resource</returns>
   public async Task<byte[]> RequestResource(string             key,
                                             CancellationToken? cancellationToken = null)
-    => await RequestResource(key,
-                             cancellationToken)
-         .ConfigureAwait(false);
+    => await taskHandler_.RequestResource(key,
+                                          cancellationToken)
+                         .ConfigureAwait(false);
 
   /// <summary>
   ///   NOT IMPLEMENTED
   ///   This method is used to retrieve data provided when creating the session.
   /// </summary>
-  /// <param name="key">The da ta key identifier</param>
+  /// <param name="key">The data key identifier</param>
   /// <param name="cancellationToken">
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns></returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the requested data</returns>
   public async Task<byte[]> RequestCommonData(string             key,
                                               CancellationToken? cancellationToken = null)
-    => await RequestCommonData(key,
-                               cancellationToken)
-         .ConfigureAwait(false);
+    => await taskHandler_.RequestCommonData(key,
+                                            cancellationToken)
+                         .ConfigureAwait(false);
 
   /// <summary>
   ///   NOT IMPLEMENTED
@@ -153,7 +153,7 @@ public class UserTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns></returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the data requested</returns>
   public async Task<byte[]> RequestDirectData(string             key,
                                               CancellationToken? cancellationToken = null)
     => await taskHandler_.RequestDirectData(key,
@@ -167,7 +167,7 @@ public class UserTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns></returns>
+  /// <returns>A task representing the asynchronous operation.</returns>
   public async Task SendResult(string             key,
                                byte[]             data,
                                CancellationToken? cancellationToken = null)
@@ -185,14 +185,14 @@ public class UserTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns></returns>
+  /// <returns>A task representing the asynchronous operation.</returns>
   public async Task SendResultByNameAsync(string             name,
                                           byte[]             data,
                                           CancellationToken? cancellationToken = null)
-    => await SendResult(Outputs[name],
-                        data,
-                        cancellationToken)
-         .ConfigureAwait(false);
+    => await taskHandler_.SendResult(Outputs[name],
+                                     data,
+                                     cancellationToken)
+                         .ConfigureAwait(false);
 
   /// <summary>Create results metadata</summary>
   /// <param name="results">The collection of results to be created</param>
@@ -200,7 +200,7 @@ public class UserTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns>The result creation response</returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the blobs creation response</returns>
   public async Task<CreateResultsMetaDataResponse> CreateResultsMetaDataAsync(IEnumerable<CreateResultsMetaDataRequest.Types.ResultCreate> results,
                                                                               CancellationToken?                                           cancellationToken = null)
     => await taskHandler_.CreateResultsMetaDataAsync(results,
@@ -214,7 +214,7 @@ public class UserTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns>The task submission response</returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the task submission response</returns>
   public async Task<SubmitTasksResponse> SubmitTasksAsync(IEnumerable<SubmitTasksRequest.Types.TaskCreation> taskCreations,
                                                           TaskOptions?                                       submissionTaskOptions,
                                                           CancellationToken?                                 cancellationToken = null)
@@ -224,14 +224,14 @@ public class UserTaskHandler
                          .ConfigureAwait(false);
 
   /// <summary>
-  ///   Create results from metadata and data in an unique request
+  ///   Create results from metadata and data in a unique request
   /// </summary>
   /// <param name="results">The results to create</param>
   /// <param name="cancellationToken">
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns>The task submission response</returns>
+  /// <returns>A task representing the asynchronous operation. The task result contains the created blobs information.</returns>
   public async Task<CreateResultsResponse> CreateResultsAsync(IEnumerable<CreateResultsRequest.Types.ResultCreate> results,
                                                               CancellationToken?                                   cancellationToken = null)
     => await taskHandler_.CreateResultsAsync(results,

@@ -40,7 +40,7 @@ public class TaskSdkClient : ClientBase
                                              .WithInput("myString",
                                                         BlobDefinition.FromString("Hello world!"))
                                              .WithInput("myInt",
-                                                        BlobDefinition.FromInt(404))
+                                                        BlobDefinition.FromInt(42))
                                              .WithInput("myDouble",
                                                         BlobDefinition.FromDouble(3.14))
                                              .WithOutput("resultString")
@@ -81,7 +81,7 @@ public class TaskSdkClient : ClientBase
     Assert.That(resultString,
                 Is.EqualTo("Hello world!"));
     Assert.That(resultInt,
-                Is.EqualTo("404"));
+                Is.EqualTo("42"));
     Assert.That(resultDouble,
                 Is.EqualTo("3.14"));
   }

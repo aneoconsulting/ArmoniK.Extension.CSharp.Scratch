@@ -150,9 +150,9 @@ public class LibraryWorker : ILibraryWorker
         throw;
       }
 
-      var result = await serviceClass.ExecuteAsync(new UserTaskHandler(taskHandler,
-                                                                       dataDependencies,
-                                                                       expectedResults),
+      var result = await serviceClass.ExecuteAsync(new SdkTaskHandler(taskHandler,
+                                                                      dataDependencies,
+                                                                      expectedResults),
                                                    Logger,
                                                    cancellationToken)
                                      .ConfigureAwait(false);
@@ -160,7 +160,21 @@ public class LibraryWorker : ILibraryWorker
       Logger.LogInformation("Got the following result from the execution: {result}",
                             result);
 
-      return result;
+      if (result.IsSuccess)
+      {
+        return new Output
+               {
+                 Ok = new Empty(),
+               };
+      }
+
+      return new Output
+             {
+               Error = new Output.Types.Error
+                       {
+                         Details = result.ErrorMessage,
+                       },
+             };
     }
     catch (Exception ex)
     {
