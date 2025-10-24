@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using ArmoniK.Api.gRPC.V1;
+using ArmoniK.Api.gRPC.V1.Results;
+using ArmoniK.Api.gRPC.V1.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
@@ -21,11 +24,95 @@ using ArmoniK.Extension.CSharp.Client.Common.Services;
 using Grpc.Core;
 
 using Moq;
+using Moq.Language;
 
 namespace Tests.Helpers;
 
 internal static class MockHelper
 {
+  public static void ConfigureBlobService(this Mock<CallInvoker> mockInvoker,
+                                          int                    dataChunkMaxSire = 1024)
+  {
+    var submitConfigurationResponse = new ResultsServiceConfigurationResponse
+                                      {
+                                        DataChunkMaxSize = dataChunkMaxSire,
+                                      };
+    mockInvoker.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(submitConfigurationResponse);
+  }
+
+  public static void ConfigureBlobMetadataCreationResponse(this   Mock<CallInvoker>                                    mockInvoker,
+                                                           params (string sessionId, string blobId, string blobName)[] blobs)
+  {
+    var blobInfos = blobs.Select(b => new ResultRaw
+                                      {
+                                        SessionId = b.sessionId,
+                                        ResultId  = b.blobId,
+                                        Name      = b.blobName,
+                                      });
+    var submitResultMetadataResponse = new CreateResultsMetaDataResponse
+                                       {
+                                         Results =
+                                         {
+                                           blobInfos,
+                                         },
+                                       };
+    mockInvoker.SetupAsyncUnaryCallInvokerMock<CreateResultsMetaDataRequest, CreateResultsMetaDataResponse>(submitResultMetadataResponse);
+  }
+
+  public static void ConfigureSubmitTaskResponse(this   Mock<CallInvoker>                                                        mockInvoker,
+                                                 params (string taskId, string payloadId, string[]? inputs, string[]? outputs)[] tasks)
+  {
+    var taskInfos = tasks.Select(t => new SubmitTasksResponse.Types.TaskInfo
+                                      {
+                                        TaskId    = t.taskId,
+                                        PayloadId = t.payloadId,
+                                        DataDependencies =
+                                        {
+                                          t.inputs?.ToList() ?? new List<string>(),
+                                        },
+                                        ExpectedOutputIds =
+                                        {
+                                          t.outputs?.ToList() ?? new List<string>(),
+                                        },
+                                      });
+    var submitTaskResponse = new SubmitTasksResponse
+                             {
+                               TaskInfos =
+                               {
+                                 taskInfos,
+                               },
+                             };
+    mockInvoker.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(submitTaskResponse);
+  }
+
+  public static ISetupSequentialResult<AsyncUnaryCall<TRes>> InitAsyncUnaryCallInvokerMock<TReq, TRes>(this Mock<CallInvoker> mockInvoker,
+                                                                                                       TRes                   returnData)
+    where TReq : class
+    where TRes : class
+    => mockInvoker.SetupSequence(invoker => invoker.AsyncUnaryCall(It.IsAny<Method<TReq, TRes>>(),
+                                                                   It.IsAny<string>(),
+                                                                   It.IsAny<CallOptions>(),
+                                                                   It.IsAny<TReq>()))
+                  .Returns(new AsyncUnaryCall<TRes>(Task.FromResult(returnData),
+                                                    Task.FromResult(new Metadata()),
+                                                    () => Status.DefaultSuccess,
+                                                    () => new Metadata(),
+                                                    () =>
+                                                    {
+                                                    }));
+
+  public static ISetupSequentialResult<AsyncUnaryCall<TRes>> AddAsyncUnaryCallInvokerMock<TReq, TRes>(this ISetupSequentialResult<AsyncUnaryCall<TRes>> sequentialResult,
+                                                                                                      TRes                                              returnData)
+    where TReq : class
+    where TRes : class
+    => sequentialResult.Returns(new AsyncUnaryCall<TRes>(Task.FromResult(returnData),
+                                                         Task.FromResult(new Metadata()),
+                                                         () => Status.DefaultSuccess,
+                                                         () => new Metadata(),
+                                                         () =>
+                                                         {
+                                                         }));
+
   public static Mock<CallInvoker> SetupAsyncUnaryCallInvokerMock<TReq, TRes>(this Mock<CallInvoker> mockInvoker,
                                                                              TRes                   returnData)
     where TReq : class
@@ -40,21 +127,12 @@ internal static class MockHelper
                                                         It.IsAny<TReq>()))
                .Returns(new AsyncUnaryCall<TRes>(responseTask,
                                                  responseHeadersTask,
-                                                 StatusFunc,
-                                                 TrailersFunc,
-                                                 DisposeAction));
-
+                                                 () => Status.DefaultSuccess,
+                                                 () => new Metadata(),
+                                                 () =>
+                                                 {
+                                                 }));
     return mockInvoker;
-
-    void DisposeAction()
-    {
-    }
-
-    Metadata TrailersFunc()
-      => new();
-
-    Status StatusFunc()
-      => Status.DefaultSuccess;
   }
 
   public static Mock<CallInvoker> SetupAsyncClientStreamingCall<TReq, TRes>(this Mock<CallInvoker>    mockInvoker,
@@ -118,4 +196,99 @@ internal static class MockHelper
 
     return blobService;
   }
+
+  /// <summary>
+  ///   Reset global counters
+  /// </summary>
+  public static void InitMock()
+    => configureBlobCreationResponseCount_ = 0;
+
+  #region Blob creation
+
+  private static int configureBlobCreationResponseCount_;
+
+  public static ISetupSequentialResult<AsyncUnaryCall<CreateResultsResponse>> ConfigureBlobCreationResponseSequence(this Mock<CallInvoker> mockInvoker,
+                                                                                                                    params (string sessionId, string blobId, string
+                                                                                                                      blobName)[] blobs)
+  {
+    var blobInfos = blobs.Select(b => new ResultRaw
+                                      {
+                                        SessionId = b.sessionId,
+                                        ResultId  = b.blobId,
+                                        Name      = b.blobName,
+                                      });
+    // Configure response of payload blob creation
+    var submitResultResponse = new CreateResultsResponse
+                               {
+                                 Results =
+                                 {
+                                   blobInfos,
+                                 },
+                               };
+    configureBlobCreationResponseCount_++;
+    return mockInvoker.InitAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(submitResultResponse);
+  }
+
+  public static ISetupSequentialResult<AsyncUnaryCall<CreateResultsResponse>> ConfigureBlobCreationResponseSequence(
+    this   ISetupSequentialResult<AsyncUnaryCall<CreateResultsResponse>> sequentialResult,
+    params (string sessionId, string blobId, string blobName)[]          blobs)
+  {
+    var blobInfos = blobs.Select(b => new ResultRaw
+                                      {
+                                        SessionId = b.sessionId,
+                                        ResultId  = b.blobId,
+                                        Name      = b.blobName,
+                                      });
+    // Configure response of payload blob creation
+    var submitResultResponse = new CreateResultsResponse
+                               {
+                                 Results =
+                                 {
+                                   blobInfos,
+                                 },
+                               };
+    configureBlobCreationResponseCount_++;
+    return sequentialResult.AddAsyncUnaryCallInvokerMock<CreateResultsRequest, CreateResultsResponse>(submitResultResponse);
+  }
+
+  public static void Stop(this ISetupSequentialResult<AsyncUnaryCall<CreateResultsResponse>> sequentialResult)
+    => sequentialResult.Throws(new InvalidOperationException("There was more blob creation calls than expected!"));
+
+
+  public static void CheckConfigureBlobCreationResponseCount(this Mock<CallInvoker> mockInvoker)
+    => mockInvoker.Verify(s => s.AsyncUnaryCall(It.IsAny<Method<CreateResultsRequest, CreateResultsResponse>>(),
+                                                It.IsAny<string>(),
+                                                It.IsAny<CallOptions>(),
+                                                It.IsAny<CreateResultsRequest>()),
+                          Times.Exactly(configureBlobCreationResponseCount_));
+
+  public static byte[] GetBlobDataSent(this Mock<CallInvoker> mockInvoker,
+                                       string                 blobName,
+                                       int                    index = 0)
+  {
+    var i = 0;
+    foreach (var invocation in mockInvoker.Invocations)
+    {
+      if (invocation.Arguments[0] is Method<CreateResultsRequest, CreateResultsResponse> method && method.Name == "CreateResults")
+      {
+        var blobs = ((CreateResultsRequest)invocation.Arguments[3]).Results;
+        foreach (var blob in blobs)
+        {
+          if (blob.Name == blobName)
+          {
+            if (i == index)
+            {
+              return blob.Data.ToByteArray();
+            }
+
+            i++;
+          }
+        }
+      }
+    }
+
+    throw new InvalidOperationException($"Could not find blob '{blobName}'");
+  }
+
+  #endregion Blob creation
 }

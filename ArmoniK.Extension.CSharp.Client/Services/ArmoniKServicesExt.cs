@@ -15,15 +15,12 @@
 // limitations under the License.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Library;
 
@@ -97,44 +94,4 @@ public static class ArmoniKServicesExt
                                   cancellationToken)
              .ConfigureAwait(false);
   }
-
-  /// <summary>
-  ///   Submits tasks with task service, depending on a previously uploaded dynamic library blob.
-  /// </summary>
-  /// <param name="taskService">The service responsible for handling task submissions.</param>
-  /// <param name="session">Session which must contain the tasks.</param>
-  /// <param name="taskNodes">The collection of tasks to submit.</param>
-  /// <param name="dllBlob">The dynamic library blob dependency for the tasks.</param>
-  /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
-  /// <param name="cancellationToken">A token to monitor for cancellation requests during the task submission process.</param>
-  public static async Task<ICollection<TaskInfos>> SubmitTasksWithDllAsync(this ITasksService       taskService,
-                                                                           SessionInfo              session,
-                                                                           IEnumerable<TaskNodeExt> taskNodes,
-                                                                           DllBlob                  dllBlob,
-                                                                           bool                     manualDeletion,
-                                                                           CancellationToken        cancellationToken)
-  {
-    taskNodes = taskNodes.Select(x =>
-                                 {
-                                   x.DataDependencies.Add(dllBlob);
-
-                                   //avoid injection of dlls which were already defined in the session taskOptions
-                                   x.TaskOptions.Options.Remove(dllBlob.BlobName);
-
-                                   x.TaskOptions.AddDynamicLibrary(x.DynamicLibrary);
-                                   return x;
-                                 });
-
-    var result = await taskService.SubmitTasksAsync(session,
-                                                    taskNodes,
-                                                    manualDeletion,
-                                                    cancellationToken)
-                                  .ConfigureAwait(false);
-    return result;
-  }
-}
-
-public record TaskNodeExt : TaskNode
-{
-  public DynamicLibrary DynamicLibrary { get; init; }
 }

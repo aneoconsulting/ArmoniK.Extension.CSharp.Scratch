@@ -71,12 +71,14 @@ public class BlobDefinition
   ///   Creates a BlobDefinition from a string
   /// </summary>
   /// <param name="content">The raw data</param>
+  /// <param name="encoding">The encoding used for the string, when null UTF-8 is used</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns></returns>
-  public static BlobDefinition FromString(string content,
-                                          bool   manualDeletion = false)
-    => new(Encoding.UTF8.GetBytes(content)
-                   .AsMemory(),
+  public static BlobDefinition FromString(string    content,
+                                          Encoding? encoding       = null,
+                                          bool      manualDeletion = false)
+    => new((encoding ?? Encoding.UTF8).GetBytes(content)
+                                      .AsMemory(),
            manualDeletion);
 
   /// <summary>
