@@ -52,7 +52,7 @@ internal class FizzBuzzClient : ClientBase
     {
       var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
                                                .WithInput("value",
-                                                          BlobDefinition.FromInt(item))
+                                                          BlobDefinition.FromString(item.ToString()))
                                                .WithOutput("result")
                                                .WithTaskOptions(TaskConfiguration);
       var taskHandle = await SessionHandle.SubmitAsync(taskDefinition)
@@ -68,8 +68,7 @@ internal class FizzBuzzClient : ClientBase
 
     foreach (var task in taskDefinitions)
     {
-      var value = BitConverter.ToInt32(task.InputDefinitions.First()
-                                           .Value.Data.Value.ToArray());
+      var value = Encoding.UTF8.GetString(task.InputDefinitions["value"].Data!.Value.ToArray());
       var name = task.Outputs.First()
                      .Key;
       var blobHandle = task.Outputs.First()
@@ -82,31 +81,31 @@ internal class FizzBuzzClient : ClientBase
           var resultString = Encoding.UTF8.GetString(rawData);
           switch (value)
           {
-            case 1:
+            case "1":
               Assert.That(resultString,
                           Is.EqualTo("1 -> 1"));
               break;
-            case 3:
+            case "3":
               Assert.That(resultString,
                           Is.EqualTo("3 -> Fizz"));
               break;
-            case 5:
+            case "5":
               Assert.That(resultString,
                           Is.EqualTo("5 -> Buzz"));
               break;
-            case 10:
+            case "10":
               Assert.That(resultString,
                           Is.EqualTo("10 -> Buzz"));
               break;
-            case 13:
+            case "13":
               Assert.That(resultString,
                           Is.EqualTo("13 -> 13"));
               break;
-            case 15:
+            case "15":
               Assert.That(resultString,
                           Is.EqualTo("15 -> FizzBuzz"));
               break;
-            case -1:
+            case "-1":
               Assert.That(resultString,
                           Is.EqualTo("-1 -> invalid input"));
               break;

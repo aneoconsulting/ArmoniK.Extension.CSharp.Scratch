@@ -308,7 +308,7 @@ public class TasksServiceTests
     Assert.Multiple(() =>
                     {
                       Assert.That(payloadStr,
-                                  Is.EqualTo("{\"Inputs\":{\"dependencyBlob\":\"dependencyBlobId\"},\"Outputs\":{\"output1\":\"outputId1\"}}"),
+                                  Is.EqualTo("{\"inputs\":{\"dependencyBlob\":\"dependencyBlobId\"},\"outputs\":{\"output1\":\"outputId1\"}}"),
                                   "Bad payload");
                       Assert.That(taskDefinition.TaskOptions.Options["ConventionVersion"],
                                   Is.EqualTo("v1"),

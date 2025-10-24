@@ -31,9 +31,15 @@ public class FizzBuzzWorker : IWorker
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
-    var value = taskHandler.GetIntDependency("value");
+    var valueString = taskHandler.GetStringDependency("value");
+    var result      = valueString + " -> ";
 
-    var result = value + " -> ";
+    if (!int.TryParse(valueString,
+                      out var value))
+    {
+      return TaskResult.Failure("Invalid 'value' input: " + valueString);
+    }
+
     if (value > 0)
     {
       if (value % 3 == 0)

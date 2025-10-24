@@ -21,10 +21,10 @@ internal class Payload
   public Payload(IReadOnlyDictionary<string, string> inputs,
                  IReadOnlyDictionary<string, string> outputs)
   {
-    Inputs  = inputs;
-    Outputs = outputs;
+    this.inputs  = inputs;
+    this.outputs = outputs;
   }
 
-  public IReadOnlyDictionary<string, string> Inputs  { get; }
-  public IReadOnlyDictionary<string, string> Outputs { get; }
+  public IReadOnlyDictionary<string, string> inputs  { get; }
+  public IReadOnlyDictionary<string, string> outputs { get; }
 }
