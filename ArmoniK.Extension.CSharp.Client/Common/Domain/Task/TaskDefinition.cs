@@ -101,14 +101,13 @@ public class TaskDefinition
   ///   Add a new output to the task
   /// </summary>
   /// <param name="outputName">The name of the output blob</param>
-  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
+  /// <param name="outputBlobDeclaration">The output blob's definition</param>
   /// <returns>The TaskDefinition updated</returns>
-  public TaskDefinition WithOutput(string outputName,
-                                   bool   manualDeletion = false)
+  public TaskDefinition WithOutput(string         outputName,
+                                   BlobDefinition outputBlobDeclaration)
   {
-    var blobDefinition = BlobDefinition.CreateOutputBlobDefinition(manualDeletion);
     Outputs.Add(outputName,
-                blobDefinition);
+                outputBlobDeclaration);
     return this;
   }
 

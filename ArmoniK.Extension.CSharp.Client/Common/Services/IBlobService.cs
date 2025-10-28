@@ -83,17 +83,30 @@ public interface IBlobService
                                  CancellationToken    cancellationToken = default);
 
   /// <summary>
+  ///   Asynchronously creates multiple blobs from blob definitions.
+  ///   The blob definition's blob handles are set with the result.
+  /// </summary>
+  /// <param name="session">The session information in which the blobs are created.</param>
+  /// <param name="blobs">Blob definitions</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>A task representing the asynchronous operation.</returns>
+  public Task CreateBlobsAsync(SessionInfo                 session,
+                               IEnumerable<BlobDefinition> blobs,
+                               CancellationToken           cancellationToken = default);
+
+  /// <summary>
   ///   Asynchronously creates multiple blobs with the specified names and contents in a given session.
   /// </summary>
   /// <param name="session">The session information in which the blobs are created.</param>
-  /// <param name="blobKeyValuePairs">The key-value pairs representing blob names and their contents.</param>
-  /// <param name="manualDeletion">Whether the blobs should be deleted manually.</param>
+  /// <param name="blobContents">
+  ///   The tuples representing blob names, their contents
+  ///   and whether the blob should be manually deleted.
+  /// </param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
-  IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                             session,
-                                              IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>> blobKeyValuePairs,
-                                              bool                                                    manualDeletion    = false,
-                                              CancellationToken                                       cancellationToken = default);
+  IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                                                   session,
+                                              IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)> blobContents,
+                                              CancellationToken                                                             cancellationToken = default);
 
   /// <summary>
   ///   Asynchronously downloads the content of a blob.

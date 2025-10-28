@@ -28,6 +28,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Queryable;
 using ArmoniK.Utils;
 
@@ -44,6 +45,7 @@ namespace ArmoniK.Extension.CSharp.Client.Services;
 /// <inheritdoc />
 public class BlobService : IBlobService
 {
+  private readonly ArmoniKClient                       armoniKClient_;
   private readonly ObjectPool<ChannelBase>             channelPool_;
   private readonly ILogger<BlobService>                logger_;
   private readonly ArmoniKQueryable<BlobState>         queryable_;
@@ -56,15 +58,18 @@ public class BlobService : IBlobService
   ///   An object pool that manages GRPC channels, providing efficient handling and reuse of channel
   ///   resources.
   /// </param>
+  /// <param name="armoniKClient">The ArmoniK client.</param>
   /// <param name="loggerFactory">
   ///   An optional factory for creating loggers, which can be used to enable logging within the
   ///   blob service. If null, logging will be disabled.
   /// </param>
   public BlobService(ObjectPool<ChannelBase> channel,
+                     ArmoniKClient           armoniKClient,
                      ILoggerFactory          loggerFactory)
   {
-    channelPool_ = channel;
-    logger_      = loggerFactory.CreateLogger<BlobService>();
+    channelPool_   = channel;
+    armoniKClient_ = armoniKClient;
+    logger_        = loggerFactory.CreateLogger<BlobService>();
 
     var queryProvider = new BlobStateQueryProvider(this,
                                                    logger_);
@@ -74,6 +79,7 @@ public class BlobService : IBlobService
   /// <inheritdoc />
   public IQueryable<BlobState> AsQueryable()
     => queryable_;
+
 
   /// <inheritdoc />
   public async IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                     session,
@@ -246,23 +252,22 @@ public class BlobService : IBlobService
   }
 
   /// <inheritdoc />
-  public async IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                             session,
-                                                           IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>> blobKeyValuePairs,
-                                                           bool                                                    manualDeletion    = false,
-                                                           [EnumeratorCancellation] CancellationToken              cancellationToken = default)
+  public async IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                                                   session,
+                                                           IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)> blobContents,
+                                                           [EnumeratorCancellation] CancellationToken                                    cancellationToken = default)
   {
-    var tasks = blobKeyValuePairs.Select(blobKeyValuePair => Task.Run(async () =>
-                                                                      {
-                                                                        var blobInfo = await CreateBlobAsync(session,
-                                                                                                             blobKeyValuePair.Key,
-                                                                                                             blobKeyValuePair.Value,
-                                                                                                             manualDeletion,
-                                                                                                             cancellationToken)
-                                                                                         .ConfigureAwait(false);
-                                                                        return blobInfo;
-                                                                      },
-                                                                      cancellationToken))
-                                 .ToList();
+    var tasks = blobContents.Select(blob => Task.Run(async () =>
+                                                     {
+                                                       var blobInfo = await CreateBlobAsync(session,
+                                                                                            blob.name,
+                                                                                            blob.content,
+                                                                                            blob.manualDeletion,
+                                                                                            cancellationToken)
+                                                                        .ConfigureAwait(false);
+                                                       return blobInfo;
+                                                     },
+                                                     cancellationToken))
+                            .ToList();
 
     var blobCreationResponse = await Task.WhenAll(tasks)
                                          .ConfigureAwait(false);
@@ -343,6 +348,61 @@ public class BlobService : IBlobService
     => CreateBlobsMetadataAsync(session,
                                 names.Select(n => (n, manualDeletion)),
                                 cancellationToken);
+
+  /// <inheritdoc />
+  public async Task CreateBlobsAsync(SessionInfo                 session,
+                                     IEnumerable<BlobDefinition> blobs,
+                                     CancellationToken           cancellationToken = default)
+  {
+    var blobsWithData    = new List<BlobDefinition>();
+    var blobsWithoutData = new List<BlobDefinition>();
+
+    foreach (var blob in blobs)
+    {
+      if (blob.Data.HasValue)
+      {
+        blobsWithData.Add(blob);
+      }
+      else
+      {
+        blobsWithoutData.Add(blob);
+      }
+    }
+
+    if (blobsWithData.Any())
+    {
+      // Creation of blobs with data
+      var blobsCreate = blobsWithData.Select(b => (b.Name, b.Data!.Value, b.ManualDeletion));
+      var response = CreateBlobsAsync(session,
+                                      blobsCreate,
+                                      cancellationToken);
+      var index = 0;
+      await foreach (var blob in response.ConfigureAwait(false))
+      {
+        blobsWithData[index].BlobHandle = new BlobHandle(blob,
+                                                         armoniKClient_);
+        blobsWithData[index].SessionInfo = session;
+        index++;
+      }
+    }
+
+    if (blobsWithoutData.Any())
+    {
+      // Creation of blobs without data
+      var blobsCreate = blobsWithoutData.Select(b => (b.Name, b.ManualDeletion));
+      var response = CreateBlobsMetadataAsync(session,
+                                              blobsCreate,
+                                              cancellationToken);
+      var index = 0;
+      await foreach (var blob in response.ConfigureAwait(false))
+      {
+        blobsWithoutData[index].BlobHandle = new BlobHandle(blob,
+                                                            armoniKClient_);
+        blobsWithoutData[index].SessionInfo = session;
+        index++;
+      }
+    }
+  }
 
   private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)
   {

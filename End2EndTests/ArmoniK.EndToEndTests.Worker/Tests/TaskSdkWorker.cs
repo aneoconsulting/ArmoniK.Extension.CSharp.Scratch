@@ -32,18 +32,10 @@ public class TaskSdkWorker : IWorker
                                              CancellationToken cancellationToken)
   {
     var resultString = taskHandler.GetStringDependency("myString");
-    var resultInt    = taskHandler.GetIntDependency("myInt");
-    var resultDouble = taskHandler.GetDoubleDependency("myDouble");
 
     // Send the input as results as is.
     await taskHandler.SendResultByNameAsync("resultString",
                                             Encoding.ASCII.GetBytes(resultString))
-                     .ConfigureAwait(false);
-    await taskHandler.SendResultByNameAsync("resultInt",
-                                            Encoding.ASCII.GetBytes(resultInt.ToString()))
-                     .ConfigureAwait(false);
-    await taskHandler.SendResultByNameAsync("resultDouble",
-                                            Encoding.ASCII.GetBytes(resultDouble.ToString("F2")))
                      .ConfigureAwait(false);
 
     return TaskResult.Success;

@@ -28,12 +28,19 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 /// </summary>
 public class BlobDefinition
 {
-  private BlobDefinition(ReadOnlyMemory<byte> content,
+  private BlobDefinition(string               name,
+                         ReadOnlyMemory<byte> content,
                          bool                 manualDeletion)
   {
+    Name           = name;
     Data           = content;
     ManualDeletion = manualDeletion;
   }
+
+  /// <summary>
+  ///   Blob name
+  /// </summary>
+  public string Name { get; init; }
 
   /// <summary>
   ///   The raw data
@@ -52,74 +59,74 @@ public class BlobDefinition
 
   internal SessionInfo? SessionInfo { get; set; }
 
-  internal static BlobDefinition CreateOutputBlobDefinition(bool manualDeletion)
-    => new(null,
+  /// <summary>
+  ///   Create an output blob definition
+  /// </summary>
+  /// <param name="name">The blob name</param>
+  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
+  /// <returns></returns>
+  public static BlobDefinition CreateOutputBlobDefinition(string name,
+                                                          bool   manualDeletion = false)
+    => new(name,
+           null,
            manualDeletion);
 
   /// <summary>
   ///   Creates a BlobDefinition from a file
   /// </summary>
+  /// <param name="blobName">The blob name</param>
   /// <param name="filePath">The file containing the data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns></returns>
-  public static BlobDefinition FromFile(string filePath,
+  public static BlobDefinition FromFile(string blobName,
+                                        string filePath,
                                         bool   manualDeletion = false)
-    => new(File.ReadAllBytes(filePath),
+    => new(blobName,
+           File.ReadAllBytes(filePath),
            manualDeletion);
 
   /// <summary>
   ///   Creates a BlobDefinition from a string
   /// </summary>
+  /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
+  /// <param name="encoding">The encoding used for the string, when null UTF-8 is used</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns></returns>
-  public static BlobDefinition FromString(string content,
-                                          bool   manualDeletion = false)
-    => new(Encoding.UTF8.GetBytes(content)
-                   .AsMemory(),
+  public static BlobDefinition FromString(string    blobName,
+                                          string    content,
+                                          Encoding? encoding       = null,
+                                          bool      manualDeletion = false)
+    => new(blobName,
+           (encoding ?? Encoding.UTF8).GetBytes(content)
+                                      .AsMemory(),
            manualDeletion);
 
   /// <summary>
   ///   Creates a BlobDefinition from a read only memory
   /// </summary>
+  /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns></returns>
-  public static BlobDefinition FromReadOnlyMemory(ReadOnlyMemory<byte> content,
+  public static BlobDefinition FromReadOnlyMemory(string               blobName,
+                                                  ReadOnlyMemory<byte> content,
                                                   bool                 manualDeletion = false)
-    => new(content,
+    => new(blobName,
+           content,
            manualDeletion);
 
   /// <summary>
   ///   Creates a BlobDefinition from a byte array
   /// </summary>
+  /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns></returns>
-  public static BlobDefinition FromByteArray(byte[] content,
+  public static BlobDefinition FromByteArray(string blobName,
+                                             byte[] content,
                                              bool   manualDeletion = false)
-    => new(content,
-           manualDeletion);
-
-  /// <summary>
-  ///   Creates a BlobDefinition from an int
-  /// </summary>
-  /// <param name="content">The raw data</param>
-  /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
-  public static BlobDefinition FromInt(int  content,
-                                       bool manualDeletion = false)
-    => new(BitConverter.GetBytes(content),
-           manualDeletion);
-
-  /// <summary>
-  ///   Creates a BlobDefinition from a double
-  /// </summary>
-  /// <param name="content">The raw data</param>
-  /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
-  public static BlobDefinition FromDouble(double content,
-                                          bool   manualDeletion = false)
-    => new(BitConverter.GetBytes(content),
+    => new(blobName,
+           content,
            manualDeletion);
 }

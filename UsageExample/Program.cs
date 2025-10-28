@@ -71,8 +71,7 @@ internal class Program
     var props = new Properties(_configuration);
 
     var client = new ArmoniKClient(props,
-                                   factory,
-                                   defaultTaskOptions);
+                                   factory);
 
     var dynamicLib = new DynamicLibrary
                      {
@@ -80,7 +79,8 @@ internal class Program
                        LibraryPath = "publish/LibraryExample.dll",
                      };
 
-    var session = await client.SessionService.CreateSessionAsync(["dll"])
+    var session = await client.SessionService.CreateSessionAsync(["dll"],
+                                                                 defaultTaskOptions)
                               .ConfigureAwait(false);
 
     Console.WriteLine($"sessionId: {session.SessionId}");

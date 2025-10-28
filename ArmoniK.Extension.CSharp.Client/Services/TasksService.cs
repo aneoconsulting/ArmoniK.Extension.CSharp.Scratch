@@ -29,7 +29,6 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Utils;
 
@@ -137,6 +136,13 @@ public class TasksService : ITasksService
     {
       throw new InvalidOperationException("Expected outputs cannot be empty.");
     }
+
+    // Create all blobs from blob definitions
+    await blobService_.CreateBlobsAsync(session,
+                                        taskDefinitions.SelectMany(t => t.InputDefinitions.Values)
+                                                       .Union(taskDefinitions.SelectMany(t => t.Outputs.Values)),
+                                        cancellationToken)
+                      .ConfigureAwait(false);
 
     // Input and output blobs creation, payload instance creation, and tasks options update with
     var payloads     = new List<Payload>();
@@ -339,13 +345,12 @@ public class TasksService : ITasksService
                                            .ToList();
     if (nodesWithNewBlobs.Any())
     {
-      var blobKeyValues = nodesWithNewBlobs.SelectMany(x => x.DataDependenciesContent);
+      var blobKeyValues = nodesWithNewBlobs.SelectMany(x => x.DataDependenciesContent.Select(dd => (dd.Key, dd.Value, manualDeletion)));
 
       var createdBlobDictionary = new Dictionary<string, BlobInfo>();
 
       await foreach (var blob in blobService_.CreateBlobsAsync(session,
                                                                blobKeyValues,
-                                                               manualDeletion,
                                                                cancellationToken)
                                              .ConfigureAwait(false))
       {
@@ -390,99 +395,6 @@ public class TasksService : ITasksService
           taskNode.Payload = createdBlob;
         }
       }
-    }
-  }
-
-  private async IAsyncEnumerable<BlobInfo> FetchInputsBlobInfo(SessionInfo                                session,
-                                                               TaskDefinition                             task,
-                                                               [EnumeratorCancellation] CancellationToken cancellationToken)
-  {
-    // Return the already available blob infos
-    foreach (var blobHandle in task.InputHandles.Values)
-    {
-      yield return blobHandle.BlobInfo;
-    }
-
-    // Return blobs already created for the same session
-    var blobsOnSameSession = task.InputDefinitions.Values.Where(b => b.BlobHandle != null && b.SessionInfo! == session);
-    foreach (var blobDefinition in blobsOnSameSession)
-    {
-      yield return blobDefinition.BlobHandle!.BlobInfo;
-    }
-
-    // new blobs creation, whether they were never created or created on another session
-    var newBlobs         = task.InputDefinitions.Where(b => (b.Value.BlobHandle != null && b.Value.SessionInfo! != session) || b.Value.BlobHandle == null);
-    var blobsWithoutData = new List<(string name, bool manualDeletion)>();
-    foreach (var pair in newBlobs)
-    {
-      var name           = pair.Key;
-      var blobDefinition = pair.Value;
-      if (blobDefinition.Data == null)
-      {
-        blobsWithoutData.Add((name, blobDefinition.ManualDeletion));
-
-        continue;
-      }
-
-      var blobInfo = await blobService_.CreateBlobAsync(session,
-                                                        name,
-                                                        blobDefinition.Data.Value,
-                                                        blobDefinition.ManualDeletion,
-                                                        cancellationToken)
-                                       .ConfigureAwait(false);
-
-      task.InputDefinitions[name].SessionInfo = session;
-      task.InputDefinitions[name].BlobHandle = new BlobHandle(blobInfo,
-                                                              armoniKClient_);
-      yield return blobInfo;
-    }
-
-    await foreach (var blobInfo in CreateBlobsMetadataAsync(session,
-                                                            task,
-                                                            blobsWithoutData,
-                                                            task.InputDefinitions,
-                                                            cancellationToken)
-                     .ConfigureAwait(false))
-    {
-      yield return blobInfo;
-    }
-  }
-
-  private async IAsyncEnumerable<BlobInfo> CreateBlobsMetadataAsync(SessionInfo                                     session,
-                                                                    TaskDefinition                                  task,
-                                                                    IEnumerable<(string name, bool manualDeletion)> blobNames,
-                                                                    Dictionary<string, BlobDefinition>              name2BlobDefinition,
-                                                                    [EnumeratorCancellation] CancellationToken      cancellationToken)
-  {
-    if (!blobNames.Any())
-    {
-      yield break;
-    }
-
-    var blobsInfo = blobService_.CreateBlobsMetadataAsync(session,
-                                                          blobNames,
-                                                          cancellationToken);
-    await foreach (var blobInfo in blobsInfo.ConfigureAwait(false))
-    {
-      name2BlobDefinition[blobInfo.BlobName].SessionInfo = session;
-      name2BlobDefinition[blobInfo.BlobName].BlobHandle = new BlobHandle(blobInfo,
-                                                                         armoniKClient_);
-      yield return blobInfo;
-    }
-  }
-
-  private async IAsyncEnumerable<BlobInfo> FetchOutputsBlobInfo(SessionInfo                                session,
-                                                                TaskDefinition                             task,
-                                                                [EnumeratorCancellation] CancellationToken cancellationToken)
-  {
-    await foreach (var blobInfo in CreateBlobsMetadataAsync(session,
-                                                            task,
-                                                            task.Outputs.Select(pair => (pair.Key, pair.Value.ManualDeletion)),
-                                                            task.Outputs,
-                                                            cancellationToken)
-                     .ConfigureAwait(false))
-    {
-      yield return blobInfo;
     }
   }
 
