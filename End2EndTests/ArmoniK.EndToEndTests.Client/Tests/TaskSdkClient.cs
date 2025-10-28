@@ -37,11 +37,11 @@ public class TaskSdkClient : ClientBase
   public async Task TaskSdk()
   {
     var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
-                                             .WithInput("myString",
-                                                        BlobDefinition.FromString("myString",
+                                             .WithInput("inputString",
+                                                        BlobDefinition.FromString("blobInputString",
                                                                                   "Hello world!"))
-                                             .WithOutput("resultString",
-                                                         BlobDefinition.CreateOutputBlobDefinition("resultString"))
+                                             .WithOutput("outputString",
+                                                         BlobDefinition.CreateOutputBlobDefinition("blobOutputString"))
                                              .WithTaskOptions(TaskConfiguration);
     var taskHandle = await SessionHandle.SubmitAsync(taskDefinition)
                                         .ConfigureAwait(false);
@@ -52,19 +52,27 @@ public class TaskSdkClient : ClientBase
                                                  CancellationToken.None);
 
     var resultString = "";
-    foreach (var pair in taskDefinition.Outputs)
+    var outputName = taskDefinition.Outputs.First()
+                                   .Key;
+    var outputBlobHandle = taskDefinition.Outputs.First()
+                                         .Value.BlobHandle;
+    var inputBlobHandle = taskDefinition.InputDefinitions.First()
+                                        .Value.BlobHandle;
+    var rawData = await outputBlobHandle!.DownloadBlobDataAsync(CancellationToken.None)
+                                         .ConfigureAwait(false);
+    if (outputName == "outputString")
     {
-      var name       = pair.Key;
-      var blobHandle = pair.Value.BlobHandle;
-      var rawData = await blobHandle!.DownloadBlobDataAsync(CancellationToken.None)
-                                     .ConfigureAwait(false);
-      if (name == "resultString")
-      {
-        resultString = Encoding.UTF8.GetString(rawData);
-      }
+      resultString = Encoding.UTF8.GetString(rawData);
     }
 
-    Assert.That(resultString,
-                Is.EqualTo("Hello world!"));
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(inputBlobHandle!.BlobInfo.BlobName,
+                                  Is.EqualTo("blobInputString"));
+                      Assert.That(outputBlobHandle!.BlobInfo.BlobName,
+                                  Is.EqualTo("blobOutputString"));
+                      Assert.That(resultString,
+                                  Is.EqualTo("Hello world!"));
+                    });
   }
 }

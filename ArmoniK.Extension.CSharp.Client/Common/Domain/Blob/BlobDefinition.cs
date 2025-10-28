@@ -18,7 +18,6 @@ using System;
 using System.IO;
 using System.Text;
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Handles;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -55,9 +54,7 @@ public class BlobDefinition
   /// <summary>
   ///   Handle once the blob has been registered
   /// </summary>
-  public BlobHandle? BlobHandle { get; internal set; } = null;
-
-  internal SessionInfo? SessionInfo { get; set; }
+  public BlobHandle? BlobHandle { get; internal set; }
 
   /// <summary>
   ///   Create an output blob definition
@@ -72,12 +69,25 @@ public class BlobDefinition
            manualDeletion);
 
   /// <summary>
+  ///   Creates a BlobDefinition from a blob handle
+  /// </summary>
+  /// <param name="handle">The blob handle</param>
+  /// <returns>The newly created blob definition</returns>
+  public static BlobDefinition FromBlobHandle(BlobHandle handle)
+    => new(handle.BlobInfo.BlobName,
+           null,
+           false)
+       {
+         BlobHandle = handle,
+       };
+
+  /// <summary>
   ///   Creates a BlobDefinition from a file
   /// </summary>
   /// <param name="blobName">The blob name</param>
   /// <param name="filePath">The file containing the data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromFile(string blobName,
                                         string filePath,
                                         bool   manualDeletion = false)
@@ -92,7 +102,7 @@ public class BlobDefinition
   /// <param name="content">The raw data</param>
   /// <param name="encoding">The encoding used for the string, when null UTF-8 is used</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromString(string    blobName,
                                           string    content,
                                           Encoding? encoding       = null,
@@ -108,7 +118,7 @@ public class BlobDefinition
   /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromReadOnlyMemory(string               blobName,
                                                   ReadOnlyMemory<byte> content,
                                                   bool                 manualDeletion = false)
@@ -122,7 +132,7 @@ public class BlobDefinition
   /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromByteArray(string blobName,
                                              byte[] content,
                                              bool   manualDeletion = false)

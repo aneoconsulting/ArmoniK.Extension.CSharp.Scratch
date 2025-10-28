@@ -87,11 +87,11 @@ public interface IBlobService
   ///   The blob definition's blob handles are set with the result.
   /// </summary>
   /// <param name="session">The session information in which the blobs are created.</param>
-  /// <param name="blobs">Blob definitions</param>
+  /// <param name="blobDefinitions">The blob definitions</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation.</returns>
   public Task CreateBlobsAsync(SessionInfo                 session,
-                               IEnumerable<BlobDefinition> blobs,
+                               IEnumerable<BlobDefinition> blobDefinitions,
                                CancellationToken           cancellationToken = default);
 
   /// <summary>

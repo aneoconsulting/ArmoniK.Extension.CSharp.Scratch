@@ -110,11 +110,11 @@ internal sealed class MockedArmoniKClient
   /// </summary>
   public static implicit operator ArmoniKClient(MockedArmoniKClient mockedClient)
     => new(mockedClient.Properties,
-           mockedClient.LoggerFactory,
-           mockedClient.TaskOptions);
+           mockedClient.LoggerFactory);
 
   private IBlobService BuildBlobService(IServiceProvider provider)
     => new BlobService(ChannelPool,
+                       this,
                        LoggerFactory);
 
   private IEventsService BuildEventsService(IServiceProvider provider)

@@ -28,6 +28,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Queryable;
 using ArmoniK.Utils;
@@ -351,21 +352,37 @@ public class BlobService : IBlobService
 
   /// <inheritdoc />
   public async Task CreateBlobsAsync(SessionInfo                 session,
-                                     IEnumerable<BlobDefinition> blobs,
+                                     IEnumerable<BlobDefinition> blobDefinitions,
                                      CancellationToken           cancellationToken = default)
   {
     var blobsWithData    = new List<BlobDefinition>();
     var blobsWithoutData = new List<BlobDefinition>();
 
-    foreach (var blob in blobs)
+    foreach (var blobDefinition in blobDefinitions)
     {
-      if (blob.Data.HasValue)
+      if (blobDefinition.BlobHandle != null)
       {
-        blobsWithData.Add(blob);
+        if (blobDefinition.BlobHandle.BlobInfo.SessionId == session.SessionId)
+        {
+          // The blob was already created on this session, then we skip it
+          continue;
+        }
+
+        if (blobDefinition.Data == null)
+        {
+          // The blob was created on another session, and we do not have its data.
+          throw new
+            ArmoniKSdkException($"The blob '{blobDefinition.BlobHandle.BlobInfo.BlobName}' (BlobId:{blobDefinition.BlobHandle.BlobInfo.BlobId}) was created on session '{blobDefinition.BlobHandle.BlobInfo.SessionId}' and cannot be used on session '{session.SessionId}'");
+        }
+      }
+
+      if (blobDefinition.Data.HasValue)
+      {
+        blobsWithData.Add(blobDefinition);
       }
       else
       {
-        blobsWithoutData.Add(blob);
+        blobsWithoutData.Add(blobDefinition);
       }
     }
 
@@ -381,7 +398,6 @@ public class BlobService : IBlobService
       {
         blobsWithData[index].BlobHandle = new BlobHandle(blob,
                                                          armoniKClient_);
-        blobsWithData[index].SessionInfo = session;
         index++;
       }
     }
@@ -398,7 +414,6 @@ public class BlobService : IBlobService
       {
         blobsWithoutData[index].BlobHandle = new BlobHandle(blob,
                                                             armoniKClient_);
-        blobsWithoutData[index].SessionInfo = session;
         index++;
       }
     }

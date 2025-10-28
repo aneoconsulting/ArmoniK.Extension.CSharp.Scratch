@@ -31,10 +31,10 @@ public class TaskSdkWorker : IWorker
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
-    var resultString = taskHandler.GetStringDependency("myString");
+    var resultString = taskHandler.GetStringDependency("inputString");
 
     // Send the input as results as is.
-    await taskHandler.SendResultByNameAsync("resultString",
+    await taskHandler.SendResultByNameAsync("outputString",
                                             Encoding.ASCII.GetBytes(resultString))
                      .ConfigureAwait(false);
 
