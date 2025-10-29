@@ -15,9 +15,11 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Handles;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -27,12 +29,59 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 /// </summary>
 public class BlobDefinition
 {
+  private readonly ReadOnlyMemory<byte>? data_;
+  private readonly long                  dataSize_;
+  private readonly string                filePath_;
+
+  /// <summary>
+  ///   Creation of a blob definition with known data
+  /// </summary>
+  /// <param name="name">The blob name</param>
+  /// <param name="content">The blob data</param>
+  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
   private BlobDefinition(string               name,
                          ReadOnlyMemory<byte> content,
                          bool                 manualDeletion)
   {
     Name           = name;
-    Data           = content;
+    data_          = content;
+    HasData        = true;
+    filePath_      = string.Empty;
+    dataSize_      = content.Length;
+    ManualDeletion = manualDeletion;
+  }
+
+  /// <summary>
+  ///   Creation of a blob definition with a data file
+  /// </summary>
+  /// <param name="name">The blob name</param>
+  /// <param name="file">The FileInfo instance</param>
+  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
+  private BlobDefinition(string   name,
+                         FileInfo file,
+                         bool     manualDeletion)
+  {
+    Name           = name;
+    data_          = null;
+    HasData        = true;
+    filePath_      = file.FullName;
+    dataSize_      = file.Length;
+    ManualDeletion = manualDeletion;
+  }
+
+  /// <summary>
+  ///   Creation of a blob definition with no data
+  /// </summary>
+  /// <param name="name">The blob name</param>
+  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
+  private BlobDefinition(string name,
+                         bool   manualDeletion)
+  {
+    Name           = name;
+    data_          = null;
+    HasData        = false;
+    filePath_      = string.Empty;
+    dataSize_      = 0;
     ManualDeletion = manualDeletion;
   }
 
@@ -42,14 +91,20 @@ public class BlobDefinition
   public string Name { get; init; }
 
   /// <summary>
-  ///   The raw data
-  /// </summary>
-  public ReadOnlyMemory<byte>? Data { get; init; }
-
-  /// <summary>
   ///   Whether the blob should be manually deleted by the user
   /// </summary>
   public bool ManualDeletion { get; init; }
+
+  /// <summary>
+  ///   The size in bytes occupied by the blob in an RPC.
+  /// </summary>
+  public long TotalSize
+    => Name.Length + dataSize_;
+
+  /// <summary>
+  ///   Indicates whether the blob definition was created with its data.
+  /// </summary>
+  public bool HasData { get; init; }
 
   /// <summary>
   ///   Handle once the blob has been registered
@@ -57,15 +112,86 @@ public class BlobDefinition
   public BlobHandle? BlobHandle { get; internal set; }
 
   /// <summary>
+  ///   Get the blob data by chunks of maximum size 'maxSize'
+  /// </summary>
+  /// <param name="maxSize">The maximum size of the chunks, 0 for no limit</param>
+  /// <returns>An enumeration of the chunks</returns>
+  public IEnumerable<ReadOnlyMemory<byte>> GetData(int maxSize = 0)
+  {
+    if (data_.HasValue)
+    {
+      if (maxSize == 0)
+      {
+        yield return data_.Value;
+      }
+      else
+      {
+        var offset        = 0;
+        var remainingSize = (int)dataSize_;
+        while (remainingSize > maxSize)
+        {
+          yield return data_.Value.Slice(offset,
+                                         maxSize);
+          remainingSize -= maxSize;
+          offset        += maxSize;
+        }
+
+        if (offset == 0)
+        {
+          yield return data_.Value;
+        }
+        else
+        {
+          yield return data_.Value.Slice(offset,
+                                         remainingSize);
+        }
+      }
+    }
+    else if (!string.IsNullOrEmpty(filePath_))
+    {
+      if (maxSize == 0)
+      {
+        yield return File.ReadAllBytes(filePath_);
+      }
+      else
+      {
+        using var fileStream = new FileStream(filePath_,
+                                              FileMode.Open,
+                                              FileAccess.Read);
+        var buffer = new byte[maxSize];
+        int bytesRead;
+
+        while ((bytesRead = fileStream.Read(buffer,
+                                            0,
+                                            maxSize)) > 0)
+        {
+          if (bytesRead < maxSize)
+          {
+            var lastBlock = new byte[bytesRead];
+            Array.Copy(buffer,
+                       lastBlock,
+                       bytesRead);
+            yield return lastBlock;
+          }
+          else
+          {
+            yield return buffer;
+            buffer = new byte[maxSize];
+          }
+        }
+      }
+    }
+  }
+
+  /// <summary>
   ///   Create an output blob definition
   /// </summary>
   /// <param name="name">The blob name</param>
   /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
-  /// <returns></returns>
+  /// <returns>The newly created blob definition</returns>
   public static BlobDefinition CreateOutputBlobDefinition(string name,
                                                           bool   manualDeletion = false)
     => new(name,
-           null,
            manualDeletion);
 
   /// <summary>
@@ -75,7 +201,6 @@ public class BlobDefinition
   /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromBlobHandle(BlobHandle handle)
     => new(handle.BlobInfo.BlobName,
-           null,
            false)
        {
          BlobHandle = handle,
@@ -91,9 +216,17 @@ public class BlobDefinition
   public static BlobDefinition FromFile(string blobName,
                                         string filePath,
                                         bool   manualDeletion = false)
-    => new(blobName,
-           File.ReadAllBytes(filePath),
-           manualDeletion);
+  {
+    var file = new FileInfo(filePath);
+    if (!file.Exists)
+    {
+      throw new ArmoniKSdkException($"The file {file.FullName} does not exists.");
+    }
+
+    return new BlobDefinition(blobName,
+                              file,
+                              manualDeletion);
+  }
 
   /// <summary>
   ///   Creates a BlobDefinition from a string

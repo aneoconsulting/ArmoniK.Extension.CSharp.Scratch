@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -149,10 +148,10 @@ public class TasksService : ITasksService
     var tasksOutputs = new List<IEnumerable<KeyValuePair<string, string>>>();
     foreach (var task in taskDefinitions)
     {
-      var inputs = task.InputDefinitions.Select(i => new KeyValuePair<string, string>(i.Value.Name,
+      var inputs = task.InputDefinitions.Select(i => new KeyValuePair<string, string>(i.Key,
                                                                                       i.Value.BlobHandle!.BlobInfo.BlobId))
                        .ToList();
-      var outputs = task.Outputs.Select(o => new KeyValuePair<string, string>(o.Value.Name,
+      var outputs = task.Outputs.Select(o => new KeyValuePair<string, string>(o.Key,
                                                                               o.Value.BlobHandle!.BlobInfo.BlobId));
 
       var payload = new Payload(inputs.ToDictionary(b => b.Key,
@@ -179,15 +178,18 @@ public class TasksService : ITasksService
     using var taskEnumerator = taskDefinitions.GetEnumerator();
     var       index          = 0;
     var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
-    var       payloadsData   = payloads.Select(p => ("payload", (ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(p)), false));
-    await foreach (var payloadInfo in blobService_.CreateBlobsAsync(session,
-                                                                    payloadsData,
-                                                                    cancellationToken)
-                                                  .ConfigureAwait(false))
+    var payloadsDefinition = payloads.Select(p => BlobDefinition.FromString("payload",
+                                                                            JsonConvert.SerializeObject(p)))
+                                     .ToList();
+    await blobService_.CreateBlobsAsync(session,
+                                        payloadsDefinition,
+                                        cancellationToken)
+                      .ConfigureAwait(false);
+    foreach (var payloadBlobHandle in payloadsDefinition.Select(p => p.BlobHandle))
     {
       taskEnumerator.MoveNext();
       var task = taskEnumerator.Current;
-      task!.Payload = payloadInfo;
+      task!.Payload = payloadBlobHandle!;
       taskCreations.Add(new SubmitTasksRequest.Types.TaskCreation
                         {
                           PayloadId = task.Payload!.BlobId,

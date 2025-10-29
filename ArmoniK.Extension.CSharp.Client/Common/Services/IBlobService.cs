@@ -96,6 +96,7 @@ public interface IBlobService
 
   /// <summary>
   ///   Asynchronously creates multiple blobs with the specified names and contents in a given session.
+  ///   Deprecated: this method is a dependency of class TaskNode, it will be removed with TaskNode.
   /// </summary>
   /// <param name="session">The session information in which the blobs are created.</param>
   /// <param name="blobContents">
@@ -104,6 +105,7 @@ public interface IBlobService
   /// </param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>An asynchronous enumerable of blob information objects.</returns>
+  [Obsolete]
   IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                                                   session,
                                               IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)> blobContents,
                                               CancellationToken                                                             cancellationToken = default);

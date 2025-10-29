@@ -253,38 +253,6 @@ public class BlobService : IBlobService
   }
 
   /// <inheritdoc />
-  public async IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                                                   session,
-                                                           IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)> blobContents,
-                                                           [EnumeratorCancellation] CancellationToken                                    cancellationToken = default)
-  {
-    var tasks = blobContents.Select(blob => Task.Run(async () =>
-                                                     {
-                                                       var blobInfo = await CreateBlobAsync(session,
-                                                                                            blob.name,
-                                                                                            blob.content,
-                                                                                            blob.manualDeletion,
-                                                                                            cancellationToken)
-                                                                        .ConfigureAwait(false);
-                                                       return blobInfo;
-                                                     },
-                                                     cancellationToken))
-                            .ToList();
-
-    var blobCreationResponse = await Task.WhenAll(tasks)
-                                         .ConfigureAwait(false);
-
-    foreach (var blob in blobCreationResponse)
-    {
-      yield return new BlobInfo
-                   {
-                     BlobName  = blob.BlobName,
-                     BlobId    = blob.BlobId,
-                     SessionId = session.SessionId,
-                   };
-    }
-  }
-
-  /// <inheritdoc />
   public async Task<BlobPage> ListBlobsAsync(BlobPagination    blobPagination,
                                              CancellationToken cancellationToken = default)
   {
@@ -351,71 +319,34 @@ public class BlobService : IBlobService
                                 cancellationToken);
 
   /// <inheritdoc />
-  public async Task CreateBlobsAsync(SessionInfo                 session,
-                                     IEnumerable<BlobDefinition> blobDefinitions,
-                                     CancellationToken           cancellationToken = default)
+  public async IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                                                   session,
+                                                           IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)> blobContents,
+                                                           [EnumeratorCancellation] CancellationToken                                    cancellationToken = default)
   {
-    var blobsWithData    = new List<BlobDefinition>();
-    var blobsWithoutData = new List<BlobDefinition>();
+    var tasks = blobContents.Select(blob => Task.Run(async () =>
+                                                     {
+                                                       var blobInfo = await CreateBlobAsync(session,
+                                                                                            blob.name,
+                                                                                            blob.content,
+                                                                                            blob.manualDeletion,
+                                                                                            cancellationToken)
+                                                                        .ConfigureAwait(false);
+                                                       return blobInfo;
+                                                     },
+                                                     cancellationToken))
+                            .ToList();
 
-    foreach (var blobDefinition in blobDefinitions)
+    var blobCreationResponse = await Task.WhenAll(tasks)
+                                         .ConfigureAwait(false);
+
+    foreach (var blob in blobCreationResponse)
     {
-      if (blobDefinition.BlobHandle != null)
-      {
-        if (blobDefinition.BlobHandle.BlobInfo.SessionId == session.SessionId)
-        {
-          // The blob was already created on this session, then we skip it
-          continue;
-        }
-
-        if (blobDefinition.Data == null)
-        {
-          // The blob was created on another session, and we do not have its data.
-          throw new
-            ArmoniKSdkException($"The blob '{blobDefinition.BlobHandle.BlobInfo.BlobName}' (BlobId:{blobDefinition.BlobHandle.BlobInfo.BlobId}) was created on session '{blobDefinition.BlobHandle.BlobInfo.SessionId}' and cannot be used on session '{session.SessionId}'");
-        }
-      }
-
-      if (blobDefinition.Data.HasValue)
-      {
-        blobsWithData.Add(blobDefinition);
-      }
-      else
-      {
-        blobsWithoutData.Add(blobDefinition);
-      }
-    }
-
-    if (blobsWithData.Any())
-    {
-      // Creation of blobs with data
-      var blobsCreate = blobsWithData.Select(b => (b.Name, b.Data!.Value, b.ManualDeletion));
-      var response = CreateBlobsAsync(session,
-                                      blobsCreate,
-                                      cancellationToken);
-      var index = 0;
-      await foreach (var blob in response.ConfigureAwait(false))
-      {
-        blobsWithData[index].BlobHandle = new BlobHandle(blob,
-                                                         armoniKClient_);
-        index++;
-      }
-    }
-
-    if (blobsWithoutData.Any())
-    {
-      // Creation of blobs without data
-      var blobsCreate = blobsWithoutData.Select(b => (b.Name, b.ManualDeletion));
-      var response = CreateBlobsMetadataAsync(session,
-                                              blobsCreate,
-                                              cancellationToken);
-      var index = 0;
-      await foreach (var blob in response.ConfigureAwait(false))
-      {
-        blobsWithoutData[index].BlobHandle = new BlobHandle(blob,
-                                                            armoniKClient_);
-        index++;
-      }
+      yield return new BlobInfo
+                   {
+                     BlobName  = blob.BlobName,
+                     BlobId    = blob.BlobId,
+                     SessionId = session.SessionId,
+                   };
     }
   }
 
@@ -427,6 +358,33 @@ public class BlobService : IBlobService
     serviceConfiguration_ = await blobClient.GetServiceConfigurationAsync(new Empty())
                                             .ConfigureAwait(false);
   }
+
+  private async Task<UploadResultDataResponse> UploadBlobByChunkAsync(Results.ResultsClient client,
+                                                                      BlobDefinition        blobDefinition)
+  {
+    var stream = client.UploadResultData();
+    await stream.RequestStream.WriteAsync(new UploadResultDataRequest
+                                          {
+                                            Id = new UploadResultDataRequest.Types.ResultIdentifier
+                                                 {
+                                                   ResultId  = blobDefinition.BlobHandle!.BlobInfo.BlobId,
+                                                   SessionId = blobDefinition.BlobHandle!.BlobInfo.SessionId,
+                                                 },
+                                          })
+                .ConfigureAwait(false);
+
+    foreach (var chunk in blobDefinition.GetData(serviceConfiguration_.DataChunkMaxSize))
+    {
+      await stream.RequestStream.WriteAsync(new UploadResultDataRequest
+                                            {
+                                              DataChunk = UnsafeByteOperations.UnsafeWrap(chunk),
+                                            })
+                  .ConfigureAwait(false);
+    }
+
+    return await stream.ResponseAsync.ConfigureAwait(false);
+  }
+
 
   private async Task UploadBlobAsync(BlobInfo              blob,
                                      ReadOnlyMemory<byte>  blobContent,
@@ -446,4 +404,181 @@ public class BlobService : IBlobService
       throw;
     }
   }
+
+  #region method CreateBlobsAsync() and its private dependencies
+
+  /// <inheritdoc />
+  public async Task CreateBlobsAsync(SessionInfo                 session,
+                                     IEnumerable<BlobDefinition> blobDefinitions,
+                                     CancellationToken           cancellationToken = default)
+  {
+    var blobsWithData    = new List<BlobDefinition>();
+    var blobsWithoutData = new List<BlobDefinition>();
+
+    foreach (var blobDefinition in blobDefinitions)
+    {
+      if (blobDefinition.BlobHandle != null)
+      {
+        if (blobDefinition.BlobHandle.BlobInfo.SessionId == session.SessionId)
+        {
+          // The blob was already created on this session, then we skip it
+          continue;
+        }
+
+        if (!blobDefinition.HasData)
+        {
+          // The blob was created on another session, and we do not have its data.
+          throw new
+            ArmoniKSdkException($"The blob '{blobDefinition.BlobHandle.BlobInfo.BlobName}' (BlobId:{blobDefinition.BlobHandle.BlobInfo.BlobId}) was created on session '{blobDefinition.BlobHandle.BlobInfo.SessionId}' and cannot be used on session '{session.SessionId}'");
+        }
+      }
+
+      if (blobDefinition.HasData)
+      {
+        if (serviceConfiguration_ is null)
+        {
+          await LoadBlobServiceConfigurationAsync(cancellationToken)
+            .ConfigureAwait(false);
+        }
+
+        blobsWithData.Add(blobDefinition);
+        if (blobDefinition.TotalSize >= serviceConfiguration_.DataChunkMaxSize)
+        {
+          // For a blob size above the threshold of DataChunkMaxSize, we add it also to the list of blobs without data
+          // so that its metadata will be created by CreateBlobsMetadataAsync(). Subsequently, the upload will be processed by CreateBlobsWithContentAsync()
+          blobsWithoutData.Add(blobDefinition);
+        }
+      }
+      else
+      {
+        blobsWithoutData.Add(blobDefinition);
+      }
+    }
+
+    if (blobsWithoutData.Any())
+    {
+      // Creation of blobs without data
+      var blobsCreate = blobsWithoutData.Select(b => (b.Name, b.ManualDeletion));
+      var response = CreateBlobsMetadataAsync(session,
+                                              blobsCreate,
+                                              cancellationToken);
+      var index = 0;
+      await foreach (var blob in response.ConfigureAwait(false))
+      {
+        blobsWithoutData[index].BlobHandle = new BlobHandle(blob,
+                                                            armoniKClient_);
+        index++;
+      }
+    }
+
+    if (blobsWithData.Any())
+    {
+      // Creation of blobs with data
+      var response = CreateBlobsWithContentAsync(session,
+                                                 blobsWithData,
+                                                 cancellationToken);
+      var index = 0;
+      await foreach (var blob in response.ConfigureAwait(false))
+      {
+        blobsWithData[index].BlobHandle = new BlobHandle(blob,
+                                                         armoniKClient_);
+        index++;
+      }
+    }
+  }
+
+  private async IAsyncEnumerable<BlobInfo> CreateBlobsWithContentAsync(SessionInfo                                session,
+                                                                       IEnumerable<BlobDefinition>                blobDefinitions,
+                                                                       [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  {
+    // This is a bin packing kind of problem for which we apply the first-fit-decreasing strategy
+    var batches = GetOptimizedBatches(blobDefinitions,
+                                      serviceConfiguration_.DataChunkMaxSize);
+
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+    var blobClient = new Results.ResultsClient(channel);
+
+    foreach (var batch in batches)
+    {
+      if (serviceConfiguration_ != null && batch.Size > serviceConfiguration_.DataChunkMaxSize)
+      {
+        // We are in a case where the size is above the threshold, then the batch contains a single element
+        var blobDefinition = batch.Items.Single();
+        await UploadBlobByChunkAsync(blobClient,
+                                     blobDefinition)
+          .ConfigureAwait(false);
+        yield return blobDefinition.BlobHandle!;
+      }
+      else
+      {
+        var blobCreationResponse = await blobClient.CreateResultsAsync(new CreateResultsRequest
+                                                                       {
+                                                                         SessionId = session.SessionId,
+                                                                         Results =
+                                                                         {
+                                                                           batch.Items.Select(b => new CreateResultsRequest.Types.ResultCreate
+                                                                                                   {
+                                                                                                     Name = b.Name,
+                                                                                                     Data = ByteString.CopyFrom(b.GetData()
+                                                                                                                                 .Single()
+                                                                                                                                 .Span),
+                                                                                                     ManualDeletion = b.ManualDeletion,
+                                                                                                   }),
+                                                                         },
+                                                                       },
+                                                                       cancellationToken: cancellationToken)
+                                                   .ConfigureAwait(false);
+        foreach (var blob in blobCreationResponse.Results)
+        {
+          yield return blob.ToBlobState();
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  ///   Dispatches a list of blob definitions in a minimal number of batches, each batch size being less than the 'maxSize'
+  /// </summary>
+  /// <param name="blobDefinitions">The list of blob definitions to dispatch</param>
+  /// <param name="maxSize">The maximum size for a batch</param>
+  /// <returns>The list of batches created</returns>
+  private static List<Batch> GetOptimizedBatches(IEnumerable<BlobDefinition> blobDefinitions,
+                                                 int                         maxSize)
+  {
+    var blobsByDescendingSize = blobDefinitions.OrderByDescending(b => b.TotalSize)
+                                               .ToList();
+    var batches = new List<Batch>();
+    foreach (var blob in blobsByDescendingSize)
+    {
+      var batch = batches.FirstOrDefault(b => maxSize > b.Size + blob.TotalSize);
+      if (batch == null)
+      {
+        batch = new Batch();
+        batches.Add(batch);
+      }
+
+      batch.AddItem(blob);
+    }
+
+    return batches;
+  }
+
+  private class Batch
+  {
+    private readonly List<BlobDefinition> items_ = new();
+
+    public IEnumerable<BlobDefinition> Items
+      => items_;
+
+    public long Size { get; private set; }
+
+    public void AddItem(BlobDefinition item)
+    {
+      items_.Add(item);
+      Size += item.TotalSize;
+    }
+  }
+
+  #endregion
 }
