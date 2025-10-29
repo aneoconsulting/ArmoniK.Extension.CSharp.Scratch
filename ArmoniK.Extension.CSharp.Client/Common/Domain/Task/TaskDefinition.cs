@@ -17,7 +17,7 @@
 using System.Collections.Generic;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Handles;
+using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Library;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
@@ -31,11 +31,6 @@ public class TaskDefinition
   ///   Input Blobs to be created
   /// </summary>
   public Dictionary<string, BlobDefinition> InputDefinitions { get; } = new();
-
-  /// <summary>
-  ///   Input Blobs already created
-  /// </summary>
-  public Dictionary<string, BlobHandle> InputHandles { get; } = new();
 
   /// <summary>
   ///   Output blobs
@@ -72,43 +67,34 @@ public class TaskDefinition
   /// <summary>
   ///   Add an input blob when the blob was not already created
   /// </summary>
-  /// <param name="name">The name of the input blob</param>
+  /// <param name="inputName">The blob's input name (which may differ from blob's name)</param>
   /// <param name="blobDeclaration">The blob definition</param>
   /// <returns>The TaskDefinition updated</returns>
-  public TaskDefinition WithInput(string         name,
+  public TaskDefinition WithInput(string         inputName,
                                   BlobDefinition blobDeclaration)
   {
-    InputDefinitions.Add(name,
+    InputDefinitions.Add(inputName,
                          blobDeclaration);
-    return this;
-  }
-
-  /// <summary>
-  ///   Add an input blob when the blob was already created
-  /// </summary>
-  /// <param name="name">The name of the input blob</param>
-  /// <param name="blobHandle">The blob handle</param>
-  /// <returns>The TaskDefinition updated</returns>
-  public TaskDefinition WithInput(string     name,
-                                  BlobHandle blobHandle)
-  {
-    InputHandles.Add(name,
-                     blobHandle);
     return this;
   }
 
   /// <summary>
   ///   Add a new output to the task
   /// </summary>
-  /// <param name="outputName">The name of the output blob</param>
-  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
+  /// <param name="outputName">The blob's output name (which may differ from blob's name)</param>
+  /// <param name="blobDeclaration">The output blob's definition</param>
   /// <returns>The TaskDefinition updated</returns>
-  public TaskDefinition WithOutput(string outputName,
-                                   bool   manualDeletion = false)
+  public TaskDefinition WithOutput(string         outputName,
+                                   BlobDefinition blobDeclaration)
   {
-    var blobDefinition = BlobDefinition.CreateOutputBlobDefinition(manualDeletion);
+    if (blobDeclaration.BlobHandle != null)
+    {
+      throw new
+        ArmoniKSdkException($"The task cannot take as output the already created blob '{blobDeclaration.BlobHandle.BlobInfo.BlobName}' with with BlobId '{blobDeclaration.BlobHandle.BlobInfo.BlobId}'");
+    }
+
     Outputs.Add(outputName,
-                blobDefinition);
+                blobDeclaration);
     return this;
   }
 

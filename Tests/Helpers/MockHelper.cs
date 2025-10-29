@@ -111,8 +111,7 @@ internal static class MockHelper
                                                        List<BlobInfo>          returnData)
   {
     blobService.Setup(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                              It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
-                                              false,
+                                              It.IsAny<IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)>>(),
                                               It.IsAny<CancellationToken>()))
                .Returns(returnData.ToAsyncEnumerable);
 

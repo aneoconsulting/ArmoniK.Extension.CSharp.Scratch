@@ -48,16 +48,13 @@ public class ArmoniKClient
   /// </summary>
   /// <param name="properties">The properties for configuring the client.</param>
   /// <param name="loggerFactory">The factory for creating loggers.</param>
-  /// <param name="taskConfiguration">The default task configuration</param>
   /// <exception cref="ArgumentNullException">Thrown when properties or loggerFactory is null.</exception>
-  public ArmoniKClient(Properties        properties,
-                       ILoggerFactory    loggerFactory,
-                       TaskConfiguration taskConfiguration)
+  public ArmoniKClient(Properties     properties,
+                       ILoggerFactory loggerFactory)
   {
-    Properties              = properties        ?? throw new ArgumentNullException(nameof(properties));
-    LoggerFactory           = loggerFactory     ?? throw new ArgumentNullException(nameof(loggerFactory));
-    DefaulTaskConfiguration = taskConfiguration ?? throw new ArgumentNullException(nameof(taskConfiguration));
-    logger_                 = loggerFactory.CreateLogger<ArmoniKClient>();
+    Properties    = properties    ?? throw new ArgumentNullException(nameof(properties));
+    LoggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+    logger_       = loggerFactory.CreateLogger<ArmoniKClient>();
 
     var services = new ServiceCollection();
     services.AddSingleton(BuildBlobService)
@@ -86,11 +83,6 @@ public class ArmoniKClient
   public ObjectPool<ChannelBase> ChannelPool
     => channelPool_ ??= ClientServiceConnector.ControlPlaneConnectionPool(Properties,
                                                                           LoggerFactory);
-
-  /// <summary>
-  ///   The default TaskConfiguration
-  /// </summary>
-  public TaskConfiguration DefaulTaskConfiguration { get; init; }
 
   /// <summary>
   ///   Gets the blob service
@@ -136,6 +128,7 @@ public class ArmoniKClient
 
   private IBlobService BuildBlobService(IServiceProvider provider)
     => new BlobService(ChannelPool,
+                       this,
                        LoggerFactory);
 
   private IEventsService BuildEventsService(IServiceProvider provider)

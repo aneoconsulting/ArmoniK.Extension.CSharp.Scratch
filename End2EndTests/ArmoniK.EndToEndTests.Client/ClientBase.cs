@@ -66,10 +66,10 @@ public class ClientBase
                     };
 
     Client = new ArmoniKClient(properties,
-                               loggerFactory,
-                               TaskConfiguration);
+                               loggerFactory);
 
-    var sessionInfo = await Client.SessionService.CreateSessionAsync([Partition])
+    var sessionInfo = await Client.SessionService.CreateSessionAsync([Partition],
+                                                                     TaskConfiguration)
                                   .ConfigureAwait(false);
     SessionHandle = new SessionHandle(sessionInfo,
                                       Client);

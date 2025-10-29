@@ -330,8 +330,7 @@ public class TasksServiceTests
                              .ConfigureAwait(false);
 
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                                          It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
-                                                          false,
+                                                          It.IsAny<IEnumerable<(string, ReadOnlyMemory<byte>, bool)>>(),
                                                           It.IsAny<CancellationToken>()),
                                   Times.Once);
     Assert.Multiple(() =>
@@ -407,8 +406,7 @@ public class TasksServiceTests
                 .ConfigureAwait(false);
 
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                                          It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
-                                                          false,
+                                                          It.IsAny<IEnumerable<(string, ReadOnlyMemory<byte>, bool)>>(),
                                                           It.IsAny<CancellationToken>()),
                                   Times.Never);
     Assert.That(taskNodes.First()
@@ -735,8 +733,7 @@ public class TasksServiceTests
                 Is.Not.Null,
                 "Result should not be null.");
     client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                                          It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
-                                                          false,
+                                                          It.IsAny<IEnumerable<(string, ReadOnlyMemory<byte>, bool)>>(),
                                                           It.IsAny<CancellationToken>()),
                                   Times.Once);
   }
