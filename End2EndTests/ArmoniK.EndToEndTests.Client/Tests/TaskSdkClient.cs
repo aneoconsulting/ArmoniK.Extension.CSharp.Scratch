@@ -52,11 +52,11 @@ public class TaskSdkClient : ClientBase
                                                  CancellationToken.None);
 
     var resultString = "";
-    var outputName = taskDefinition.Outputs.First()
+    var outputName = taskDefinition.Outputs.Single()
                                    .Key;
-    var outputBlobHandle = taskDefinition.Outputs.First()
+    var outputBlobHandle = taskDefinition.Outputs.Single()
                                          .Value.BlobHandle;
-    var inputBlobHandle = taskDefinition.InputDefinitions.First()
+    var inputBlobHandle = taskDefinition.InputDefinitions.Single()
                                         .Value.BlobHandle;
     var rawData = await outputBlobHandle!.DownloadBlobDataAsync(CancellationToken.None)
                                          .ConfigureAwait(false);
