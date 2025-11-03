@@ -46,11 +46,11 @@ namespace ArmoniK.Extension.CSharp.Client.Services;
 /// <inheritdoc />
 public class BlobService : IBlobService
 {
-  private readonly ArmoniKClient                       armoniKClient_;
-  private readonly ObjectPool<ChannelBase>             channelPool_;
-  private readonly ILogger<BlobService>                logger_;
-  private readonly ArmoniKQueryable<BlobState>         queryable_;
-  private          ResultsServiceConfigurationResponse serviceConfiguration_;
+  private readonly ArmoniKClient                        armoniKClient_;
+  private readonly ObjectPool<ChannelBase>              channelPool_;
+  private readonly ILogger<BlobService>                 logger_;
+  private readonly ArmoniKQueryable<BlobState>          queryable_;
+  private          ResultsServiceConfigurationResponse? serviceConfiguration_;
 
   /// <summary>
   ///   Creates an instance of <see cref="BlobService" /> using the specified GRPC channel and an optional logger factory.
@@ -359,10 +359,22 @@ public class BlobService : IBlobService
                                             .ConfigureAwait(false);
   }
 
-  private async Task<UploadResultDataResponse> UploadBlobByChunkAsync(Results.ResultsClient client,
-                                                                      BlobDefinition        blobDefinition)
+  /// <summary>
+  ///   Upload a blob by chunks
+  /// </summary>
+  /// <param name="blobDefinition">The blob definition</param>
+  /// <param name="chunkEnumerator">A chunk enumerator positioned on the first chunk, or null</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>A task representing the asynchronous operation. The task result contains the result of the upload.</returns>
+  private async Task<UploadResultDataResponse> UploadBlobByChunkAsync(BlobDefinition                          blobDefinition,
+                                                                      IAsyncEnumerator<ReadOnlyMemory<byte>>? chunkEnumerator   = null,
+                                                                      CancellationToken                       cancellationToken = default)
   {
-    var stream = client.UploadResultData();
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+    var blobClient = new Results.ResultsClient(channel);
+
+    var stream = blobClient.UploadResultData(cancellationToken: cancellationToken);
     await stream.RequestStream.WriteAsync(new UploadResultDataRequest
                                           {
                                             Id = new UploadResultDataRequest.Types.ResultIdentifier
@@ -373,14 +385,25 @@ public class BlobService : IBlobService
                                           })
                 .ConfigureAwait(false);
 
-    foreach (var chunk in blobDefinition.GetData(serviceConfiguration_.DataChunkMaxSize))
+    if (chunkEnumerator == null)
+    {
+      chunkEnumerator = blobDefinition.GetDataAsync(serviceConfiguration_!.DataChunkMaxSize,
+                                                    cancellationToken)
+                                      .GetAsyncEnumerator(cancellationToken);
+      // Let's move next to be positioned on the first element
+      await chunkEnumerator.MoveNextAsync(cancellationToken)
+                           .ConfigureAwait(false);
+    }
+
+    do
     {
       await stream.RequestStream.WriteAsync(new UploadResultDataRequest
                                             {
-                                              DataChunk = UnsafeByteOperations.UnsafeWrap(chunk),
+                                              DataChunk = UnsafeByteOperations.UnsafeWrap(chunkEnumerator.Current),
                                             })
                   .ConfigureAwait(false);
-    }
+    } while (await chunkEnumerator.MoveNextAsync(cancellationToken)
+                                  .ConfigureAwait(false));
 
     return await stream.ResponseAsync.ConfigureAwait(false);
   }
@@ -441,8 +464,49 @@ public class BlobService : IBlobService
             .ConfigureAwait(false);
         }
 
+        // Refresh the size information (whenever the blob is actually a file)
+        blobDefinition.RefreshFile();
+
+        if (blobDefinition.MayBeAPipe)
+        {
+          // The blob might come from a pipe
+          var chunkEnumerator = blobDefinition.GetDataAsync(serviceConfiguration_!.DataChunkMaxSize,
+                                                            cancellationToken)
+                                              .GetAsyncEnumerator(cancellationToken);
+          await chunkEnumerator.MoveNextAsync(cancellationToken)
+                               .ConfigureAwait(false);
+          if (!chunkEnumerator.Current.IsEmpty)
+          {
+            // This is a pipe, let's create the blob ...
+            if (chunkEnumerator.Current.Length == serviceConfiguration_!.DataChunkMaxSize)
+            {
+              // ... by uploading it by chunks
+              await UploadBlobByChunkAsync(blobDefinition,
+                                           chunkEnumerator,
+                                           cancellationToken)
+                .ConfigureAwait(false);
+            }
+            else
+            {
+              // ... with a unitary call
+              await CreateBlobAsync(session,
+                                    blobDefinition.Name,
+                                    chunkEnumerator.Current,
+                                    blobDefinition.ManualDeletion,
+                                    cancellationToken)
+                .ConfigureAwait(false);
+            }
+
+            continue;
+          }
+
+          // This is an empty file
+          blobDefinition.SetData(chunkEnumerator.Current);
+        }
+
+        // The blob is not a file, or it is a file but not a pipe.
         blobsWithData.Add(blobDefinition);
-        if (blobDefinition.TotalSize >= serviceConfiguration_.DataChunkMaxSize)
+        if (blobDefinition.TotalSize >= serviceConfiguration_!.DataChunkMaxSize)
         {
           // For a blob size above the threshold of DataChunkMaxSize, we add it also to the list of blobs without data
           // so that its metadata will be created by CreateBlobsMetadataAsync(). Subsequently, the upload will be processed by CreateBlobsWithContentAsync()
@@ -505,26 +569,36 @@ public class BlobService : IBlobService
       {
         // We are in a case where the size is above the threshold, then the batch contains a single element
         var blobDefinition = batch.Items.Single();
-        await UploadBlobByChunkAsync(blobClient,
-                                     blobDefinition)
+        await UploadBlobByChunkAsync(blobDefinition,
+                                     cancellationToken: cancellationToken)
           .ConfigureAwait(false);
         yield return blobDefinition.BlobHandle!;
       }
       else
       {
+        var itemTasks = batch.Items.Select(async b =>
+                                           {
+                                             var bytes = await b.GetDataAsync(cancellationToken: cancellationToken)
+                                                                .SingleAsync(cancellationToken)
+                                                                .ConfigureAwait(false);
+
+                                             return new CreateResultsRequest.Types.ResultCreate
+                                                    {
+                                                      Name           = b.Name,
+                                                      Data           = ByteString.CopyFrom(bytes.Span),
+                                                      ManualDeletion = b.ManualDeletion,
+                                                    };
+                                           });
+        var items = await Task.WhenAll(itemTasks)
+                              .ConfigureAwait(false);
+
         var blobCreationResponse = await blobClient.CreateResultsAsync(new CreateResultsRequest
+
                                                                        {
                                                                          SessionId = session.SessionId,
                                                                          Results =
                                                                          {
-                                                                           batch.Items.Select(b => new CreateResultsRequest.Types.ResultCreate
-                                                                                                   {
-                                                                                                     Name = b.Name,
-                                                                                                     Data = ByteString.CopyFrom(b.GetData()
-                                                                                                                                 .Single()
-                                                                                                                                 .Span),
-                                                                                                     ManualDeletion = b.ManualDeletion,
-                                                                                                   }),
+                                                                           items,
                                                                          },
                                                                        },
                                                                        cancellationToken: cancellationToken)

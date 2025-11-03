@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -145,17 +146,17 @@ public class SessionHandle
   /// <summary>
   ///   Submit a task.
   /// </summary>
-  /// <param name="task">The task to submit</param>
+  /// <param name="tasks">The tasks to submit</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns></returns>
   /// <exception cref="ArgumentException">When the task provided is null</exception>
-  public async Task<TaskHandle> SubmitAsync(TaskDefinition    task,
-                                            CancellationToken cancellationToken = default)
+  public async Task<TaskHandle> SubmitAsync(IEnumerable<TaskDefinition> tasks,
+                                            CancellationToken           cancellationToken = default)
   {
-    _ = task ?? throw new ArgumentException("Task parameter should not be null");
+    _ = tasks ?? throw new ArgumentException("Tasks parameter should not be null");
 
     var taskInfos = await armoniKClient_.TasksService.SubmitTasksAsync(sessionInfo_,
-                                                                       [task],
+                                                                       tasks,
                                                                        cancellationToken)
                                         .ConfigureAwait(false);
     return new TaskHandle(armoniKClient_,

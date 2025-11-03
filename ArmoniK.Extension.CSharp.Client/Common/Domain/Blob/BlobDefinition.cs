@@ -17,7 +17,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Handles;
@@ -29,26 +31,23 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 /// </summary>
 public class BlobDefinition
 {
-  private readonly long                  dataSize_;
-  private readonly ReadOnlyMemory<byte>? data_;
-  private readonly string                filePath_;
+  private readonly FileInfo?             file_;
+  private          ReadOnlyMemory<byte>? data_;
+  private          long                  dataSize_;
 
   /// <summary>
   ///   Creation of a blob definition with known data
   /// </summary>
   /// <param name="name">The blob name</param>
   /// <param name="content">The blob data</param>
-  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
   private BlobDefinition(string               name,
-                         ReadOnlyMemory<byte> content,
-                         bool                 manualDeletion)
+                         ReadOnlyMemory<byte> content)
   {
-    Name           = name;
-    data_          = content;
-    HasData        = true;
-    filePath_      = string.Empty;
-    dataSize_      = content.Length;
-    ManualDeletion = manualDeletion;
+    Name      = name;
+    data_     = content;
+    HasData   = true;
+    file_     = null;
+    dataSize_ = content.Length;
   }
 
   /// <summary>
@@ -56,33 +55,27 @@ public class BlobDefinition
   /// </summary>
   /// <param name="name">The blob name</param>
   /// <param name="file">The FileInfo instance</param>
-  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
   private BlobDefinition(string   name,
-                         FileInfo file,
-                         bool     manualDeletion)
+                         FileInfo file)
   {
-    Name           = name;
-    data_          = null;
-    HasData        = true;
-    filePath_      = file.FullName;
-    dataSize_      = file.Length;
-    ManualDeletion = manualDeletion;
+    Name      = name;
+    data_     = null;
+    HasData   = true;
+    file_     = file;
+    dataSize_ = 0; // will be refreshed on task submission time
   }
 
   /// <summary>
   ///   Creation of a blob definition with no data
   /// </summary>
   /// <param name="name">The blob name</param>
-  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
-  private BlobDefinition(string name,
-                         bool   manualDeletion)
+  private BlobDefinition(string name)
   {
-    Name           = name;
-    data_          = null;
-    HasData        = false;
-    filePath_      = string.Empty;
-    dataSize_      = 0;
-    ManualDeletion = manualDeletion;
+    Name      = name;
+    data_     = null;
+    HasData   = false;
+    file_     = null;
+    dataSize_ = 0;
   }
 
   /// <summary>
@@ -91,14 +84,16 @@ public class BlobDefinition
   public string Name { get; init; }
 
   /// <summary>
-  ///   Whether the blob should be manually deleted by the user
+  ///   Whether the blob should be created as manually deleted by the user.
+  ///   Warning: when the blob definition is created from a BlobHandle, the present property will
+  ///   always be false and will not reflect the actual status whether the blob should be manually deleted.
   /// </summary>
-  public bool ManualDeletion { get; init; }
+  internal bool ManualDeletion { get; private set; }
 
   /// <summary>
   ///   The size in bytes occupied by the blob in an RPC.
   /// </summary>
-  public long TotalSize
+  internal long TotalSize
     => Name.Length + dataSize_;
 
   /// <summary>
@@ -112,17 +107,45 @@ public class BlobDefinition
   public BlobHandle? BlobHandle { get; internal set; }
 
   /// <summary>
-  ///   Get the blob data by chunks of maximum size 'maxSize'
+  ///   Indicates whether the blob may be a pipe,
+  ///   when true it is not necessarily a pipe, when false we're sure it's not a pipe.
+  /// </summary>
+  internal bool MayBeAPipe
+    => dataSize_ == 0 && file_ != null;
+
+  /// <summary>
+  ///   Fetch the last state the file, whenever the blob comes from a file.
+  /// </summary>
+  internal void RefreshFile()
+  {
+    if (file_ != null)
+    {
+      file_.Refresh();
+      dataSize_ = file_.Length;
+    }
+  }
+
+  internal void SetData(ReadOnlyMemory<byte> data)
+  {
+    data_     = data;
+    dataSize_ = data.Length;
+  }
+
+  /// <summary>
+  ///   Get the blob data by chunks of maximum size 'maxSize'.
+  ///   At least 1 chunk will always be returned, even if it is empty.
   /// </summary>
   /// <param name="maxSize">The maximum size of the chunks, 0 for no limit</param>
-  /// <returns>An enumeration of the chunks</returns>
-  public IEnumerable<ReadOnlyMemory<byte>> GetData(int maxSize = 0)
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>An enumeration of chunks</returns>
+  internal async IAsyncEnumerable<ReadOnlyMemory<byte>> GetDataAsync(int                                        maxSize           = 0,
+                                                                     [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     if (data_.HasValue)
     {
       if (maxSize == 0)
       {
-        yield return data_.Value;
+        yield return data_!.Value;
       }
       else
       {
@@ -147,37 +170,85 @@ public class BlobDefinition
         }
       }
     }
-    else if (!string.IsNullOrEmpty(filePath_))
+    else if (!string.IsNullOrEmpty(file_?.FullName))
     {
+      using var fileStream = new FileStream(file_!.FullName,
+                                            FileMode.Open,
+                                            FileAccess.Read);
       if (maxSize == 0)
       {
-        yield return File.ReadAllBytes(filePath_);
+        // We are not in the case of a pipe, then <dataSize_> hold the actual data size
+        if (dataSize_ > 0)
+        {
+          var buffer = new byte[dataSize_];
+
+          while (await fileStream.ReadAsync(buffer,
+                                            0,
+                                            (int)dataSize_,
+                                            cancellationToken)
+                                 .ConfigureAwait(false) > 0)
+          {
+            yield return buffer;
+          }
+        }
+        else
+        {
+          // we must return at least one element, even an empty one
+          yield return Array.Empty<byte>();
+        }
       }
       else
       {
-        using var fileStream = new FileStream(filePath_,
-                                              FileMode.Open,
-                                              FileAccess.Read);
-        var buffer = new byte[maxSize];
+        // We are either in the case of an actual file (dataSize_ > 0) or a pipe (dataSize_ == 0).
+        var remainingBytes = dataSize_ > 0
+                               ? (int)dataSize_
+                               : maxSize;
+        var bytesToRead = remainingBytes > maxSize
+                            ? maxSize
+                            : remainingBytes;
+        var buffer     = new byte[bytesToRead];
+        var chunksRead = 0;
         int bytesRead;
 
-        while ((bytesRead = fileStream.Read(buffer,
-                                            0,
-                                            maxSize)) > 0)
+        while ((bytesRead = await fileStream.ReadAsync(buffer,
+                                                       0,
+                                                       bytesToRead,
+                                                       cancellationToken)
+                                            .ConfigureAwait(false)) > 0)
         {
-          if (bytesRead < maxSize)
+          chunksRead++;
+          if (bytesRead < bytesToRead)
           {
             var lastBlock = new byte[bytesRead];
             Array.Copy(buffer,
                        lastBlock,
                        bytesRead);
             yield return lastBlock;
+            break;
           }
-          else
+
+          yield return buffer;
+
+          if (dataSize_ > 0)
           {
-            yield return buffer;
-            buffer = new byte[maxSize];
+            remainingBytes -= bytesRead;
+            bytesToRead = remainingBytes > maxSize
+                            ? maxSize
+                            : remainingBytes;
           }
+
+          if (bytesToRead == 0)
+          {
+            break;
+          }
+
+          buffer = new byte[bytesToRead];
+        }
+
+        if (chunksRead == 0)
+        {
+          // we must return at least one element, even an empty one
+          yield return Array.Empty<byte>();
         }
       }
     }
@@ -187,12 +258,19 @@ public class BlobDefinition
   ///   Create an output blob definition
   /// </summary>
   /// <param name="name">The blob name</param>
-  /// <param name="manualDeletion">Whether the blob should be manually deleted</param>
   /// <returns>The newly created blob definition</returns>
-  public static BlobDefinition CreateOutputBlobDefinition(string name,
-                                                          bool   manualDeletion = false)
-    => new(name,
-           manualDeletion);
+  public static BlobDefinition CreateOutput(string name)
+    => new(name);
+
+  /// <summary>
+  ///   Set the blob as to be manually deleted
+  /// </summary>
+  /// <returns>The updated BlobDefinition</returns>
+  public BlobDefinition WithManualDeletion()
+  {
+    ManualDeletion = true;
+    return this;
+  }
 
   /// <summary>
   ///   Creates a BlobDefinition from a blob handle
@@ -200,8 +278,7 @@ public class BlobDefinition
   /// <param name="handle">The blob handle</param>
   /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromBlobHandle(BlobHandle handle)
-    => new(handle.BlobInfo.BlobName,
-           false)
+    => new(handle.BlobInfo.BlobName)
        {
          BlobHandle = handle,
        };
@@ -211,11 +288,9 @@ public class BlobDefinition
   /// </summary>
   /// <param name="blobName">The blob name</param>
   /// <param name="filePath">The file containing the data</param>
-  /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromFile(string blobName,
-                                        string filePath,
-                                        bool   manualDeletion = false)
+                                        string filePath)
   {
     var file = new FileInfo(filePath);
     if (!file.Exists)
@@ -224,8 +299,7 @@ public class BlobDefinition
     }
 
     return new BlobDefinition(blobName,
-                              file,
-                              manualDeletion);
+                              file);
   }
 
   /// <summary>
@@ -234,42 +308,33 @@ public class BlobDefinition
   /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
   /// <param name="encoding">The encoding used for the string, when null UTF-8 is used</param>
-  /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromString(string    blobName,
                                           string    content,
-                                          Encoding? encoding       = null,
-                                          bool      manualDeletion = false)
+                                          Encoding? encoding = null)
     => new(blobName,
            (encoding ?? Encoding.UTF8).GetBytes(content)
-                                      .AsMemory(),
-           manualDeletion);
+                                      .AsMemory());
 
   /// <summary>
   ///   Creates a BlobDefinition from a read only memory
   /// </summary>
   /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
-  /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromReadOnlyMemory(string               blobName,
-                                                  ReadOnlyMemory<byte> content,
-                                                  bool                 manualDeletion = false)
+                                                  ReadOnlyMemory<byte> content)
     => new(blobName,
-           content,
-           manualDeletion);
+           content);
 
   /// <summary>
   ///   Creates a BlobDefinition from a byte array
   /// </summary>
   /// <param name="blobName">The blob name</param>
   /// <param name="content">The raw data</param>
-  /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
   /// <returns>The newly created blob definition</returns>
   public static BlobDefinition FromByteArray(string blobName,
-                                             byte[] content,
-                                             bool   manualDeletion = false)
+                                             byte[] content)
     => new(blobName,
-           content,
-           manualDeletion);
+           content);
 }

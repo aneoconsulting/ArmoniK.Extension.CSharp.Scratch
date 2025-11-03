@@ -64,7 +64,7 @@ public class PriorityClient : ClientBase
                                                  .WithInput("Priority",
                                                             BlobDefinition.FromBlobHandle(priorityBlobHandle))
                                                  .WithOutput(resultName,
-                                                             BlobDefinition.CreateOutputBlobDefinition(resultName))
+                                                             BlobDefinition.CreateOutput(resultName))
                                                  .WithTaskOptions(options);
         taskDefinitions.Add(taskDefinition);
       }
@@ -72,7 +72,7 @@ public class PriorityClient : ClientBase
       allTasks.AddRange(taskDefinitions);
       foreach (var taskDefinition in taskDefinitions)
       {
-        await SessionHandle.SubmitAsync(taskDefinition)
+        await SessionHandle.SubmitAsync([taskDefinition])
                            .ConfigureAwait(false);
       }
 
