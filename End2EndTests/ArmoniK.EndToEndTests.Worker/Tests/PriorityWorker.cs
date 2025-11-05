@@ -27,20 +27,20 @@ public class PriorityWorker : IWorker
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
     => Task.FromResult(HealthCheckResult.Healthy());
 
-  public async Task<TaskResult> ExecuteAsync(SdkTaskHandler    taskHandler,
+  public async Task<TaskResult> ExecuteAsync(ISdkTaskHandler   taskHandler,
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
     try
     {
-      var priority  = taskHandler.GetIntDependency("Priority");
+      var priority  = taskHandler.GetStringDependency("Priority");
       var strResult = $"Payload is {priority} and TaskOptions.Priority is {taskHandler.TaskOptions.Priority}";
 
-      var name = taskHandler.Outputs.Single()
-                            .Value;
+      var result = taskHandler.Outputs.Single()
+                              .Value;
       logger.LogInformation($"Sending result: {strResult}. Task Id: {taskHandler.TaskId}");
-      await taskHandler.SendResult(name,
-                                   Encoding.ASCII.GetBytes(strResult))
+      await taskHandler.SendResultAsync(result,
+                                        Encoding.ASCII.GetBytes(strResult))
                        .ConfigureAwait(false);
       return TaskResult.Success;
     }

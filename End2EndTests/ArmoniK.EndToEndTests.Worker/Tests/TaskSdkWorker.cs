@@ -27,7 +27,7 @@ public class TaskSdkWorker : IWorker
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
     => Task.FromResult(HealthCheckResult.Healthy());
 
-  public async Task<TaskResult> ExecuteAsync(SdkTaskHandler    taskHandler,
+  public async Task<TaskResult> ExecuteAsync(ISdkTaskHandler   taskHandler,
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
@@ -36,14 +36,17 @@ public class TaskSdkWorker : IWorker
     var resultDouble = taskHandler.GetDoubleDependency("myDouble");
 
     // Send the input as results as is.
-    await taskHandler.SendResultByNameAsync("resultString",
-                                            Encoding.ASCII.GetBytes(resultString))
+    await taskHandler.Outputs["resultString"]
+                     .SendResultAsync(Encoding.ASCII.GetBytes(resultString),
+                                      CancellationToken.None)
                      .ConfigureAwait(false);
-    await taskHandler.SendResultByNameAsync("resultInt",
-                                            Encoding.ASCII.GetBytes(resultInt.ToString()))
+    await taskHandler.Outputs["resultInt"]
+                     .SendResultAsync(Encoding.ASCII.GetBytes(resultInt.ToString()),
+                                      CancellationToken.None)
                      .ConfigureAwait(false);
-    await taskHandler.SendResultByNameAsync("resultDouble",
-                                            Encoding.ASCII.GetBytes(resultDouble.ToString("F2")))
+    await taskHandler.Outputs["resultDouble"]
+                     .SendResultAsync(Encoding.ASCII.GetBytes(resultDouble.ToString("F2")),
+                                      CancellationToken.None)
                      .ConfigureAwait(false);
 
     return TaskResult.Success;

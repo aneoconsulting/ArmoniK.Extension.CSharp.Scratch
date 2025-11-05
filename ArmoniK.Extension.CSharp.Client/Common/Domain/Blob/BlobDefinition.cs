@@ -61,7 +61,7 @@ public class BlobDefinition
   /// </summary>
   /// <param name="filePath">The file containing the data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created BlobDefinition</returns>
   public static BlobDefinition FromFile(string filePath,
                                         bool   manualDeletion = false)
     => new(File.ReadAllBytes(filePath),
@@ -72,7 +72,7 @@ public class BlobDefinition
   /// </summary>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created BlobDefinition</returns>
   public static BlobDefinition FromString(string content,
                                           bool   manualDeletion = false)
     => new(Encoding.UTF8.GetBytes(content)
@@ -84,7 +84,7 @@ public class BlobDefinition
   /// </summary>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created BlobDefinition</returns>
   public static BlobDefinition FromReadOnlyMemory(ReadOnlyMemory<byte> content,
                                                   bool                 manualDeletion = false)
     => new(content,
@@ -95,7 +95,7 @@ public class BlobDefinition
   /// </summary>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created BlobDefinition</returns>
   public static BlobDefinition FromByteArray(byte[] content,
                                              bool   manualDeletion = false)
     => new(content,
@@ -106,7 +106,7 @@ public class BlobDefinition
   /// </summary>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created BlobDefinition</returns>
   public static BlobDefinition FromInt(int  content,
                                        bool manualDeletion = false)
     => new(BitConverter.GetBytes(content),
@@ -117,7 +117,7 @@ public class BlobDefinition
   /// </summary>
   /// <param name="content">The raw data</param>
   /// <param name="manualDeletion">Whether the blob created should be deleted manually</param>
-  /// <returns></returns>
+  /// <returns>The newly created BlobDefinition</returns>
   public static BlobDefinition FromDouble(double content,
                                           bool   manualDeletion = false)
     => new(BitConverter.GetBytes(content),

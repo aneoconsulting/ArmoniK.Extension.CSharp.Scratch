@@ -53,7 +53,7 @@ public class PriorityClient : ClientBase
       {
         var priorityBlobInfo = await Client.BlobService.CreateBlobAsync(SessionHandle,
                                                                         "Priority",
-                                                                        BitConverter.GetBytes(priority))
+                                                                        Encoding.UTF8.GetBytes(priority.ToString()))
                                            .ConfigureAwait(false);
         var priorityBlobHandle = new BlobHandle(priorityBlobInfo,
                                                 Client);
