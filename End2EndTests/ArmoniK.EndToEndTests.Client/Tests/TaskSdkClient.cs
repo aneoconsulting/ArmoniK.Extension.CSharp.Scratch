@@ -43,8 +43,8 @@ public class TaskSdkClient : ClientBase
                                              .WithOutput("outputString",
                                                          BlobDefinition.CreateOutput("blobOutputString"))
                                              .WithTaskOptions(TaskConfiguration);
-    var taskHandle = await SessionHandle.SubmitAsync([taskDefinition])
-                                        .ConfigureAwait(false);
+    await SessionHandle.SubmitAsync([taskDefinition])
+                       .ConfigureAwait(false);
 
     await Client.EventsService.WaitForBlobsAsync(SessionHandle,
                                                  taskDefinition.Outputs.Values.Select(b => b.BlobHandle!.BlobInfo)

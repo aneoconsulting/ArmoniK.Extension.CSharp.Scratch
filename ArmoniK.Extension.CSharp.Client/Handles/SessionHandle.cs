@@ -148,10 +148,10 @@ public class SessionHandle
   /// </summary>
   /// <param name="tasks">The tasks to submit</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns></returns>
-  /// <exception cref="ArgumentException">When the task provided is null</exception>
-  public async Task<TaskHandle> SubmitAsync(IEnumerable<TaskDefinition> tasks,
-                                            CancellationToken           cancellationToken = default)
+  /// <returns>A task representing the asynchronous operation. The task result contains a collection of task handles.</returns>
+  /// <exception cref="ArgumentException">When the tasks parameter provided is null</exception>
+  public async Task<ICollection<TaskHandle>> SubmitAsync(IEnumerable<TaskDefinition> tasks,
+                                                         CancellationToken           cancellationToken = default)
   {
     _ = tasks ?? throw new ArgumentException("Tasks parameter should not be null");
 
@@ -159,7 +159,8 @@ public class SessionHandle
                                                                        tasks,
                                                                        cancellationToken)
                                         .ConfigureAwait(false);
-    return new TaskHandle(armoniKClient_,
-                          taskInfos.First());
+    return taskInfos.Select(t => new TaskHandle(armoniKClient_,
+                                                t))
+                    .ToList();
   }
 }
