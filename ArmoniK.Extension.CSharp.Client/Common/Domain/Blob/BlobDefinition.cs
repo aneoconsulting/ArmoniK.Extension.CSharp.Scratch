@@ -32,8 +32,8 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 public class BlobDefinition
 {
   private readonly FileInfo?             file_;
-  private          long                  dataSize_;
   private          ReadOnlyMemory<byte>? data_;
+  private          long                  dataSize_;
 
   /// <summary>
   ///   Creation of a blob definition with known data
@@ -89,6 +89,11 @@ public class BlobDefinition
   ///   always be false and will not reflect the actual status whether the blob should be manually deleted.
   /// </summary>
   internal bool ManualDeletion { get; private set; }
+
+  /// <summary>
+  ///   Defines the callback on the blob once its data is available
+  /// </summary>
+  internal Func<BlobHandle, CancellationToken, System.Threading.Tasks.Task>? CallBack { get; private set; }
 
   /// <summary>
   ///   The size in bytes occupied by the blob in an RPC.
@@ -269,6 +274,17 @@ public class BlobDefinition
   public BlobDefinition WithManualDeletion()
   {
     ManualDeletion = true;
+    return this;
+  }
+
+  /// <summary>
+  ///   Defines the callback to be invoked once the data is available.
+  /// </summary>
+  /// <param name="callBack">The callback</param>
+  /// <returns>The updated BlobDefinition</returns>
+  public BlobDefinition WithCallback(Func<BlobHandle, CancellationToken, System.Threading.Tasks.Task> callBack)
+  {
+    CallBack = callBack;
     return this;
   }
 

@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.Client.Services;
 
@@ -34,20 +35,24 @@ namespace ArmoniK.Extension.CSharp.Client.Handles;
 /// </summary>
 public class SessionHandle
 {
-  private readonly ArmoniKClient armoniKClient_;
-  private readonly SessionInfo   sessionInfo_;
+  private readonly ArmoniKClient                                                  armoniKClient_;
+  private readonly SessionInfo                                                    sessionInfo_;
+  public           List<(BlobHandle, Func<BlobHandle, CancellationToken, Task>)>? callbacks_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="SessionHandle" /> class.
   /// </summary>
   /// <param name="session">The session information for managing session-related operations.</param>
   /// <param name="armoniKClient">The ArmoniK client used to perform operations on the session.</param>
-  public SessionHandle(SessionInfo   session,
-                       ArmoniKClient armoniKClient)
+  internal SessionHandle(SessionInfo   session,
+                         ArmoniKClient armoniKClient)
   {
     armoniKClient_ = armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient));
     sessionInfo_   = session       ?? throw new ArgumentNullException(nameof(session));
   }
+
+  public IReadOnlyList<(BlobHandle, Func<BlobHandle, CancellationToken, Task>)>? Callbacks
+    => callbacks_;
 
   /// <summary>
   ///   Implicit conversion operator from SessionHandle to SessionInfo.
@@ -144,14 +149,47 @@ public class SessionHandle
                            .ConfigureAwait(false);
 
   /// <summary>
+  ///   Asynchronously waits for the blobs defined with a callback, and calls their respective callbacks.
+  /// </summary>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>A task representing the asynchronous operation.</returns>
+  public async Task WaitForBlobsAsync(CancellationToken cancellationToken)
+  {
+    if (Callbacks != null)
+    {
+      await armoniKClient_.EventsService.WaitForBlobsAsync(sessionInfo_,
+                                                           Callbacks!.Select(b => b.Item1.BlobInfo)
+                                                                     .ToList(),
+                                                           cancellationToken)
+                          .ConfigureAwait(false);
+      foreach (var pair in Callbacks)
+      {
+        var blobHandle = pair.Item1;
+        var callback   = pair.Item2;
+        try
+        {
+          await callback.Invoke(blobHandle,
+                                cancellationToken)
+                        .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          throw new ArmoniKSdkException($"An unexpected error occured while executing the callback of blob {blobHandle.BlobInfo.BlobId}",
+                                        ex);
+        }
+      }
+    }
+  }
+
+  /// <summary>
   ///   Submit a task.
   /// </summary>
   /// <param name="tasks">The tasks to submit</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns></returns>
-  /// <exception cref="ArgumentException">When the task provided is null</exception>
-  public async Task<TaskHandle> SubmitAsync(IEnumerable<TaskDefinition> tasks,
-                                            CancellationToken           cancellationToken = default)
+  /// <returns>A task representing the asynchronous operation. The task result contains a collection of task handles.</returns>
+  /// <exception cref="ArgumentException">When the tasks parameter provided is null</exception>
+  public async Task<ICollection<TaskHandle>> SubmitAsync(IEnumerable<TaskDefinition> tasks,
+                                                         CancellationToken           cancellationToken = default)
   {
     _ = tasks ?? throw new ArgumentException("Tasks parameter should not be null");
 
@@ -159,7 +197,21 @@ public class SessionHandle
                                                                        tasks,
                                                                        cancellationToken)
                                         .ConfigureAwait(false);
-    return new TaskHandle(armoniKClient_,
-                          taskInfos.First());
+
+    var blobsWithCallbacks = tasks.SelectMany(t => t.Outputs.Values)
+                                  .Where(b => b.CallBack != null);
+    if (callbacks_ == null)
+    {
+      callbacks_ = blobsWithCallbacks.Select(b => (b.BlobHandle!, b.CallBack!))
+                                     .ToList();
+    }
+    else
+    {
+      callbacks_.AddRange(blobsWithCallbacks.Select(b => (b.BlobHandle!, b.CallBack!)));
+    }
+
+    return taskInfos.Select(t => new TaskHandle(armoniKClient_,
+                                                t))
+                    .ToList();
   }
 }

@@ -15,10 +15,12 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Handles;
@@ -178,11 +180,21 @@ public class ArmoniKClient
            taskInfos);
 
   /// <summary>
-  ///   Gets a session handle for the specified session information.
+  ///   Asynchronously creates a new session.
   /// </summary>
-  /// <param name="session">The session information.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains the session handle instance.</returns>
-  public SessionHandle GetSessionHandle(SessionInfo session)
-    => new(session,
-           this);
+  /// <param name="partitionIds">Partitions related to opened session</param>
+  /// <param name="taskOptions">Default task options for the session</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns>A task representing the asynchronous operation. The task result contains the created session info.</returns>
+  public async Task<SessionHandle> CreateSessionAsync(IEnumerable<string> partitionIds,
+                                                      TaskConfiguration   taskOptions,
+                                                      CancellationToken   cancellationToken = default)
+  {
+    var sessionInfo = await SessionService.CreateSessionAsync(partitionIds,
+                                                              taskOptions,
+                                                              cancellationToken)
+                                          .ConfigureAwait(false);
+    return new SessionHandle(sessionInfo,
+                             this);
+  }
 }
