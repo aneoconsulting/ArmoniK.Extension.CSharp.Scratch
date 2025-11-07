@@ -71,8 +71,7 @@ internal class Program
     var props = new Properties(_configuration);
 
     var client = new ArmoniKClient(props,
-                                   factory,
-                                   defaultTaskOptions);
+                                   factory);
 
     var dynamicLib = new DynamicLibrary
                      {
@@ -80,7 +79,8 @@ internal class Program
                        LibraryPath = "publish/LibraryExample.dll",
                      };
 
-    var sessionInfo = await client.SessionService.CreateSessionAsync(["dllworker"])
+    var sessionInfo = await client.SessionService.CreateSessionAsync(["dllworker"],
+                                                                     defaultTaskOptions)
                                   .ConfigureAwait(false);
     var sessionHandle = new SessionHandle(sessionInfo,
                                           client);
@@ -102,13 +102,14 @@ internal class Program
     Console.WriteLine($"libraryId: {dllBlob.BlobId}");
 
     var task = new TaskDefinition().WithLibrary(dynamicLib)
-                                   .WithOutput("Result")
+                                   .WithOutput("Result",
+                                               BlobDefinition.CreateOutput("Result"))
                                    .WithTaskOptions(defaultTaskOptions);
 
-    var taskHandle = await sessionHandle.SubmitAsync(task,
+    var taskHandle = await sessionHandle.SubmitAsync([task],
                                                      CancellationToken.None)
                                         .ConfigureAwait(false);
-    TaskInfos taskInfos = taskHandle;
+    TaskInfos taskInfos = taskHandle.First();
 
     BlobInfo resultBlobInfo = task.Outputs.Values.First()
                                   .BlobHandle!;

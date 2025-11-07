@@ -52,10 +52,12 @@ internal class FizzBuzzClient : ClientBase
     {
       var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
                                                .WithInput("value",
-                                                          BlobDefinition.FromString(item.ToString()))
-                                               .WithOutput("result")
+                                                          BlobDefinition.FromString("value",
+                                                                                    item.ToString()))
+                                               .WithOutput("result",
+                                                           BlobDefinition.CreateOutput("result"))
                                                .WithTaskOptions(TaskConfiguration);
-      var taskHandle = await SessionHandle.SubmitAsync(taskDefinition)
+      var taskHandle = await SessionHandle.SubmitAsync([taskDefinition])
                                           .ConfigureAwait(false);
       taskDefinitions.Add(taskDefinition);
     }
@@ -65,10 +67,11 @@ internal class FizzBuzzClient : ClientBase
                                                                               .BlobHandle!.BlobInfo)
                                                                 .ToList(),
                                                  CancellationToken.None);
-
+    var inputEnum = input.GetEnumerator();
     foreach (var task in taskDefinitions)
     {
-      var value = Encoding.UTF8.GetString(task.InputDefinitions["value"].Data!.Value.ToArray());
+      inputEnum.MoveNext();
+      var value = inputEnum.Current!.ToString();
       var name = task.Outputs.First()
                      .Key;
       var blobHandle = task.Outputs.First()

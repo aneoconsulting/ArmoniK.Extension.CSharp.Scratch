@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Api.gRPC.V1.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -25,6 +24,9 @@ using Grpc.Core;
 
 using Moq;
 using Moq.Language;
+
+using Empty = ArmoniK.Api.gRPC.V1.Empty;
+using Timestamp = Google.Protobuf.WellKnownTypes.Timestamp;
 
 namespace Tests.Helpers;
 
@@ -189,8 +191,7 @@ internal static class MockHelper
                                                        List<BlobInfo>          returnData)
   {
     blobService.Setup(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                              It.IsAny<IEnumerable<KeyValuePair<string, ReadOnlyMemory<byte>>>>(),
-                                              false,
+                                              It.IsAny<IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)>>(),
                                               It.IsAny<CancellationToken>()))
                .Returns(returnData.ToAsyncEnumerable);
 
@@ -216,6 +217,7 @@ internal static class MockHelper
                                         SessionId = b.sessionId,
                                         ResultId  = b.blobId,
                                         Name      = b.blobName,
+                                        CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
                                       });
     // Configure response of payload blob creation
     var submitResultResponse = new CreateResultsResponse
@@ -238,6 +240,7 @@ internal static class MockHelper
                                         SessionId = b.sessionId,
                                         ResultId  = b.blobId,
                                         Name      = b.blobName,
+                                        CreatedAt = Timestamp.FromDateTime(DateTime.UtcNow),
                                       });
     // Configure response of payload blob creation
     var submitResultResponse = new CreateResultsResponse

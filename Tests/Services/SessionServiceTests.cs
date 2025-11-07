@@ -16,6 +16,7 @@
 
 using ArmoniK.Api.gRPC.V1.Sessions;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
 using Grpc.Core;
 
@@ -42,7 +43,11 @@ public class SessionServiceTests
                              };
     client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<CreateSessionRequest, CreateSessionReply>(createSessionReply);
 
-    var result = await client.SessionService.CreateSessionAsync(defaultPartitionsIds_)
+    var result = await client.SessionService.CreateSessionAsync(defaultPartitionsIds_,
+                                                                new TaskConfiguration(1,
+                                                                                      1,
+                                                                                      defaultPartitionsIds_[0],
+                                                                                      TimeSpan.FromMinutes(3)))
                              .ConfigureAwait(false);
     Assert.That(result.SessionId,
                 Is.EqualTo("12345"));

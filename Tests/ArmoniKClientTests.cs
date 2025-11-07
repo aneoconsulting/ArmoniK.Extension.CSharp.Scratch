@@ -54,16 +54,14 @@ public class ArmoniKClientTests
     loggerFactoryMock_ = new Mock<ILoggerFactory>();
 
     client_ = new ArmoniKClient(defaultProperties_,
-                                loggerFactoryMock_.Object,
-                                defaultTaskOptions_);
+                                loggerFactoryMock_.Object);
   }
 
   [Test]
   public void Constructor_ThrowsArgumentNullException_IfPropertiesIsNull()
     // Act & Assert
     => Assert.That(() => new ArmoniKClient(null,
-                                           loggerFactoryMock_.Object,
-                                           defaultTaskOptions_),
+                                           loggerFactoryMock_.Object),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                          .EqualTo("properties"));
 
@@ -71,8 +69,7 @@ public class ArmoniKClientTests
   public void Constructor_ThrowsArgumentNullException_IfLoggerFactoryIsNull()
     // Act & Assert
     => Assert.That(() => new ArmoniKClient(defaultProperties_,
-                                           null,
-                                           defaultTaskOptions_),
+                                           null),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                          .EqualTo("loggerFactory"));
 

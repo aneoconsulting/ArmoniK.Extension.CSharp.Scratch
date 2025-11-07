@@ -16,6 +16,7 @@
 
 using System.Text;
 
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Handles;
 
@@ -53,7 +54,7 @@ public class PriorityClient : ClientBase
       {
         var priorityBlobInfo = await Client.BlobService.CreateBlobAsync(SessionHandle,
                                                                         "Priority",
-                                                                        BitConverter.GetBytes(priority))
+                                                                        Encoding.UTF8.GetBytes(priority.ToString()))
                                            .ConfigureAwait(false);
         var priorityBlobHandle = new BlobHandle(priorityBlobInfo,
                                                 Client);
@@ -61,8 +62,9 @@ public class PriorityClient : ClientBase
         var resultName = "Result" + priority;
         var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
                                                  .WithInput("Priority",
-                                                            priorityBlobHandle)
-                                                 .WithOutput(resultName)
+                                                            BlobDefinition.FromBlobHandle(priorityBlobHandle))
+                                                 .WithOutput(resultName,
+                                                             BlobDefinition.CreateOutput(resultName))
                                                  .WithTaskOptions(options);
         taskDefinitions.Add(taskDefinition);
       }
@@ -70,7 +72,7 @@ public class PriorityClient : ClientBase
       allTasks.AddRange(taskDefinitions);
       foreach (var taskDefinition in taskDefinitions)
       {
-        await SessionHandle.SubmitAsync(taskDefinition)
+        await SessionHandle.SubmitAsync([taskDefinition])
                            .ConfigureAwait(false);
       }
 

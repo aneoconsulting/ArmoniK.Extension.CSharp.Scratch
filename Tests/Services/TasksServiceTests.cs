@@ -69,7 +69,8 @@ public class TasksServiceTests
     // Configure task submission response
     (string taskId, string payloadId, string[]? inputs, string[]? outputs) task =
       (taskId: "taskId1", payloadId: payload.blobId, inputs: null, outputs: [outputBlob.blobId]);
-    var taskDefinition = new TaskDefinition().WithOutput(outputBlob.blobName)
+    var taskDefinition = new TaskDefinition().WithOutput(outputBlob.blobName,
+                                                         BlobDefinition.CreateOutput(outputBlob.blobName))
                                              .WithTaskOptions(taskOption);
     mock.ConfigureSubmitTaskResponse(task);
 
@@ -122,8 +123,8 @@ public class TasksServiceTests
     // Configure payload blobs creation response
     var payload1 = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload");
     var payload2 = (sessionId: sessionInfo.SessionId, blobId: "payloadId2", blobName: "payload");
-    mock.ConfigureBlobCreationResponseSequence(payload1)
-        .ConfigureBlobCreationResponseSequence(payload2)
+    mock.ConfigureBlobCreationResponseSequence(payload1,
+                                               payload2)
         .Stop();
 
     // Configure task submission response
@@ -131,9 +132,11 @@ public class TasksServiceTests
       (taskId: "taskId1", payloadId: payload1.blobId, inputs: null, outputs: [outputBlob1.blobId]);
     (string taskId, string payloadId, string[]? inputs, string[]? outputs) task2 =
       (taskId: "taskId2", payloadId: payload2.blobId, inputs: null, outputs: [outputBlob2.blobId]);
-    var taskDefinition1 = new TaskDefinition().WithOutput(outputBlob1.blobName)
+    var taskDefinition1 = new TaskDefinition().WithOutput(outputBlob1.blobName,
+                                                          BlobDefinition.CreateOutput(outputBlob1.blobName))
                                               .WithTaskOptions(taskOptions);
-    var taskDefinition2 = new TaskDefinition().WithOutput(outputBlob2.blobName)
+    var taskDefinition2 = new TaskDefinition().WithOutput(outputBlob2.blobName,
+                                                          BlobDefinition.CreateOutput(outputBlob2.blobName))
                                               .WithTaskOptions(taskOptions);
     mock.ConfigureSubmitTaskResponse(task1,
                                      task2);
@@ -227,8 +230,10 @@ public class TasksServiceTests
       (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
     var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
                                              .WithInput(dependency.blobName,
-                                                        BlobDefinition.FromByteArray([1, 2, 3]))
-                                             .WithOutput(outputBlob.blobName);
+                                                        BlobDefinition.FromByteArray(dependency.blobName,
+                                                                                     [1, 2, 3]))
+                                             .WithOutput(outputBlob.blobName,
+                                                         BlobDefinition.CreateOutput(outputBlob.blobName));
     mock.ConfigureSubmitTaskResponse(task);
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
@@ -292,8 +297,10 @@ public class TasksServiceTests
       (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
     var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
                                              .WithInput(dependency.blobName,
-                                                        BlobDefinition.FromByteArray([1, 2, 3]))
-                                             .WithOutput(outputBlob.blobName)
+                                                        BlobDefinition.FromByteArray(dependency.blobName,
+                                                                                     [1, 2, 3]))
+                                             .WithOutput(outputBlob.blobName,
+                                                         BlobDefinition.CreateOutput(outputBlob.blobName))
                                              .WithLibrary(lib);
     mock.ConfigureSubmitTaskResponse(task);
 
@@ -615,8 +622,10 @@ public class TasksServiceTests
       (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
     var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
                                              .WithInput("dependencyBlob",
-                                                        BlobDefinition.FromByteArray([1, 2, 3]))
-                                             .WithOutput("output1");
+                                                        BlobDefinition.FromByteArray("dependencyBlob",
+                                                                                     [1, 2, 3]))
+                                             .WithOutput("output1",
+                                                         BlobDefinition.CreateOutput("output1"));
     mock.ConfigureSubmitTaskResponse(task);
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
@@ -660,8 +669,10 @@ public class TasksServiceTests
       (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
     var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
                                              .WithInput("dependencyBlob",
-                                                        BlobDefinition.FromByteArray([1, 2, 3]))
-                                             .WithOutput("output1");
+                                                        BlobDefinition.FromByteArray("dependencyBlob",
+                                                                                     [1, 2, 3]))
+                                             .WithOutput("output1",
+                                                         BlobDefinition.CreateOutput("output1"));
     mock.ConfigureSubmitTaskResponse(task);
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,

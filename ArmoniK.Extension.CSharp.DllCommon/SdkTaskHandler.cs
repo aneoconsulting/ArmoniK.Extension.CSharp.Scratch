@@ -82,22 +82,6 @@ public class SdkTaskHandler
                                     Encoding? encoding = null)
     => (encoding ?? Encoding.UTF8).GetString(Inputs[name]);
 
-  /// <summary>
-  ///   Decode a dependency from its raw data
-  /// </summary>
-  /// <param name="name">The input name defined by the client</param>
-  /// <returns>The decoded integer</returns>
-  public int GetIntDependency(string name)
-    => BitConverter.ToInt32(Inputs[name]);
-
-  /// <summary>
-  ///   Decode a dependency from its raw data
-  /// </summary>
-  /// <param name="name">The input name defined by the client</param>
-  /// <returns>The decoded double</returns>
-  public double GetDoubleDependency(string name)
-    => BitConverter.ToDouble(Inputs[name]);
-
   /// <summary>This method allows to create subtasks.</summary>
   /// <param name="tasks">Lists the tasks to submit</param>
   /// <param name="taskOptions">The task options. If no value is provided, will use the default session options</param>
