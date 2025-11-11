@@ -85,7 +85,7 @@ internal class Program
     var sessionHandle = new SessionHandle(sessionInfo,
                                           client);
 
-    Console.WriteLine($"sessionId: {sessionInfo.SessionId}");
+    _logger.LogInformation($"sessionId: {sessionInfo.SessionId}");
 
     var blobService = client.BlobService;
 
@@ -99,7 +99,7 @@ internal class Program
                                                      false,
                                                      CancellationToken.None)
                                    .ConfigureAwait(false);
-    Console.WriteLine($"libraryId: {dllBlob.BlobId}");
+    _logger.LogInformation($"libraryId: {dllBlob.BlobId}");
 
     var task = new TaskDefinition().WithLibrary(dynamicLib)
                                    .WithOutput("Result",
@@ -109,12 +109,11 @@ internal class Program
     var taskHandle = await sessionHandle.SubmitAsync([task],
                                                      CancellationToken.None)
                                         .ConfigureAwait(false);
-    TaskInfos taskInfos = taskHandle.First();
 
     BlobInfo resultBlobInfo = task.Outputs.Values.First()
                                   .BlobHandle!;
-    Console.WriteLine($"resultId: {resultBlobInfo.BlobId}");
-    Console.WriteLine($"taskId: {taskInfos.TaskId}");
+    _logger.LogInformation($"resultId: {resultBlobInfo.BlobId}");
+    _logger.LogInformation($"taskId: {((TaskInfos)taskHandle.First()).TaskId}");
 
     await eventsService.WaitForBlobsAsync(sessionHandle,
                                           [resultBlobInfo])
@@ -129,7 +128,7 @@ internal class Program
 
     foreach (var returnString in stringArray)
     {
-      Console.WriteLine($"{returnString}");
+      _logger.LogInformation($"{returnString}");
     }
   }
 

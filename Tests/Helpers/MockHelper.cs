@@ -33,11 +33,11 @@ namespace Tests.Helpers;
 internal static class MockHelper
 {
   public static void ConfigureBlobService(this Mock<CallInvoker> mockInvoker,
-                                          int                    dataChunkMaxSire = 1024)
+                                          int                    dataChunkMaxSize = 1024)
   {
     var submitConfigurationResponse = new ResultsServiceConfigurationResponse
                                       {
-                                        DataChunkMaxSize = dataChunkMaxSire,
+                                        DataChunkMaxSize = dataChunkMaxSize,
                                       };
     mockInvoker.SetupAsyncUnaryCallInvokerMock<Empty, ResultsServiceConfigurationResponse>(submitConfigurationResponse);
   }
