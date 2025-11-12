@@ -128,7 +128,7 @@ public class LibraryWorker : ILibraryWorker
         // Decoding of the payload
         var payload     = Encoding.UTF8.GetString(taskHandler.Payload);
         var name2BlobId = JsonSerializer.Deserialize<Payload>(payload);
-        foreach (var pair in name2BlobId.inputs)
+        foreach (var pair in name2BlobId.Inputs)
         {
           var name   = pair.Key;
           var blobId = pair.Value;
@@ -136,7 +136,7 @@ public class LibraryWorker : ILibraryWorker
           dataDependencies[name] = data;
         }
 
-        foreach (var pair in name2BlobId.outputs)
+        foreach (var pair in name2BlobId.Outputs)
         {
           var name   = pair.Key;
           var blobId = pair.Value;

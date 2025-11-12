@@ -281,11 +281,14 @@ public class TasksService : ITasksService
     public Payload(IReadOnlyDictionary<string, string> inputs,
                    IReadOnlyDictionary<string, string> outputs)
     {
-      this.inputs  = inputs;
-      this.outputs = outputs;
+      Inputs  = inputs;
+      Outputs = outputs;
     }
 
-    public IReadOnlyDictionary<string, string> inputs  { get; }
-    public IReadOnlyDictionary<string, string> outputs { get; }
+    [JsonProperty("inputs")]
+    public IReadOnlyDictionary<string, string> Inputs { get; }
+
+    [JsonProperty("outputs")]
+    public IReadOnlyDictionary<string, string> Outputs { get; }
   }
 }
