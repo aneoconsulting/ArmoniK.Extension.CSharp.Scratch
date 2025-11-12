@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.DllCommon;
 
 using Microsoft.Extensions.Logging;
@@ -23,6 +22,10 @@ using TaskDefinition = ArmoniK.Extension.CSharp.DllCommon.TaskDefinition;
 
 namespace ArmoniK.EndToEndTests.Worker.Tests;
 
+/// <summary>
+///   Adds all integers given as inputs, and set the result in the blob output.
+///   Inputs and output are expected to be strings containing integers.
+/// </summary>
 public class GaussProblemWorker : IWorker
 {
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
@@ -32,83 +35,101 @@ public class GaussProblemWorker : IWorker
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
-    if (taskHandler.Inputs.Count == 2)
+    if (taskHandler.Inputs.Count > 2)
     {
-      var result = taskHandler.Inputs.Values.Select(i => int.Parse(i.GetStringData()))
-                              .Sum();
-
-      await taskHandler.Outputs.Values.Single()
-                       .SendStringResultAsync(result.ToString(),
-                                              cancellationToken: cancellationToken)
-                       .ConfigureAwait(false);
+      // Create the graph of subtasks, each subtask having 2 inputs only
+      await BuildSubTasksGraph(taskHandler,
+                               cancellationToken)
+        .ConfigureAwait(false);
+    }
+    else if (taskHandler.Inputs.Count == 2)
+    {
+      // Execute the subtask that add only 2 operands
+      await Addition(taskHandler,
+                     cancellationToken)
+        .ConfigureAwait(false);
     }
     else
     {
-      var inputs = taskHandler.Inputs.Values.Select(BlobDefinition.FromBlobHandle)
-                              .ToList();
-      var             taskDefinitions    = new List<TaskDefinition>();
-      var             allTaskDefinitions = new List<TaskDefinition>();
-      BlobDefinition? lastBlobDefinition = null;
-
-      do
-      {
-        var blobCount = inputs.Count;
-        if (blobCount == 2)
-        {
-          // This is the last task
-          var task = new TaskDefinition().WithInput("blob1",
-                                                    inputs[0])
-                                         .WithInput("blob2",
-                                                    inputs[1])
-                                         .WithOutput("finalOutput",
-                                                     taskHandler.Outputs.Values.Single())
-                                         .WithTaskOptions(taskHandler.TaskOptions);
-          allTaskDefinitions.Add(task);
-          break;
-        }
-
-        if (blobCount % 2 == 1)
-        {
-          blobCount--;
-          lastBlobDefinition = inputs[blobCount];
-        }
-
-        for (var i = 0; i < blobCount; i += 2)
-        {
-          taskDefinitions.Add(CreateTask(inputs[i],
-                                         inputs[i + 1],
-                                         taskHandler.TaskOptions));
-        }
-
-        // All outputs of current task level become the inputs of the next level
-        inputs = taskDefinitions.SelectMany(t => t.OutputDefinitions.Values)
-                                .ToList();
-        if (lastBlobDefinition != null)
-        {
-          inputs.Add(lastBlobDefinition);
-          lastBlobDefinition = null;
-        }
-
-        allTaskDefinitions.AddRange(taskDefinitions);
-        taskDefinitions.Clear();
-      } while (true);
-
-      await taskHandler.SubmitTasksAsync(allTaskDefinitions,
-                                         taskHandler.TaskOptions,
-                                         cancellationToken)
-                       .ConfigureAwait(false);
+      return TaskResult.Failure("Unexpected input count");
     }
 
     return TaskResult.Success;
   }
 
-  private TaskDefinition CreateTask(BlobDefinition    blob1,
-                                    BlobDefinition    blob2,
-                                    TaskConfiguration taskOptions)
-    => new TaskDefinition().WithInput("blob1",
-                                      blob1)
-                           .WithInput("blob2",
-                                      blob2)
-                           .WithOutput("output")
-                           .WithTaskOptions(taskOptions);
+  private async Task BuildSubTasksGraph(ISdkTaskHandler   taskHandler,
+                                        CancellationToken cancellationToken)
+  {
+    var             taskDefinitions    = new List<TaskDefinition>();
+    var             allTaskDefinitions = new List<TaskDefinition>();
+    BlobDefinition? lastBlobDefinition = null;
+    var inputs = taskHandler.Inputs.Values.Select(BlobDefinition.FromBlobHandle)
+                            .ToList();
+
+    do
+    {
+      var blobCount = inputs.Count;
+      if (blobCount == 2)
+      {
+        // This is the last task
+        var task = new TaskDefinition().WithInput("blob1",
+                                                  inputs[0])
+                                       .WithInput("blob2",
+                                                  inputs[1])
+                                       .WithOutput("finalOutput",
+                                                   taskHandler.Outputs.Values.Single())
+                                       .WithTaskOptions(taskHandler.TaskOptions);
+        allTaskDefinitions.Add(task);
+        break;
+      }
+
+      if (blobCount % 2 == 1)
+      {
+        blobCount--;
+        lastBlobDefinition = inputs[blobCount];
+      }
+
+      for (var i = 0; i < blobCount; i += 2)
+      {
+        taskDefinitions.Add(new TaskDefinition().WithInput("blob1",
+                                                           inputs[i])
+                                                .WithInput("blob2",
+                                                           inputs[i + 1])
+                                                .WithOutput("output")
+                                                .WithTaskOptions(taskHandler.TaskOptions));
+      }
+
+      // All outputs of current task level become the inputs of the next level
+      inputs = taskDefinitions.SelectMany(t => t.OutputDefinitions.Values)
+                              .ToList();
+      if (lastBlobDefinition != null)
+      {
+        inputs.Add(lastBlobDefinition);
+        lastBlobDefinition = null;
+      }
+
+      allTaskDefinitions.AddRange(taskDefinitions);
+      taskDefinitions.Clear();
+    } while (true);
+
+    await taskHandler.SubmitTasksAsync(allTaskDefinitions,
+                                       taskHandler.TaskOptions,
+                                       cancellationToken)
+                     .ConfigureAwait(false);
+  }
+
+  private static async Task Addition(ISdkTaskHandler   taskHandler,
+                                     CancellationToken cancellationToken)
+  {
+    var op1 = int.Parse(taskHandler.Inputs["blob1"]
+                                   .GetStringData());
+    var op2 = int.Parse(taskHandler.Inputs["blob2"]
+                                   .GetStringData());
+
+    var result = (op1 + op2).ToString();
+    await taskHandler.Outputs.Values.Single()
+                     .SendStringResultAsync(result,
+                                            cancellationToken: cancellationToken)
+                     .ConfigureAwait(false);
+  }
 }

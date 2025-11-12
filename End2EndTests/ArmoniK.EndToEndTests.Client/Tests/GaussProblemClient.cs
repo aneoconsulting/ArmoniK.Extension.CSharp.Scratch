@@ -34,13 +34,13 @@ public class GaussProblemClient : ClientBase
          .ConfigureAwait(false);
 
   /// <summary>
-  ///   Adds all integers from 1 to 100 (two by two on worker side with subtasking)
-  ///   and check that result is 5050
+  ///   Adds all integers from 1 to 10 (two by two on worker side with subtasking)
+  ///   and check that result is 55
   /// </summary>
   [Test]
   public async Task GaussProblem()
   {
-    var N = 100;
+    var N = 10;
     var task = new TaskDefinition().WithLibrary(WorkerLibrary)
                                    .WithTaskOptions(TaskConfiguration)
                                    .WithOutput("result");

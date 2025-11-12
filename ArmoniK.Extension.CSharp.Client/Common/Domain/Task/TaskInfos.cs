@@ -26,29 +26,6 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 public record TaskInfos
 {
   /// <summary>
-  ///   Initializes a new instance of the <see cref="TaskInfos" /> class with detailed task information from a task and
-  ///   session ID.
-  /// </summary>
-  /// <param name="taskInfo">The task information from the task submission response.</param>
-  /// <param name="sessionId">The session ID associated with the task.</param>
-  internal TaskInfos(SubmitTasksResponse.Types.TaskInfo taskInfo,
-                     string                             sessionId)
-  {
-    TaskId           = taskInfo.TaskId;
-    ExpectedOutputs  = taskInfo.ExpectedOutputIds;
-    DataDependencies = taskInfo.DataDependencies;
-    PayloadId        = taskInfo.PayloadId;
-    SessionId        = sessionId;
-  }
-
-  /// <summary>
-  ///   Protected constructor used for inheritance purposes, allowing derived classes to initialize without parameters.
-  /// </summary>
-  protected TaskInfos()
-  {
-  }
-
-  /// <summary>
   ///   Identifier of the task.
   /// </summary>
   public string TaskId { get; init; }
@@ -72,4 +49,24 @@ public record TaskInfos
   ///   Session ID associated with the task.
   /// </summary>
   public string SessionId { get; init; }
+}
+
+public static class TaskInfosExt
+{
+  /// <summary>
+  ///   Initializes a new instance of the <see cref="TaskInfos" /> class with detailed task information from a task
+  ///   submission and session ID.
+  /// </summary>
+  /// <param name="taskInfo">The task information from the task submission response.</param>
+  /// <param name="sessionId">The session ID associated with the task.</param>
+  public static TaskInfos ToTaskInfos(this SubmitTasksResponse.Types.TaskInfo taskInfo,
+                                      string                                  sessionId)
+    => new()
+       {
+         TaskId           = taskInfo.TaskId,
+         ExpectedOutputs  = taskInfo.ExpectedOutputIds,
+         DataDependencies = taskInfo.DataDependencies,
+         PayloadId        = taskInfo.PayloadId,
+         SessionId        = sessionId,
+       };
 }

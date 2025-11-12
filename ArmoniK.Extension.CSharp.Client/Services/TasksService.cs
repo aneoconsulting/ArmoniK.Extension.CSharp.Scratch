@@ -122,8 +122,7 @@ public class TasksService : ITasksService
                                                                     cancellationToken: cancellationToken)
                                                   .ConfigureAwait(false);
 
-    return taskSubmissionResponse.TaskInfos.Select(x => new TaskInfos(x,
-                                                                      session.SessionId))
+    return taskSubmissionResponse.TaskInfos.Select(x => x.ToTaskInfos(session.SessionId))
                                  .AsICollection();
   }
 
@@ -223,8 +222,7 @@ public class TasksService : ITasksService
                                                                     cancellationToken: cancellationToken)
                                                   .ConfigureAwait(false);
 
-    return taskSubmissionResponse.TaskInfos.Select(x => new TaskInfos(x,
-                                                                      session.SessionId))
+    return taskSubmissionResponse.TaskInfos.Select(x => x.ToTaskInfos(session.SessionId))
                                  .AsICollection();
   }
 

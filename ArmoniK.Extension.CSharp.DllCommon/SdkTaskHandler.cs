@@ -19,6 +19,7 @@ using System.Text;
 using ArmoniK.Api.gRPC.V1.Agent;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.DllCommon.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.DllCommon.Handles;
 
 using Google.Protobuf;
@@ -153,10 +154,10 @@ public class SdkTaskHandler : ISdkTaskHandler
   ///   Token used to cancel the execution of the method.
   ///   If null, the cancellation token of the task handler is used
   /// </param>
-  /// <returns>A task representing the asynchronous operation.</returns>
-  public async Task<ICollection<string>> SubmitTasksAsync(IEnumerable<TaskDefinition> taskDefinitions,
-                                                          TaskConfiguration           submissionTaskOptions,
-                                                          CancellationToken           cancellationToken = default)
+  /// <returns>A task representing the asynchronous operation. The task result contains the collection of TaskInfos</returns>
+  public async Task<ICollection<TaskInfos>> SubmitTasksAsync(IEnumerable<TaskDefinition> taskDefinitions,
+                                                             TaskConfiguration           submissionTaskOptions,
+                                                             CancellationToken           cancellationToken = default)
   {
     // Create all input and output blobs
     var allBlobDefinitions = taskDefinitions.SelectMany(t => t.InputDefinitions.Values.Union(t.OutputDefinitions.Values));
@@ -211,7 +212,7 @@ public class SdkTaskHandler : ISdkTaskHandler
                                                        cancellationToken)
                                      .ConfigureAwait(false);
 
-    return response.TaskInfos.Select(t => t.TaskId)
+    return response.TaskInfos.Select(t => t.ToTaskInfos(taskHandler_.SessionId))
                    .ToList();
   }
 
