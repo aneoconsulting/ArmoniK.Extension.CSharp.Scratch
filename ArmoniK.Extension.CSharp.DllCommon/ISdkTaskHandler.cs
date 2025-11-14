@@ -54,20 +54,6 @@ public interface ISdkTaskHandler
   string GetStringDependency(string    name,
                              Encoding? encoding = null);
 
-  /// <summary>
-  ///   Decode a dependency from its raw data
-  /// </summary>
-  /// <param name="name">The input name defined by the client</param>
-  /// <returns>The decoded integer</returns>
-  int GetIntDependency(string name);
-
-  /// <summary>
-  ///   Decode a dependency from its raw data
-  /// </summary>
-  /// <param name="name">The input name defined by the client</param>
-  /// <returns>The decoded double</returns>
-  double GetDoubleDependency(string name);
-
   /// <summary>Send the results computed by the task</summary>
   /// <param name="blob">The blob handle.</param>
   /// <param name="data">The data corresponding to the result</param>

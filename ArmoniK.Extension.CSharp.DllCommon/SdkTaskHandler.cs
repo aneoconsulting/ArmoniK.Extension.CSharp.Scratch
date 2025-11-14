@@ -76,27 +76,11 @@ public class SdkTaskHandler : ISdkTaskHandler
   ///   Decode a dependency from its raw data
   /// </summary>
   /// <param name="name">The input name defined by the client</param>
-  /// <param name="encoding">Encoding used for the string, when null UTF-8 is used</param>
+  /// <param name="encoding">The encoding used for the string, when null UTF-8 is used</param>
   /// <returns>The decoded string</returns>
   public string GetStringDependency(string    name,
                                     Encoding? encoding = null)
     => (encoding ?? Encoding.UTF8).GetString(Inputs[name].Data!);
-
-  /// <summary>
-  ///   Decode a dependency from its raw data
-  /// </summary>
-  /// <param name="name">The input name defined by the client</param>
-  /// <returns>The decoded integer</returns>
-  public int GetIntDependency(string name)
-    => BitConverter.ToInt32(Inputs[name].Data);
-
-  /// <summary>
-  ///   Decode a dependency from its raw data
-  /// </summary>
-  /// <param name="name">The input name defined by the client</param>
-  /// <returns>The decoded double</returns>
-  public double GetDoubleDependency(string name)
-    => BitConverter.ToDouble(Inputs[name].Data);
 
   /// <summary>
   ///   Create blobs metadata

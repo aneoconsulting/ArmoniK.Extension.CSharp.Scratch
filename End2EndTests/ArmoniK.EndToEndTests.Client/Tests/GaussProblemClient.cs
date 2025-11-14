@@ -43,14 +43,16 @@ public class GaussProblemClient : ClientBase
     var N = 10;
     var task = new TaskDefinition().WithLibrary(WorkerLibrary)
                                    .WithTaskOptions(TaskConfiguration)
-                                   .WithOutput("result");
+                                   .WithOutput("result",
+                                               BlobDefinition.CreateOutput("resultBlob"));
     for (var i = 1; i <= N; i++)
     {
       task.WithInput("blob" + i,
-                     BlobDefinition.FromString(i.ToString()));
+                     BlobDefinition.FromString("input" + 1,
+                                               i.ToString()));
     }
 
-    await SessionHandle.SubmitAsync(task)
+    await SessionHandle.SubmitAsync([task])
                        .ConfigureAwait(false);
 
     await Client.EventsService.WaitForBlobsAsync(SessionHandle,

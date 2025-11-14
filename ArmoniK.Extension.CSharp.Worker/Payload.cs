@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Text.Json.Serialization;
+
 namespace ArmoniK.Extension.CSharp.Worker;
 
 internal class Payload
@@ -25,6 +27,9 @@ internal class Payload
     Outputs = outputs;
   }
 
-  public IReadOnlyDictionary<string, string> Inputs  { get; }
+  [JsonPropertyName("inputs")]
+  public IReadOnlyDictionary<string, string> Inputs { get; }
+
+  [JsonPropertyName("outputs")]
   public IReadOnlyDictionary<string, string> Outputs { get; }
 }

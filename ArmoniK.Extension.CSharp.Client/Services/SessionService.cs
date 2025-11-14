@@ -165,13 +165,12 @@ public class SessionService : ISessionService
 
   /// <inheritdoc />
   public async Task<SessionInfo> CreateSessionAsync(IEnumerable<string> partitionIds,
-                                                    TaskConfiguration?  taskOptions       = null,
+                                                    TaskConfiguration   taskOptions,
                                                     CancellationToken   cancellationToken = default)
   {
     await using var channel = await channel_.GetAsync(cancellationToken)
                                             .ConfigureAwait(false);
     var sessionClient = new Sessions.SessionsClient(channel);
-    taskOptions ??= armoniKClient_.DefaulTaskConfiguration;
     var createSessionReply = await sessionClient.CreateSessionAsync(new CreateSessionRequest
                                                                     {
                                                                       DefaultTaskOption = taskOptions.ToTaskOptions(),
