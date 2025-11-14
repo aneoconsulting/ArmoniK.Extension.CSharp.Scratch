@@ -76,9 +76,11 @@ public class SdkTaskHandler
   ///   Decode a dependency from its raw data
   /// </summary>
   /// <param name="name">The input name defined by the client</param>
+  /// <param name="encoding">The encoding used for the string, when null UTF-8 is used</param>
   /// <returns>The decoded string</returns>
-  public string GetStringDependency(string name)
-    => Encoding.UTF8.GetString(Inputs[name]);
+  public string GetStringDependency(string    name,
+                                    Encoding? encoding = null)
+    => (encoding ?? Encoding.UTF8).GetString(Inputs[name]);
 
   /// <summary>This method allows to create subtasks.</summary>
   /// <param name="tasks">Lists the tasks to submit</param>

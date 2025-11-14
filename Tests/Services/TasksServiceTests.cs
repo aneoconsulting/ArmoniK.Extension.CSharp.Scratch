@@ -14,13 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Collections.Immutable;
+using System.Text;
 
 using ArmoniK.Api.gRPC.V1.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Client.Library;
 
 using Google.Protobuf.WellKnownTypes;
 
@@ -40,59 +41,44 @@ namespace Tests.Services;
 
 public class TasksServiceTests
 {
+  [SetUp]
+  public void Setup()
+    => MockHelper.InitMock();
+
   [Test]
   public async Task CreateTaskReturnsNewTaskWithId()
   {
     var client = new MockedArmoniKClient();
-    var submitTaskResponse = new SubmitTasksResponse
-                             {
-                               TaskInfos =
-                               {
-                                 new SubmitTasksResponse.Types.TaskInfo
-                                 {
-                                   TaskId = "taskId1",
-                                   ExpectedOutputIds =
-                                   {
-                                     new List<string>
-                                     {
-                                       "blobId1",
-                                     },
-                                   },
-                                   PayloadId = "payloadId1",
-                                 },
-                               },
-                             };
-    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(submitTaskResponse);
-    var taskNodes = new List<TaskNode>
-                    {
-                      new()
-                      {
-                        ExpectedOutputs = new List<BlobInfo>
-                                          {
-                                            new()
-                                            {
-                                              BlobName = "blob1",
-                                              BlobId = submitTaskResponse.TaskInfos[0]
-                                                                         .ExpectedOutputIds[0],
-                                              SessionId = "sessionId1",
-                                            },
-                                          },
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payload1",
-                                    BlobId    = submitTaskResponse.TaskInfos[0].PayloadId,
-                                    SessionId = "sessionId1",
-                                  },
-                        Session = new SessionInfo("sessionId1"),
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                      },
-                    };
+    var mock   = client.CallInvokerMock;
 
-    var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                            taskNodes)
+    var taskOption = new TaskConfiguration
+                     {
+                       PartitionId = "subtasking",
+                     };
+    var sessionInfo = new SessionInfo("sessionId1");
+
+    // Configure blob metadata creation response
+    var outputBlob = (sessionId: sessionInfo.SessionId, blobId: "blobId1", blobName: "blob1");
+    mock.ConfigureBlobMetadataCreationResponse(outputBlob);
+
+    // Configure blob creation response
+    var payload = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload");
+    mock.ConfigureBlobCreationResponseSequence(payload)
+        .Stop();
+
+    // Configure task submission response
+    (string taskId, string payloadId, string[]? inputs, string[]? outputs) task =
+      (taskId: "taskId1", payloadId: payload.blobId, inputs: null, outputs: [outputBlob.blobId]);
+    var taskDefinition = new TaskDefinition().WithOutput(outputBlob.blobName,
+                                                         BlobDefinition.CreateOutput(outputBlob.blobName))
+                                             .WithTaskOptions(taskOption);
+    mock.ConfigureSubmitTaskResponse(task);
+
+    // Configure blob service configuration response
+    mock.ConfigureBlobService();
+
+    var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
+                                                            [taskDefinition])
                              .ConfigureAwait(false);
 
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
@@ -103,15 +89,15 @@ public class TasksServiceTests
                                   "Expected one task info in the response.");
                       Assert.That(taskInfosEnumerable.First()
                                                      .TaskId,
-                                  Is.EqualTo("taskId1"),
+                                  Is.EqualTo(task.taskId),
                                   "Expected task ID to match.");
                       Assert.That(taskInfosEnumerable.First()
                                                      .PayloadId,
-                                  Is.EqualTo("payloadId1"),
+                                  Is.EqualTo(task.payloadId),
                                   "Expected payload ID to match.");
                       Assert.That(taskInfosEnumerable.First()
                                                      .ExpectedOutputs.First(),
-                                  Is.EqualTo("blobId1"),
+                                  Is.EqualTo(outputBlob.blobId),
                                   "Expected blob ID to match.");
                     });
   }
@@ -120,83 +106,46 @@ public class TasksServiceTests
   public async Task SubmitTasksAsyncMultipleTasksWithOutputsReturnsCorrectResponses()
   {
     var client = new MockedArmoniKClient();
-    var taskResponse = new SubmitTasksResponse
-                       {
-                         TaskInfos =
-                         {
-                           new SubmitTasksResponse.Types.TaskInfo
-                           {
-                             TaskId    = "taskId1",
-                             PayloadId = "payloadId1",
-                             ExpectedOutputIds =
-                             {
-                               "outputId1",
-                             },
-                           },
-                           new SubmitTasksResponse.Types.TaskInfo
-                           {
-                             TaskId    = "taskId2",
-                             PayloadId = "payloadId2",
-                             ExpectedOutputIds =
-                             {
-                               "outputId2",
-                             },
-                           },
-                         },
-                       };
-    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
-    var taskNodes = new List<TaskNode>
-                    {
-                      new()
-                      {
-                        ExpectedOutputs = new List<BlobInfo>
-                                          {
-                                            new()
-                                            {
-                                              BlobName  = "blob1",
-                                              BlobId    = "blobId1",
-                                              SessionId = "sessionId1",
-                                            },
-                                          },
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payload1",
-                                    BlobId    = "payloadId1",
-                                    SessionId = "sessionId1",
-                                  },
-                        Session = new SessionInfo("sessionId1"),
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                      },
-                      new()
-                      {
-                        ExpectedOutputs = new List<BlobInfo>
-                                          {
-                                            new()
-                                            {
-                                              BlobName  = "blob2",
-                                              BlobId    = "blobId2",
-                                              SessionId = "sessionId1",
-                                            },
-                                          },
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payload2",
-                                    BlobId    = "payloadId2",
-                                    SessionId = "sessionId1",
-                                  },
-                        Session = new SessionInfo("sessionId1"),
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                      },
-                    };
+    var mock   = client.CallInvokerMock;
 
-    var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                            taskNodes)
+    var sessionInfo = new SessionInfo("sessionId1");
+    var taskOptions = new TaskConfiguration
+                      {
+                        PartitionId = "subtasking",
+                      };
+
+    // Configure blob metadata creation response
+    var outputBlob1 = (sessionId: sessionInfo.SessionId, blobId: "blobId1", blobName: "blob1");
+    var outputBlob2 = (sessionId: sessionInfo.SessionId, blobId: "blobId2", blobName: "blob2");
+    mock.ConfigureBlobMetadataCreationResponse(outputBlob1,
+                                               outputBlob2);
+
+    // Configure payload blobs creation response
+    var payload1 = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload");
+    var payload2 = (sessionId: sessionInfo.SessionId, blobId: "payloadId2", blobName: "payload");
+    mock.ConfigureBlobCreationResponseSequence(payload1,
+                                               payload2)
+        .Stop();
+
+    // Configure task submission response
+    (string taskId, string payloadId, string[]? inputs, string[]? outputs) task1 =
+      (taskId: "taskId1", payloadId: payload1.blobId, inputs: null, outputs: [outputBlob1.blobId]);
+    (string taskId, string payloadId, string[]? inputs, string[]? outputs) task2 =
+      (taskId: "taskId2", payloadId: payload2.blobId, inputs: null, outputs: [outputBlob2.blobId]);
+    var taskDefinition1 = new TaskDefinition().WithOutput(outputBlob1.blobName,
+                                                          BlobDefinition.CreateOutput(outputBlob1.blobName))
+                                              .WithTaskOptions(taskOptions);
+    var taskDefinition2 = new TaskDefinition().WithOutput(outputBlob2.blobName,
+                                                          BlobDefinition.CreateOutput(outputBlob2.blobName))
+                                              .WithTaskOptions(taskOptions);
+    mock.ConfigureSubmitTaskResponse(task1,
+                                     task2);
+
+    // Configure blob service configuration response
+    mock.ConfigureBlobService();
+
+    var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
+                                                            [taskDefinition1, taskDefinition2])
                              .ConfigureAwait(false);
 
     Assert.Multiple(() =>
@@ -210,48 +159,43 @@ public class TasksServiceTests
                       Assert.That(result.Select(t => t.TaskId),
                                   Is.EqualTo(new[]
                                              {
-                                               "taskId1",
-                                               "taskId2",
+                                               task1.taskId,
+                                               task2.taskId,
                                              }),
                                   "Expected task IDs to match.");
                       Assert.That(result.Select(t => t.PayloadId),
                                   Is.EqualTo(new[]
                                              {
-                                               "payloadId1",
-                                               "payloadId2",
+                                               payload1.blobId,
+                                               payload2.blobId,
                                              }),
                                   "Expected payload IDs to match.");
                     });
   }
-
 
   [Test]
   public void SubmitTasksAsyncWithEmptyExpectedOutputsThrowsException()
   {
     // Arrange
     var client = new MockedArmoniKClient();
+    var mock   = client.CallInvokerMock;
 
-    var taskNodes = new List<TaskNode>
-                    {
-                      new()
+    var sessionInfo = new SessionInfo("sessionId1");
+    var taskOptions = new TaskConfiguration
                       {
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payload1",
-                                    BlobId    = "payloadId1",
-                                    SessionId = "sessionId1",
-                                  },
-                        ExpectedOutputs = new List<BlobInfo>(),
-                        Session         = new SessionInfo("sessionId1"),
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                      },
-                    };
+                        PartitionId = "subtasking",
+                      };
 
-    Assert.That(async () => await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                                       taskNodes),
+    // Configure payload blob creation response
+    var payload = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload");
+    mock.ConfigureBlobCreationResponseSequence(payload)
+        .Stop();
+
+    var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions);
+
+    Assert.That(async () => await client.TasksService.SubmitTasksAsync(sessionInfo,
+                                                                       [taskDefinition])
+                                        .ConfigureAwait(false),
                 Throws.Exception.TypeOf<InvalidOperationException>());
   }
 
@@ -259,159 +203,133 @@ public class TasksServiceTests
   public async Task SubmitTasksAsyncWithDataDependenciesCreatesBlobsCorrectly()
   {
     var client = new MockedArmoniKClient();
+    var mock   = client.CallInvokerMock;
 
-    var expectedBlobs = new List<BlobInfo>
-                        {
-                          new()
-                          {
-                            BlobName  = "dependencyBlob",
-                            BlobId    = "dependencyBlobId",
-                            SessionId = "sessionId1",
-                          },
-                        };
-    client.BlobServiceMock.SetupCreateBlobMock(expectedBlobs);
-
-    var taskResponse = new SubmitTasksResponse
-                       {
-                         TaskInfos =
-                         {
-                           new SubmitTasksResponse.Types.TaskInfo
-                           {
-                             TaskId    = "taskId1",
-                             PayloadId = "payloadId1",
-                             ExpectedOutputIds =
-                             {
-                               "outputId1",
-                             },
-                             DataDependencies =
-                             {
-                               "dependencyBlobId",
-                             },
-                           },
-                         },
-                       };
-    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
-
-    var taskNodes = new List<TaskNode>
-                    {
-                      new()
+    var sessionInfo = new SessionInfo("sessionId1");
+    var taskOptions = new TaskConfiguration
                       {
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payloadId",
-                                    BlobId    = "blobId",
-                                    SessionId = "sessionId1",
-                                  },
-                        ExpectedOutputs = new List<BlobInfo>
-                                          {
-                                            new()
-                                            {
-                                              BlobName  = "output1",
-                                              BlobId    = "outputId1",
-                                              SessionId = "sessionId1",
-                                            },
-                                          },
-                        Session = new SessionInfo("sessionId1"),
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                        DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
-                                                  {
-                                                    {
-                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
-                                                    },
-                                                  },
-                      },
-                    };
+                        PartitionId = "subtasking",
+                      };
 
-    var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                            taskNodes)
+    // Configure blob service configuration response
+    mock.ConfigureBlobService();
+
+    // Configure blobs creation response
+    var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    mock.ConfigureBlobCreationResponseSequence(dependency)
+        .ConfigureBlobCreationResponseSequence(payload)
+        .Stop();
+
+    // Configure blob metadata creation response
+    var outputBlob = (sessionId: sessionInfo.SessionId, blobId: "outputId1", blobName: "output1");
+    mock.ConfigureBlobMetadataCreationResponse(outputBlob);
+
+    // Configure task submission response
+    (string taskId, string payloadId, string[]? inputs, string[]? outputs) task =
+      (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
+    var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
+                                             .WithInput(dependency.blobName,
+                                                        BlobDefinition.FromByteArray(dependency.blobName,
+                                                                                     [1, 2, 3]))
+                                             .WithOutput(outputBlob.blobName,
+                                                         BlobDefinition.CreateOutput(outputBlob.blobName));
+    mock.ConfigureSubmitTaskResponse(task);
+
+    var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
+                                                            [taskDefinition])
                              .ConfigureAwait(false);
 
-    client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                                          It.IsAny<IEnumerable<(string, ReadOnlyMemory<byte>, bool)>>(),
-                                                          It.IsAny<CancellationToken>()),
-                                  Times.Once);
+    var dependencyData = mock.GetBlobDataSent(dependency.blobName);
+
+    mock.CheckConfigureBlobCreationResponseCount();
     Assert.Multiple(() =>
                     {
-                      Assert.That("dependencyBlobId",
+                      Assert.That(dependencyData,
+                                  Is.EqualTo((byte[]) [1, 2, 3]));
+                      Assert.That(dependency.blobId,
                                   Is.EqualTo(result.First()
                                                    .DataDependencies.First()),
                                   "Expected data dependency blob ID to match.");
-                      Assert.That("dependencyBlobId",
-                                  Is.EqualTo(taskNodes.First()
-                                                      .DataDependencies.First()
-                                                      .BlobId),
-                                  "Expected data dependency blob ID in task node to match.");
+                      Assert.That(dependency.blobId,
+                                  Is.EqualTo(taskDefinition.InputDefinitions.First()
+                                                           .Value.BlobHandle!.BlobInfo.BlobId),
+                                  "Expected data dependency blob ID in task definition to match.");
                     });
   }
 
   [Test]
-  public async Task SubmitTasksAsyncEmptyDataDependenciesDoesNotCreateBlobs()
+  public async Task SubmitTasksAsyncCheckInteroperabilityConvention()
   {
     // Arrange
     var client = new MockedArmoniKClient();
+    var mock   = client.CallInvokerMock;
 
-    var expectedBlobs = new List<BlobInfo>
-                        {
-                          new()
-                          {
-                            BlobName  = "dependencyBlob",
-                            BlobId    = "dependencyBlobId",
-                            SessionId = "sessionId1",
-                          },
-                        };
-    client.BlobServiceMock.SetupCreateBlobMock(expectedBlobs);
-
-    var taskResponse = new SubmitTasksResponse
-                       {
-                         TaskInfos =
-                         {
-                           new SubmitTasksResponse.Types.TaskInfo
-                           {
-                             TaskId    = "taskId1",
-                             PayloadId = "payloadId1",
-                             ExpectedOutputIds =
-                             {
-                               "outputId1",
-                             },
-                           },
-                         },
-                       };
-    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
-
-    var dataDependenciesContent = ImmutableDictionary<string, ReadOnlyMemory<byte>>.Empty;
-    var taskNodes = new List<TaskNode>
-                    {
-                      new()
+    var sessionInfo = new SessionInfo("sessionId1");
+    var taskOptions = new TaskConfiguration
                       {
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payloadId",
-                                    BlobId    = "blobId",
-                                    SessionId = "sessionId1",
-                                  },
-                        ExpectedOutputs         = expectedBlobs,
-                        DataDependenciesContent = dataDependenciesContent,
-                        Session                 = new SessionInfo("sessionId1"),
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                      },
-                    };
-    await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                               taskNodes)
+                        PartitionId = "subtasking",
+                      };
+
+    var lib = new DynamicLibrary
+              {
+                Symbol        = "Test",
+                LibraryPath   = "C:\\Test",
+                LibraryBlobId = "libBlobId",
+              };
+
+    // Configure blob service configuration response
+    mock.ConfigureBlobService();
+
+    // Configure blobs creation response
+    var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    mock.ConfigureBlobCreationResponseSequence(dependency)
+        .ConfigureBlobCreationResponseSequence(payload)
+        .Stop();
+
+    // Configure blob metadata creation response
+    var outputBlob = (sessionId: sessionInfo.SessionId, blobId: "outputId1", blobName: "output1");
+    mock.ConfigureBlobMetadataCreationResponse(outputBlob);
+
+    // Configure task submission response
+    (string taskId, string payloadId, string[]? inputs, string[]? outputs) task =
+      (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
+    var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
+                                             .WithInput(dependency.blobName,
+                                                        BlobDefinition.FromByteArray(dependency.blobName,
+                                                                                     [1, 2, 3]))
+                                             .WithOutput(outputBlob.blobName,
+                                                         BlobDefinition.CreateOutput(outputBlob.blobName))
+                                             .WithLibrary(lib);
+    mock.ConfigureSubmitTaskResponse(task);
+
+    await client.TasksService.SubmitTasksAsync(sessionInfo,
+                                               [taskDefinition])
                 .ConfigureAwait(false);
 
-    client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                                          It.IsAny<IEnumerable<(string, ReadOnlyMemory<byte>, bool)>>(),
-                                                          It.IsAny<CancellationToken>()),
-                                  Times.Never);
-    Assert.That(taskNodes.First()
-                         .DataDependencies,
-                Is.Empty);
+    var payloadData = mock.GetBlobDataSent(payload.blobName);
+    var payloadStr  = Encoding.UTF8.GetString(payloadData);
+
+    mock.CheckConfigureBlobCreationResponseCount();
+    Assert.Multiple(() =>
+                    {
+                      Assert.That(payloadStr,
+                                  Is.EqualTo("{\"inputs\":{\"dependencyBlob\":\"dependencyBlobId\"},\"outputs\":{\"output1\":\"outputId1\"}}"),
+                                  "Bad payload");
+                      Assert.That(taskDefinition.TaskOptions.Options["ConventionVersion"],
+                                  Is.EqualTo("v1"),
+                                  "Expected convention version v1.");
+                      Assert.That(taskDefinition.TaskOptions.Options["LibraryBlobId"],
+                                  Is.EqualTo(lib.LibraryBlobId),
+                                  "Expected library blob id being lib.LibraryBlobId.");
+                      Assert.That(taskDefinition.TaskOptions.Options["Symbol"],
+                                  Is.EqualTo(lib.Symbol),
+                                  "Expected symbol being lib.Symbol.");
+                      Assert.That(taskDefinition.TaskOptions.Options["LibraryPath"],
+                                  Is.EqualTo(lib.LibraryPath),
+                                  "Expected library path being lib.LibraryPath.");
+                    });
   }
 
   [Test]
@@ -676,141 +594,89 @@ public class TasksServiceTests
   [Test]
   public async Task CreateNewBlobsAsyncCreatesBlobsCorrectly()
   {
-    var client  = new MockedArmoniKClient();
-    var session = new SessionInfo("sessionId1");
-    var taskNodes = new List<TaskNode>
-                    {
-                      new()
+    var client = new MockedArmoniKClient();
+    var mock   = client.CallInvokerMock;
+
+    var sessionInfo = new SessionInfo("sessionId1");
+    var taskOptions = new TaskConfiguration
                       {
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payloadId",
-                                    BlobId    = "blobId",
-                                    SessionId = "sessionId1",
-                                  },
-                        ExpectedOutputs = new List<BlobInfo>
-                                          {
-                                            new()
-                                            {
-                                              BlobName  = "output1",
-                                              BlobId    = "outputId1",
-                                              SessionId = "sessionId1",
-                                            },
-                                          },
-                        Session = session,
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                        DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
-                                                  {
-                                                    {
-                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
-                                                    },
-                                                  },
-                      },
-                    };
+                        PartitionId = "subtasking",
+                      };
 
-    var expectedBlobs = new List<BlobInfo>
-                        {
-                          new()
-                          {
-                            BlobName  = "dependencyBlob",
-                            BlobId    = "dependencyBlobId",
-                            SessionId = "sessionId1",
-                          },
-                        };
+    // Configure blob service configuration response
+    mock.ConfigureBlobService();
 
-    client.BlobServiceMock.SetupCreateBlobMock(expectedBlobs);
+    // Configure blobs creation response
+    var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    mock.ConfigureBlobCreationResponseSequence(dependency)
+        .ConfigureBlobCreationResponseSequence(payload)
+        .Stop();
 
-    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(new SubmitTasksResponse());
+    // Configure blob metadata creation response
+    var outputBlob = (sessionId: sessionInfo.SessionId, blobId: "outputId1", blobName: "output1");
+    mock.ConfigureBlobMetadataCreationResponse(outputBlob);
 
-    var result = await client.TasksService.SubmitTasksAsync(session,
-                                                            taskNodes)
+    // Configure task submission response
+    (string taskId, string payloadId, string[]? inputs, string[]? outputs) task =
+      (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
+    var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
+                                             .WithInput("dependencyBlob",
+                                                        BlobDefinition.FromByteArray("dependencyBlob",
+                                                                                     [1, 2, 3]))
+                                             .WithOutput("output1",
+                                                         BlobDefinition.CreateOutput("output1"));
+    mock.ConfigureSubmitTaskResponse(task);
+
+    var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
+                                                            [taskDefinition])
                              .ConfigureAwait(false);
 
     Assert.That(result,
                 Is.Not.Null,
                 "Result should not be null.");
-    client.BlobServiceMock.Verify(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                                          It.IsAny<IEnumerable<(string, ReadOnlyMemory<byte>, bool)>>(),
-                                                          It.IsAny<CancellationToken>()),
-                                  Times.Once);
+    mock.CheckConfigureBlobCreationResponseCount();
   }
 
   [Test]
   public async Task SubmitTasksAsyncWithDataDependenciesReturnsCorrectResponses()
   {
     var client = new MockedArmoniKClient();
-    var taskResponse = new SubmitTasksResponse
-                       {
-                         TaskInfos =
-                         {
-                           new SubmitTasksResponse.Types.TaskInfo
-                           {
-                             TaskId    = "taskId1",
-                             PayloadId = "payloadId1",
-                             ExpectedOutputIds =
-                             {
-                               "outputId1",
-                             },
-                             DataDependencies =
-                             {
-                               "dependencyBlobId",
-                             },
-                           },
-                         },
-                       };
+    var mock   = client.CallInvokerMock;
 
-    client.CallInvokerMock.SetupAsyncUnaryCallInvokerMock<SubmitTasksRequest, SubmitTasksResponse>(taskResponse);
-
-    var expectedBlobs = new List<BlobInfo>
-                        {
-                          new()
-                          {
-                            BlobName  = "dependencyBlob",
-                            BlobId    = "dependencyBlobId",
-                            SessionId = "sessionId1",
-                          },
-                        };
-
-    client.BlobServiceMock.SetupCreateBlobMock(expectedBlobs);
-
-    var taskNodes = new List<TaskNode>
-                    {
-                      new()
+    var sessionInfo = new SessionInfo("sessionId1");
+    var taskOptions = new TaskConfiguration
                       {
-                        Payload = new BlobInfo
-                                  {
-                                    BlobName  = "payloadId",
-                                    BlobId    = "blobId",
-                                    SessionId = "sessionId1",
-                                  },
-                        ExpectedOutputs = new List<BlobInfo>
-                                          {
-                                            new()
-                                            {
-                                              BlobName  = "output1",
-                                              BlobId    = "outputId1",
-                                              SessionId = "sessionId1",
-                                            },
-                                          },
-                        Session = new SessionInfo("sessionId1"),
-                        TaskOptions = new TaskConfiguration
-                                      {
-                                        PartitionId = "subtasking",
-                                      },
-                        DataDependenciesContent = new Dictionary<string, ReadOnlyMemory<byte>>
-                                                  {
-                                                    {
-                                                      "dependencyBlob", new ReadOnlyMemory<byte>([1, 2, 3])
-                                                    },
-                                                  },
-                      },
-                    };
+                        PartitionId = "subtasking",
+                      };
 
-    var result = await client.TasksService.SubmitTasksAsync(new SessionInfo("sessionId1"),
-                                                            taskNodes)
+    // Configure blob service configuration response
+    mock.ConfigureBlobService();
+
+    // Configure blobs creation response
+    var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    mock.ConfigureBlobCreationResponseSequence(dependency)
+        .ConfigureBlobCreationResponseSequence(payload)
+        .Stop();
+
+    // Configure blob metadata creation response
+    var outputBlob = (sessionId: sessionInfo.SessionId, blobId: "outputId1", blobName: "output1");
+    mock.ConfigureBlobMetadataCreationResponse(outputBlob);
+
+    // Configure task submission response
+    (string taskId, string payloadId, string[]? inputs, string[]? outputs) task =
+      (taskId: "taskId1", payloadId: payload.blobId, inputs: [dependency.blobId], outputs: [outputBlob.blobId]);
+    var taskDefinition = new TaskDefinition().WithTaskOptions(taskOptions)
+                                             .WithInput("dependencyBlob",
+                                                        BlobDefinition.FromByteArray("dependencyBlob",
+                                                                                     [1, 2, 3]))
+                                             .WithOutput("output1",
+                                                         BlobDefinition.CreateOutput("output1"));
+    mock.ConfigureSubmitTaskResponse(task);
+
+    var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
+                                                            [taskDefinition])
                              .ConfigureAwait(false);
     Assert.Multiple(() =>
                     {
@@ -822,15 +688,15 @@ public class TasksServiceTests
                                   "Expected one task info in the response.");
                       Assert.That(result.First()
                                         .TaskId,
-                                  Is.EqualTo("taskId1"),
+                                  Is.EqualTo(task.taskId),
                                   "Expected task ID to match.");
                       Assert.That(result.First()
                                         .PayloadId,
-                                  Is.EqualTo("payloadId1"),
+                                  Is.EqualTo(payload.blobId),
                                   "Expected payload ID to match.");
                       Assert.That(result.First()
                                         .ExpectedOutputs.First(),
-                                  Is.EqualTo("outputId1"),
+                                  Is.EqualTo(outputBlob.blobId),
                                   "Expected output ID to match.");
                     });
   }
