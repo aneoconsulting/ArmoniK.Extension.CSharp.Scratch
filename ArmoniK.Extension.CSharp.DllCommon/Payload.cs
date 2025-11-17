@@ -16,9 +16,9 @@
 
 using System.Text.Json.Serialization;
 
-namespace ArmoniK.Extension.CSharp.Worker;
+namespace ArmoniK.Extension.CSharp.DllCommon;
 
-internal class Payload
+public class Payload
 {
   public Payload(IReadOnlyDictionary<string, string> inputs,
                  IReadOnlyDictionary<string, string> outputs)

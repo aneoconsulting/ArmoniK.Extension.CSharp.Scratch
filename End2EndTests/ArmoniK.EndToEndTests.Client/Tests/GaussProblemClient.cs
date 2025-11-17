@@ -34,7 +34,7 @@ public class GaussProblemClient : ClientBase
          .ConfigureAwait(false);
 
   /// <summary>
-  ///   Adds all integers from 1 to 10 (two by two on worker side with subtasking)
+  ///   Adds all integers from 1 to 10 (added two by two on worker side with subtasking)
   ///   and check that result is 55
   /// </summary>
   [Test]
@@ -66,7 +66,7 @@ public class GaussProblemClient : ClientBase
                                    .ConfigureAwait(false);
     var resultString = Encoding.UTF8.GetString(rawData);
 
-    var totalExpected = N * (N + 1) / 2;
+    var totalExpected = N * (N + 1) / 2; // 55 for N=10, 5050 for N=100
     Assert.That(resultString,
                 Is.EqualTo(totalExpected.ToString()));
   }

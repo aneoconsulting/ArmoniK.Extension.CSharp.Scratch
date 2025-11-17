@@ -34,7 +34,7 @@ public class TaskSdkWorker : IWorker
     var resultString = taskHandler.GetStringDependency("inputString");
 
     // Send the input as results as is.
-    await taskHandler.Outputs["resultString"]
+    await taskHandler.Outputs["outputString"]
                      .SendResultAsync(Encoding.ASCII.GetBytes(resultString),
                                       CancellationToken.None)
                      .ConfigureAwait(false);

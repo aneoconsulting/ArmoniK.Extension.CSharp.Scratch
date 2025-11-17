@@ -126,10 +126,11 @@ public class LibraryWorker : ILibraryWorker
       var sdkTaskHandler = new SdkTaskHandler(taskHandler,
                                               dataDependencies,
                                               expectedResults);
+      var payload = string.Empty;
       try
       {
         // Decoding of the payload
-        var payload     = Encoding.UTF8.GetString(taskHandler.Payload);
+        payload = Encoding.UTF8.GetString(taskHandler.Payload);
         var name2BlobId = JsonSerializer.Deserialize<Payload>(payload);
         foreach (var pair in name2BlobId!.Inputs)
         {
@@ -152,7 +153,10 @@ public class LibraryWorker : ILibraryWorker
       catch (Exception ex)
       {
         Logger.LogError(ex,
-                        "Could not decode payload: " + ex.Message);
+                        "Could not decode payload: {Message}",
+                        ex.Message);
+        Logger.LogError("Payload is:{Payload}",
+                        payload);
         throw;
       }
 

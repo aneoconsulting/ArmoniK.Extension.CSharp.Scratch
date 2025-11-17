@@ -24,7 +24,7 @@ using ArmoniK.Extension.CSharp.DllCommon.Handles;
 
 using Google.Protobuf;
 
-using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ArmoniK.Extension.CSharp.DllCommon;
 
@@ -166,8 +166,8 @@ public class SdkTaskHandler : ISdkTaskHandler
     using var taskEnumerator = taskDefinitions.GetEnumerator();
     var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
     var payloadBlobs = await CreateBlobsAsync(payloads.Select(p => new KeyValuePair<string, ReadOnlyMemory<byte>>("payload",
-                                                                                                                  Encoding.UTF8
-                                                                                                                          .GetBytes(JsonConvert.SerializeObject(p)))),
+                                                                                                                  Encoding.UTF8.GetBytes(JsonSerializer
+                                                                                                                                           .Serialize<Payload>(p)))),
                                               cancellationToken)
                          .ConfigureAwait(false);
     foreach (var payloadBlobHandle in payloadBlobs)
@@ -295,18 +295,5 @@ public class SdkTaskHandler : ISdkTaskHandler
         index++;
       }
     }
-  }
-
-  private class Payload
-  {
-    public Payload(IReadOnlyDictionary<string, string> inputs,
-                   IReadOnlyDictionary<string, string> outputs)
-    {
-      Inputs  = inputs;
-      Outputs = outputs;
-    }
-
-    public IReadOnlyDictionary<string, string> Inputs  { get; }
-    public IReadOnlyDictionary<string, string> Outputs { get; }
   }
 }

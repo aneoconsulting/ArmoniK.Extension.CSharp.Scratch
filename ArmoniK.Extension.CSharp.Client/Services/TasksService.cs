@@ -18,6 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,8 +35,6 @@ using ArmoniK.Utils;
 using Grpc.Core;
 
 using Microsoft.Extensions.Logging;
-
-using Newtonsoft.Json;
 
 using ITasksService = ArmoniK.Extension.CSharp.Client.Common.Services.ITasksService;
 using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
@@ -124,9 +124,11 @@ public class TasksService : ITasksService
     using var taskEnumerator = taskDefinitions.GetEnumerator();
     var       index          = 0;
     var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
-    var payloadsDefinition = payloads.Select(p => BlobDefinition.FromString("payload",
-                                                                            JsonConvert.SerializeObject(p)))
-                                     .ToList();
+
+    var payloadsJson = payloads.Select(p => JsonSerializer.Serialize(p));
+    var payloadsDefinition = payloadsJson.Select(p => BlobDefinition.FromString("payload",
+                                                                                p))
+                                         .ToList();
     await blobService_.CreateBlobsAsync(session,
                                         payloadsDefinition,
                                         cancellationToken)
@@ -284,10 +286,10 @@ public class TasksService : ITasksService
       Outputs = outputs;
     }
 
-    [JsonProperty("inputs")]
+    [JsonPropertyName("inputs")]
     public IReadOnlyDictionary<string, string> Inputs { get; }
 
-    [JsonProperty("outputs")]
+    [JsonPropertyName("outputs")]
     public IReadOnlyDictionary<string, string> Outputs { get; }
   }
 }
