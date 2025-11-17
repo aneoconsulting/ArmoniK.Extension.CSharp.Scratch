@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using ArmoniK.Api.gRPC.V1.Agent;
@@ -166,8 +167,7 @@ public class SdkTaskHandler : ISdkTaskHandler
     using var taskEnumerator = taskDefinitions.GetEnumerator();
     var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
     var payloadBlobs = await CreateBlobsAsync(payloads.Select(p => new KeyValuePair<string, ReadOnlyMemory<byte>>("payload",
-                                                                                                                  Encoding.UTF8.GetBytes(JsonSerializer
-                                                                                                                                           .Serialize<Payload>(p)))),
+                                                                                                                  Encoding.UTF8.GetBytes(JsonSerializer.Serialize(p)))),
                                               cancellationToken)
                          .ConfigureAwait(false);
     foreach (var payloadBlobHandle in payloadBlobs)
@@ -247,8 +247,11 @@ public class SdkTaskHandler : ISdkTaskHandler
         continue;
       }
 
-      if (blob.Data.HasValue)
+      if (blob.HasData)
       {
+        blob.RefreshFile();
+        await blob.FetchDataAsync(cancellationToken)
+                  .ConfigureAwait(false);
         blobsWithData.Add(blob);
       }
       else
@@ -260,18 +263,12 @@ public class SdkTaskHandler : ISdkTaskHandler
     if (blobsWithData.Any())
     {
       // Creation of blobs with data
-      var blobsCreate = blobsWithData.Select(b => new CreateResultsRequest.Types.ResultCreate
-                                                  {
-                                                    Name = b.Name,
-                                                    Data = ByteString.CopyFrom(b.Data!.Value.Span),
-                                                  });
-      var response = await taskHandler_.CreateResultsAsync(blobsCreate,
-                                                           cancellationToken)
-                                       .ConfigureAwait(false);
+      var response = CreateBlobsWithContentAsync(blobsWithData,
+                                                 cancellationToken);
       var index = 0;
-      foreach (var result in response.Results)
+      await foreach (var blobId in response.ConfigureAwait(false))
       {
-        blobsWithData[index].BlobHandle = new BlobHandle(result.ResultId,
+        blobsWithData[index].BlobHandle = new BlobHandle(blobId,
                                                          this);
         index++;
       }
@@ -294,6 +291,74 @@ public class SdkTaskHandler : ISdkTaskHandler
                                                             this);
         index++;
       }
+    }
+  }
+
+  private async IAsyncEnumerable<string> CreateBlobsWithContentAsync(IEnumerable<BlobDefinition>                blobDefinitions,
+                                                                     [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  {
+    // This is a bin packing kind of problem for which we apply the first-fit-decreasing strategy
+    var batches = GetOptimizedBatches(blobDefinitions,
+                                      taskHandler_.Configuration.DataChunkMaxSize);
+
+    foreach (var batch in batches)
+    {
+      var items = batch.Items.Select(b => new CreateResultsRequest.Types.ResultCreate
+                                          {
+                                            Name = b.Name,
+                                            Data = ByteString.CopyFrom(b.Data!.Value.Span),
+                                          });
+
+      var blobCreationResponse = await taskHandler_.CreateResultsAsync(items,
+                                                                       cancellationToken)
+                                                   .ConfigureAwait(false);
+      foreach (var blob in blobCreationResponse.Results)
+      {
+        yield return blob.ResultId;
+      }
+    }
+  }
+
+  /// <summary>
+  ///   Dispatches a list of blob definitions in a minimal number of batches, each batch size being less than the 'maxSize'
+  /// </summary>
+  /// <param name="blobDefinitions">The list of blob definitions to dispatch</param>
+  /// <param name="maxSize">The maximum size for a batch</param>
+  /// <returns>The list of batches created</returns>
+  private static List<Batch> GetOptimizedBatches(IEnumerable<BlobDefinition> blobDefinitions,
+                                                 int                         maxSize)
+  {
+    var blobsByDescendingSize = blobDefinitions.OrderByDescending(b => b.TotalSize)
+                                               .ToList();
+    var batches = new List<Batch>();
+    foreach (var blob in blobsByDescendingSize)
+    {
+      var batch = batches.FirstOrDefault(b => maxSize > b.Size + blob.TotalSize);
+      if (batch == null)
+      {
+        batch = new Batch();
+        batches.Add(batch);
+      }
+
+      batch.AddItem(blob);
+    }
+
+    return batches;
+  }
+
+  private class Batch
+  {
+    private readonly List<BlobDefinition> items_ = new();
+
+    public IEnumerable<BlobDefinition> Items
+      => items_;
+
+    public long Size { get; private set; }
+
+    public void AddItem(BlobDefinition item)
+    {
+      items_.Add(item);
+      Size += item.TotalSize;
     }
   }
 }

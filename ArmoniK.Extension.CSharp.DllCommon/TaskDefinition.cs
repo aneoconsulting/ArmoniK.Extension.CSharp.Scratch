@@ -62,14 +62,11 @@ public class TaskDefinition
   ///   Add a new output to the task
   /// </summary>
   /// <param name="outputName">The name of the output blob</param>
-  /// <param name="blobHandle">The output's blob handle</param>
+  /// <param name="blobDefinition">The output's blob definition</param>
   /// <returns>The TaskDefinition updated</returns>
-  public TaskDefinition WithOutput(string      outputName,
-                                   BlobHandle? blobHandle = null)
+  public TaskDefinition WithOutput(string         outputName,
+                                   BlobDefinition blobDefinition)
   {
-    var blobDefinition = blobHandle == null
-                           ? BlobDefinition.CreateOutput(outputName)
-                           : BlobDefinition.FromBlobHandle(blobHandle!);
     OutputDefinitions.Add(outputName,
                           blobDefinition);
     return this;

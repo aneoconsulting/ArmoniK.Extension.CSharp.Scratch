@@ -77,7 +77,7 @@ public class GaussProblemWorker : IWorker
                                        .WithInput("blob2",
                                                   inputs[1])
                                        .WithOutput("finalOutput",
-                                                   taskHandler.Outputs.Values.Single())
+                                                   BlobDefinition.FromBlobHandle(taskHandler.Outputs.Values.Single()))
                                        .WithTaskOptions(taskHandler.TaskOptions);
         allTaskDefinitions.Add(task);
         break;
@@ -95,7 +95,8 @@ public class GaussProblemWorker : IWorker
                                                            inputs[i])
                                                 .WithInput("blob2",
                                                            inputs[i + 1])
-                                                .WithOutput("output")
+                                                .WithOutput("output",
+                                                            BlobDefinition.CreateOutput("output"))
                                                 .WithTaskOptions(taskHandler.TaskOptions));
       }
 

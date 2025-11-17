@@ -51,6 +51,9 @@ public record TaskInfos
   public string SessionId { get; init; }
 }
 
+/// <summary>
+///   Class of extensions methods to convert Protobuf instances and TaskInfos instances
+/// </summary>
 public static class TaskInfosExt
 {
   /// <summary>
