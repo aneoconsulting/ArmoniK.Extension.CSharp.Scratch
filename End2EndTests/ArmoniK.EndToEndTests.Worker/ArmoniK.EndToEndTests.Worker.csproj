@@ -17,7 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.Client\ArmoniK.Extension.CSharp.Client.csproj" />
     <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.DllCommon\ArmoniK.Extension.CSharp.DllCommon.csproj" />
     <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.DllWorker\ArmoniK.Extension.CSharp.DllWorker.csproj" />
   </ItemGroup>
