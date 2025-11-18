@@ -17,6 +17,7 @@
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using NUnit.Framework;
 
@@ -380,7 +381,8 @@ public class BlobTests
                 Is.EqualTo(-1));
     Assert.That(blobPagination.PageSize,
                 Is.EqualTo(-10));
-    Assert.That(blobPagination.Total,
-                Is.EqualTo(-100));
+    Assert.That(bl
+    bPagination.Total,
+    Is.EqualTo(-100));
   }
 }

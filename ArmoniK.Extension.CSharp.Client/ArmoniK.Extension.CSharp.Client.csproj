@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -8,24 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Common\Exceptions\**" />
-    <EmbeddedResource Remove="Common\Exceptions\**" />
-    <None Remove="Common\Exceptions\**" />
-  </ItemGroup>
-
-  <ItemGroup>
   <InternalsVisibleTo Include="Tests" />
     <PackageReference Include="ArmoniK.Api.Client" Version="3.26.0" />
     <PackageReference Include="IsExternalInit" Version="1.0.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="protobuf-net" Version="3.2.52" />
     <PackageReference Include="System.Text.Json" Version="9.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ArmoniK.Extension.CSharp.Common\ArmoniK.Extension.CSharp.Common.csproj" />
   </ItemGroup>
 
 </Project>

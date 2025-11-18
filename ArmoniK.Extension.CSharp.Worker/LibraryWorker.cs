@@ -21,13 +21,10 @@ using System.Text.Json;
 using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.Exceptions;
-using ArmoniK.Extension.CSharp.DllCommon;
-using ArmoniK.Extension.CSharp.DllCommon.Handles;
-
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using ArmoniK.Extension.CSharp.Common.Exceptions;
+using ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
+using ArmoniK.Extension.CSharp.Worker.Interfaces.Handles;
 
 namespace ArmoniK.Extension.CSharp.Worker;
 

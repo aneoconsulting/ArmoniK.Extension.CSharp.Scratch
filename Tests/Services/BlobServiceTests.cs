@@ -19,6 +19,7 @@ using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
@@ -723,7 +724,8 @@ public class BlobServiceTests
                              Status    = BlobStatus.Completed,
                              BlobName  = "myBlob",
                              OpaqueId  = opaqueId,
-                             CreateAt  = now,
+
+                             CreateAt = now,
                            }));
   }
 }

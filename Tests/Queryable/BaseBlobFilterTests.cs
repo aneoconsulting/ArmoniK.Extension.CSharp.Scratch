@@ -18,6 +18,7 @@ using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using Google.Protobuf.WellKnownTypes;
 
@@ -287,7 +288,8 @@ public class BaseBlobFilterTests
     var filterOr = new Filters();
     foreach (var filterAnd in filtersAnd)
     {
-      filterOr.Or.Add(filterAnd);
+      f
+      lterOr.Or.Add(filterAnd);
     }
 
     return filterOr;

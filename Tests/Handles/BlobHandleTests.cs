@@ -15,8 +15,8 @@
 // limitations under the License.
 
 using ArmoniK.Extension.CSharp.Client;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Handles;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using NUnit.Framework;
 

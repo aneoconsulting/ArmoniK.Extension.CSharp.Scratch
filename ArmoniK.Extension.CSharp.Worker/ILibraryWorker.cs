@@ -16,8 +16,8 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
-using ArmoniK.Extension.CSharp.Client.Exceptions;
-using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.Common.Exceptions;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
 
 namespace ArmoniK.Extension.CSharp.Worker;
 
