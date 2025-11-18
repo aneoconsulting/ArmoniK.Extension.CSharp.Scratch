@@ -27,15 +27,16 @@ public class TaskSdkWorker : IWorker
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
     => Task.FromResult(HealthCheckResult.Healthy());
 
-  public async Task<TaskResult> ExecuteAsync(SdkTaskHandler    taskHandler,
+  public async Task<TaskResult> ExecuteAsync(ISdkTaskHandler   taskHandler,
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
     var resultString = taskHandler.GetStringDependency("inputString");
 
     // Send the input as results as is.
-    await taskHandler.SendResultByNameAsync("outputString",
-                                            Encoding.ASCII.GetBytes(resultString))
+    await taskHandler.Outputs["outputString"]
+                     .SendResultAsync(Encoding.ASCII.GetBytes(resultString),
+                                      CancellationToken.None)
                      .ConfigureAwait(false);
 
     return TaskResult.Success;

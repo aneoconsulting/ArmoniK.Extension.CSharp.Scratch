@@ -50,8 +50,8 @@ public class TaskSdkClient : ClientBase
                                                                                                                 .ConfigureAwait(false);
                                                                                      }))
                                              .WithTaskOptions(TaskConfiguration);
-    var taskHandle = await SessionHandle.SubmitAsync([taskDefinition])
-                                        .ConfigureAwait(false);
+    await SessionHandle.SubmitAsync([taskDefinition])
+                       .ConfigureAwait(false);
 
     await SessionHandle.WaitCallbacksAsync()
                        .ConfigureAwait(false);
