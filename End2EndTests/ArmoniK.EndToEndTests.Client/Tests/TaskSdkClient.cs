@@ -36,20 +36,25 @@ public class TaskSdkClient : ClientBase
   [Test]
   public async Task TaskSdk()
   {
+    byte[] result = null;
     var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
                                              .WithInput("inputString",
                                                         BlobDefinition.FromString("blobInputString",
                                                                                   "Hello world!"))
                                              .WithOutput("outputString",
-                                                         BlobDefinition.CreateOutput("blobOutputString"))
+                                                         BlobDefinition.CreateOutput("blobOutputString")
+                                                                       .WithCallback(async (blobHandle,
+                                                                                            cancellationToken) =>
+                                                                                     {
+                                                                                       result = await blobHandle.DownloadBlobDataAsync(cancellationToken)
+                                                                                                                .ConfigureAwait(false);
+                                                                                     }))
                                              .WithTaskOptions(TaskConfiguration);
     var taskHandle = await SessionHandle.SubmitAsync([taskDefinition])
                                         .ConfigureAwait(false);
 
-    await Client.EventsService.WaitForBlobsAsync(SessionHandle,
-                                                 taskDefinition.Outputs.Values.Select(b => b.BlobHandle!.BlobInfo)
-                                                               .ToList(),
-                                                 CancellationToken.None);
+    await SessionHandle.WaitCallbacksAsync()
+                       .ConfigureAwait(false);
 
     var resultString = "";
     var outputName = taskDefinition.Outputs.Single()
@@ -58,11 +63,9 @@ public class TaskSdkClient : ClientBase
                                          .Value.BlobHandle;
     var inputBlobHandle = taskDefinition.InputDefinitions.Single()
                                         .Value.BlobHandle;
-    var rawData = await outputBlobHandle!.DownloadBlobDataAsync(CancellationToken.None)
-                                         .ConfigureAwait(false);
     if (outputName == "outputString")
     {
-      resultString = Encoding.UTF8.GetString(rawData);
+      resultString = Encoding.UTF8.GetString(result);
     }
 
     Assert.Multiple(() =>

@@ -69,7 +69,8 @@ public class ClientBase
                                loggerFactory);
 
     var sessionHandle = await Client.CreateSessionAsync([Partition],
-                                                        TaskConfiguration)
+                                                        TaskConfiguration,
+                                                        true)
                                     .ConfigureAwait(false);
 
     var filePath = Path.Join(AppContext.BaseDirectory,
@@ -84,7 +85,8 @@ public class ClientBase
 
   protected async Task TearDownBaseAsync()
   {
-    await Client.SessionService.CloseSessionAsync(SessionHandle);
+    await SessionHandle.DisposeAsync()
+                       .ConfigureAwait(false);
     await Client.SessionService.PurgeSessionAsync(SessionHandle);
     await Client.SessionService.DeleteSessionAsync(SessionHandle);
     Properties        = null;

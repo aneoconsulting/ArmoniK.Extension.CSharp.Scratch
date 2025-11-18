@@ -350,6 +350,86 @@ public class BlobService : IBlobService
     }
   }
 
+  /// <inheritdoc />
+  public async IAsyncEnumerable<BlobState> GetBlobStatesByStatusAsync(IEnumerable<string> blobIds,
+                                                                      BlobStatus          status,
+                                                                      CancellationToken   cancellationToken = default)
+  {
+    var pageSize = 50;
+    var blobPagination = new BlobPagination
+                         {
+                           Filter = new Filters
+                                    {
+                                      Or =
+                                      {
+                                        blobIds.Select(b => new FiltersAnd
+                                                            {
+                                                              And =
+                                                              {
+                                                                new FilterField
+                                                                {
+                                                                  Field = new ResultField
+                                                                          {
+                                                                            ResultRawField = new ResultRawField
+                                                                                             {
+                                                                                               Field = ResultRawEnumField.ResultId,
+                                                                                             },
+                                                                          },
+                                                                  FilterString = new FilterString
+                                                                                 {
+                                                                                   Operator = FilterStringOperator.Equal,
+                                                                                   Value    = b,
+                                                                                 },
+                                                                },
+                                                                new FilterField
+                                                                {
+                                                                  Field = new ResultField
+                                                                          {
+                                                                            ResultRawField = new ResultRawField
+                                                                                             {
+                                                                                               Field = ResultRawEnumField.Status,
+                                                                                             },
+                                                                          },
+                                                                  FilterStatus = new FilterStatus
+                                                                                 {
+                                                                                   Operator = FilterStatusOperator.Equal,
+                                                                                   Value    = status.ToGrpcStatus(),
+                                                                                 },
+                                                                },
+                                                              },
+                                                            }),
+                                      },
+                                    },
+                           Page          = 0,
+                           PageSize      = pageSize,
+                           SortDirection = SortDirection.Asc,
+                           SortField = new ResultField
+                                       {
+                                         ResultRawField = new ResultRawField
+                                                          {
+                                                            Field = ResultRawEnumField.ResultId,
+                                                          },
+                                       },
+                         };
+    do
+    {
+      var page = await ListBlobsAsync(blobPagination,
+                                      cancellationToken)
+                   .ConfigureAwait(false);
+      if (page.Blobs.Length == 0)
+      {
+        break;
+      }
+
+      foreach (var blobState in page.Blobs)
+      {
+        yield return blobState;
+      }
+
+      blobPagination.Page++;
+    } while (true);
+  }
+
   private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
