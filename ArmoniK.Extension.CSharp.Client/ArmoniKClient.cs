@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Handles;
@@ -178,6 +179,15 @@ public class ArmoniKClient
   public TaskHandle GetTaskHandle(TaskInfos taskInfos)
     => new(this,
            taskInfos);
+
+  /// <summary>
+  ///   Gets a session handle for the specified session information.
+  /// </summary>
+  /// <param name="session">The session information.</param>
+  /// <returns>A task representing the asynchronous operation. The task result contains the session handle instance.</returns>
+  public SessionHandle GetSessionHandle(SessionInfo session)
+    => new(session,
+           this);
 
   /// <summary>
   ///   Asynchronously creates a new session.
