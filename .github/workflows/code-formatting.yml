@@ -28,7 +28,7 @@ jobs:
         dotnet restore ArmoniK.CSharp.Extension.Scratch.sln
     - name: Reformat
       run: |
-        jb cleanupcode --profile="Full Cleanup With Headers"  ArmoniK.CSharp.Extension.Scratch.sln
+        jb cleanupcode --toolset=17.0 --profile="Full Cleanup With Headers"  ArmoniK.CSharp.Extension.Scratch.sln
 
     - name: Check Diff
       id: check-diff
