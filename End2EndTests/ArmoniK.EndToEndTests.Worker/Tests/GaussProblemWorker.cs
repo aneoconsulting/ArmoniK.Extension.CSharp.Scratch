@@ -14,7 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Worker;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
+using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 
 using Microsoft.Extensions.Logging;
@@ -132,7 +133,6 @@ public class GaussProblemWorker : IWorker
     await taskHandler.Outputs.Values.Single()
                      .SendStringResultAsync(result,
                                             cancellationToken: cancellationToken)
-                     .ConfigureA
-    ait(false);
+                     .ConfigureAwait(false);
   }
 }

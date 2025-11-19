@@ -22,6 +22,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Common.Library;
 
 using Google.Protobuf.WellKnownTypes;
 

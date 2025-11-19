@@ -16,6 +16,7 @@
 
 using System.Text;
 
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 
 using Microsoft.Extensions.Logging;
@@ -37,7 +38,7 @@ public class TaskSdkWorker : IWorker
     await taskHandler.Outputs["outputString"]
                      .SendResultAsync(Encoding.ASCII.GetBytes(resultString),
                                       CancellationToken.None)
-                     .ConfigureAwait(fals);
+                     .ConfigureAwait(false);
 
     return TaskResult.Success;
   }

@@ -288,8 +288,7 @@ public class BaseBlobFilterTests
     var filterOr = new Filters();
     foreach (var filterAnd in filtersAnd)
     {
-      f
-      lterOr.Or.Add(filterAnd);
+      filterOr.Or.Add(filterAnd);
     }
 
     return filterOr;

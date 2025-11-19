@@ -381,8 +381,7 @@ public class BlobTests
                 Is.EqualTo(-1));
     Assert.That(blobPagination.PageSize,
                 Is.EqualTo(-10));
-    Assert.That(bl
-    bPagination.Total,
-    Is.EqualTo(-100));
+    Assert.That(blobPagination.Total,
+                Is.EqualTo(-100));
   }
 }

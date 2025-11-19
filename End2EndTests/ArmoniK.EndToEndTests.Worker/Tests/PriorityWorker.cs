@@ -16,7 +16,7 @@
 
 using System.Text;
 
-using ArmoniK.Extension.CSharp.Worker;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 
 using Microsoft.Extensions.Logging;
@@ -49,8 +49,7 @@ public class PriorityWorker : IWorker
     {
       logger.LogError(ex,
                       ex.Message);
-      return Tas
-      esult.Failure(ex.Message);
+      return TaskResult.Failure(ex.Message);
     }
   }
 }
