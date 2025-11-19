@@ -36,18 +36,19 @@ public class Worker : IWorker
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing a successful output.</returns>
   /// <exception cref="InvalidOperationException">Thrown when no expected results are found (Single() fails).</exception>
-  public async Task<TaskResult> ExecuteAsync(SdkTaskHandler    taskHandler,
+  public async Task<TaskResult> ExecuteAsync(ISdkTaskHandler   taskHandler,
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
-    var resultId = taskHandler.Outputs.Single()
-                              .Value;
+    var result = taskHandler.Outputs.Single()
+                            .Value;
 
     logger.LogWarning("Sending the following resultId: {resultId}",
-                      resultId);
-    await taskHandler.SendResult(resultId,
-                                 Encoding.ASCII.GetBytes($"World_ {resultId}"))
-                     .ConfigureAwait(false);
+                      result.BlobId);
+
+    await result.SendResultAsync(Encoding.ASCII.GetBytes($"World_ {result.BlobId}"),
+                                 cancellationToken)
+                .ConfigureAwait(false);
     return TaskResult.Success;
   }
 

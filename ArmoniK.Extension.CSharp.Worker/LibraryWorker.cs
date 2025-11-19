@@ -24,6 +24,7 @@ using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.DllCommon.Handles;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -120,39 +121,46 @@ public class LibraryWorker : ILibraryWorker
       lastLoadedService_ = serviceClass;
       lastServiceKey_    = serviceKey;
 
-      var dataDependencies = new Dictionary<string, byte[]>();
-      var expectedResults  = new Dictionary<string, string>();
-
+      var dataDependencies = new Dictionary<string, BlobHandle>();
+      var expectedResults  = new Dictionary<string, BlobHandle>();
+      var sdkTaskHandler = new SdkTaskHandler(taskHandler,
+                                              dataDependencies,
+                                              expectedResults);
+      var payload = string.Empty;
       try
       {
         // Decoding of the payload
-        var payload     = Encoding.UTF8.GetString(taskHandler.Payload);
+        payload = Encoding.UTF8.GetString(taskHandler.Payload);
         var name2BlobId = JsonSerializer.Deserialize<Payload>(payload);
-        foreach (var pair in name2BlobId.Inputs)
+        foreach (var pair in name2BlobId!.Inputs)
         {
           var name   = pair.Key;
           var blobId = pair.Value;
           var data   = taskHandler.DataDependencies[blobId];
-          dataDependencies[name] = data;
+          dataDependencies[name] = new BlobHandle(blobId,
+                                                  sdkTaskHandler,
+                                                  data);
         }
 
         foreach (var pair in name2BlobId.Outputs)
         {
           var name   = pair.Key;
           var blobId = pair.Value;
-          expectedResults[name] = blobId;
+          expectedResults[name] = new BlobHandle(blobId,
+                                                 sdkTaskHandler);
         }
       }
       catch (Exception ex)
       {
         Logger.LogError(ex,
-                        "Could not decode payload: " + ex.Message);
+                        "Could not decode payload: {Message}",
+                        ex.Message);
+        Logger.LogError("Payload is:{Payload}",
+                        payload);
         throw;
       }
 
-      var result = await serviceClass.ExecuteAsync(new SdkTaskHandler(taskHandler,
-                                                                      dataDependencies,
-                                                                      expectedResults),
+      var result = await serviceClass.ExecuteAsync(sdkTaskHandler,
                                                    Logger,
                                                    cancellationToken)
                                      .ConfigureAwait(false);

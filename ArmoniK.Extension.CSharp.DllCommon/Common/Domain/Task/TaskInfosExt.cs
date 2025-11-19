@@ -14,22 +14,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text.Json.Serialization;
+using ArmoniK.Api.gRPC.V1.Agent;
+using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
-namespace ArmoniK.Extension.CSharp.Worker;
+namespace ArmoniK.Extension.CSharp.DllCommon.Common.Domain.Task;
 
-internal class Payload
+public static class TaskInfosExt
 {
-  public Payload(IReadOnlyDictionary<string, string> inputs,
-                 IReadOnlyDictionary<string, string> outputs)
-  {
-    Inputs  = inputs;
-    Outputs = outputs;
-  }
-
-  [JsonPropertyName("inputs")]
-  public IReadOnlyDictionary<string, string> Inputs { get; }
-
-  [JsonPropertyName("outputs")]
-  public IReadOnlyDictionary<string, string> Outputs { get; }
+  public static TaskInfos ToTaskInfos(this SubmitTasksResponse.Types.TaskInfo taskInfo,
+                                      string                                  sessionId)
+    => new()
+       {
+         TaskId           = taskInfo.TaskId,
+         ExpectedOutputs  = taskInfo.ExpectedOutputIds,
+         DataDependencies = taskInfo.DataDependencies,
+         PayloadId        = taskInfo.PayloadId,
+         SessionId        = sessionId,
+       };
 }
