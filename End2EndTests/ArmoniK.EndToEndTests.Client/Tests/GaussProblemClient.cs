@@ -40,11 +40,18 @@ public class GaussProblemClient : ClientBase
   [Test]
   public async Task GaussProblem()
   {
-    var N = 10;
+    var    N         = 10;
+    byte[] rawResult = null;
     var task = new TaskDefinition().WithLibrary(WorkerLibrary)
                                    .WithTaskOptions(TaskConfiguration)
                                    .WithOutput("result",
-                                               BlobDefinition.CreateOutput("resultBlob"));
+                                               BlobDefinition.CreateOutput("resultBlob")
+                                                             .WithCallback(async (blobHandle,
+                                                                                  cancellationToken) =>
+                                                                           {
+                                                                             rawResult = await blobHandle.DownloadBlobDataAsync(cancellationToken)
+                                                                                                         .ConfigureAwait(false);
+                                                                           }));
     for (var i = 1; i <= N; i++)
     {
       task.WithInput("blob" + i,
@@ -55,16 +62,10 @@ public class GaussProblemClient : ClientBase
     await SessionHandle.SubmitAsync([task])
                        .ConfigureAwait(false);
 
-    await Client.EventsService.WaitForBlobsAsync(SessionHandle,
-                                                 task.Outputs.Values.Select(b => b.BlobHandle!.BlobInfo)
-                                                     .ToList(),
-                                                 CancellationToken.None);
+    await SessionHandle.WaitCallbacksAsync()
+                       .ConfigureAwait(false);
 
-    var blobHandle = task.Outputs.Single()
-                         .Value.BlobHandle;
-    var rawData = await blobHandle!.DownloadBlobDataAsync(CancellationToken.None)
-                                   .ConfigureAwait(false);
-    var resultString = Encoding.UTF8.GetString(rawData);
+    var resultString = Encoding.UTF8.GetString(rawResult);
 
     var totalExpected = N * (N + 1) / 2; // 55 for N=10, 5050 for N=100
     Assert.That(resultString,

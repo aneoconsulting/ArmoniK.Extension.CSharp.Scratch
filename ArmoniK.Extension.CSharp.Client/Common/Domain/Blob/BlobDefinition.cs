@@ -32,8 +32,8 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 public class BlobDefinition
 {
   private readonly FileInfo?             file_;
-  private          ReadOnlyMemory<byte>? data_;
   private          long                  dataSize_;
+  private          ReadOnlyMemory<byte>? data_;
 
   /// <summary>
   ///   Creation of a blob definition with known data
