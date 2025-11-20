@@ -14,12 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Api.Worker.Utils;
 using ArmoniK.Extension.CSharp.Worker;
 
-WorkerServer.Create<ComputerService>(serviceConfigurator: collection =>
-                                                          {
-                                                            collection.AddSingleton<ServiceRequestContext>();
-                                                            collection.AddSingleton<ComputerService>();
-                                                          })
-            .Run();
+namespace ArmoniK.Extension.CSharp.DynamicWorker;
+
+public class Program
+{
+  public static void Main(string[] args)
+    => ArmoniKWorker.Run<DynamicServiceRequestContext>();
+}

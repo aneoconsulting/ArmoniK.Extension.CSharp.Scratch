@@ -21,7 +21,7 @@ using ArmoniK.Extension.CSharp.Common.Library;
 
 namespace ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 
-internal static class TaskOptionExt
+public static class TaskOptionExt
 {
   public static TaskConfiguration ToTaskConfiguration(this TaskOptions taskOption)
     => new(taskOption.MaxRetries,

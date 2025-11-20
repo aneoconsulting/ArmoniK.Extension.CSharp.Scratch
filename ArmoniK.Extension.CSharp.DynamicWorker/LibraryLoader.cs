@@ -29,7 +29,7 @@ namespace ArmoniK.Extension.CSharp.Worker;
 /// <summary>
 ///   Provides functionality to load and manage dynamic libraries for the ArmoniK project.
 /// </summary>
-public class LibraryLoader : ILibraryLoader
+internal class LibraryLoader : ILibraryLoader
 {
   private readonly ILogger                                                                            logger_;
   private          ConcurrentDictionary<string, (Assembly assembly, AssemblyLoadContext loadContext)> assemblyLoadContexts_ = new();

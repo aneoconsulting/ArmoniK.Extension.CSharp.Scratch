@@ -15,8 +15,6 @@
 // limitations under the License.
 
 using System.Runtime.Loader;
-using System.Text;
-using System.Text.Json;
 
 using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
@@ -24,14 +22,13 @@ using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Common.Exceptions;
 using ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
-using ArmoniK.Extension.CSharp.Worker.Interfaces.Handles;
 
 namespace ArmoniK.Extension.CSharp.Worker;
 
 /// <summary>
 ///   Represents a worker that handles the execution of tasks within a specific library context.
 /// </summary>
-public class LibraryWorker : ILibraryWorker
+internal class LibraryWorker : ILibraryWorker
 {
   /// <summary>
   ///   Reference to the last loaded service for health checking.
@@ -90,17 +87,10 @@ public class LibraryWorker : ILibraryWorker
       using var _ = Logger.BeginPropertyScope(("sessionId", taskHandler.SessionId),
                                               ("taskId", $"{taskHandler.TaskId}"));
 
-      var conventionVersion = taskHandler.TaskOptions.GetConventionVersion();
-      if (conventionVersion != "v1")
-      {
-        throw new ArmoniKSdkException($"ArmoniK SDK version '{conventionVersion}' not supported.");
-      }
-
       var dynamicLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
 
       Logger.LogInformation("DynamicLibrary.Symbol: {Service}",
                             dynamicLibrary.Symbol);
-
       Logger.LogInformation("Entering Context");
 
       var context = libraryLoader.GetAssemblyLoadContext(libraryContext);
@@ -109,77 +99,16 @@ public class LibraryWorker : ILibraryWorker
         context.EnterContextualReflection();
       }
 
-      var serviceKey = $"{libraryContext}:{dynamicLibrary.Symbol}";
-
+      lastServiceKey_ = $"{libraryContext}:{dynamicLibrary.Symbol}";
       Logger.LogDebug("Loading service class: {ServiceKey}",
-                      serviceKey);
-      var serviceClass = libraryLoader.GetClassInstance<IWorker>(dynamicLibrary);
+                      lastServiceKey_);
+      lastLoadedService_ = libraryLoader.GetClassInstance<IWorker>(dynamicLibrary);
 
-      lastLoadedService_ = serviceClass;
-      lastServiceKey_    = serviceKey;
-
-      var dataDependencies = new Dictionary<string, BlobHandle>();
-      var expectedResults  = new Dictionary<string, BlobHandle>();
-      var sdkTaskHandler = new SdkTaskHandler(taskHandler,
-                                              dataDependencies,
-                                              expectedResults);
-      var payload = string.Empty;
-      try
-      {
-        // Decoding of the payload
-        payload = Encoding.UTF8.GetString(taskHandler.Payload);
-        var name2BlobId = JsonSerializer.Deserialize<Payload>(payload);
-        foreach (var pair in name2BlobId!.Inputs)
-        {
-          var name   = pair.Key;
-          var blobId = pair.Value;
-          var data   = taskHandler.DataDependencies[blobId];
-          dataDependencies[name] = new BlobHandle(blobId,
-                                                  sdkTaskHandler,
-                                                  data);
-        }
-
-        foreach (var pair in name2BlobId.Outputs)
-        {
-          var name   = pair.Key;
-          var blobId = pair.Value;
-          expectedResults[name] = new BlobHandle(blobId,
-                                                 sdkTaskHandler);
-        }
-      }
-      catch (Exception ex)
-      {
-        Logger.LogError(ex,
-                        "Could not decode payload: {Message}",
-                        ex.Message);
-        Logger.LogError("Payload is:{Payload}",
-                        payload);
-        throw;
-      }
-
-      var result = await serviceClass.ExecuteAsync(sdkTaskHandler,
-                                                   Logger,
-                                                   cancellationToken)
-                                     .ConfigureAwait(false);
-
-      Logger.LogInformation("Got the following result from the execution: {result}",
-                            result);
-
-      if (result.IsSuccess)
-      {
-        return new Output
-               {
-                 Ok = new Empty(),
-               };
-      }
-
-      return new Output
-             {
-               Error = new Output.Types.Error
-                       {
-                         Details = result.ErrorMessage,
-                       },
-             };
+      return await SdkTaskRunner.Run(taskHandler,
+                                     lastLoadedService_,
+                                     Logger,
+                                     cancellationToken)
+                                .ConfigureAwait(false);
     }
     catch (Exception ex)
     {

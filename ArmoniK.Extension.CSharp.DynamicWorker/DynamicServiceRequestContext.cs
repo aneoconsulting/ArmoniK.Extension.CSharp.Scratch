@@ -16,34 +16,37 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
 
 namespace ArmoniK.Extension.CSharp.Worker;
 
 /// <summary>
-///   Represents the context for handling service requests.
+///   Represents the context for handling service requests with dynamic loading capability.
 /// </summary>
-public class ServiceRequestContext
+public class DynamicServiceRequestContext : IServiceRequestContext
 {
-  private readonly ILibraryLoader                 libraryLoader_;
-  private readonly ILogger<ServiceRequestContext> logger_;
+  private readonly ILibraryLoader                        libraryLoader_;
+  private readonly ILibraryWorker                        libraryWorker_;
+  private readonly ILogger<DynamicServiceRequestContext> logger_;
+
 
   private string? currentSession_;
 
   /// <summary>
-  ///   Initializes a new instance of the <see cref="ServiceRequestContext" /> class.
+  ///   Initializes a new instance of the <see cref="DynamicServiceRequestContext" /> class.
   /// </summary>
   /// <param name="configuration">The configuration settings.</param>
   /// <param name="loggerFactory">The logger factory to create logger instances.</param>
-  public ServiceRequestContext(IConfiguration configuration,
-                               ILoggerFactory loggerFactory)
+  public DynamicServiceRequestContext(IConfiguration configuration,
+                                      ILoggerFactory loggerFactory)
   {
     LoggerFactory = loggerFactory;
 
-    logger_ = loggerFactory.CreateLogger<ServiceRequestContext>();
+    logger_ = loggerFactory.CreateLogger<DynamicServiceRequestContext>();
 
     libraryLoader_ = new LibraryLoader(loggerFactory);
-    LibraryWorker = new LibraryWorker(configuration,
-                                      loggerFactory);
+    libraryWorker_ = new LibraryWorker(configuration,
+                                       loggerFactory);
   }
 
   /// <summary>
@@ -52,9 +55,13 @@ public class ServiceRequestContext
   public ILoggerFactory LoggerFactory { get; set; }
 
   /// <summary>
-  ///   Gets the library worker instance.
+  ///   Check the health of the library worker.
   /// </summary>
-  public ILibraryWorker LibraryWorker { get; }
+  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+  /// <returns>A task representing the asynchronous operation, containing the heath status of the worker.</returns>
+  public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken)
+    => await libraryWorker_.CheckHealth(cancellationToken)
+                           .ConfigureAwait(false);
 
   /// <summary>
   ///   Executes a task asynchronously.
@@ -75,11 +82,11 @@ public class ServiceRequestContext
                                                             cancellationToken)
                                           .ConfigureAwait(false);
 
-    var result = await LibraryWorker.ExecuteAsync(taskHandler,
-                                                  libraryLoader_,
-                                                  contextName,
-                                                  cancellationToken)
-                                    .ConfigureAwait(false);
+    var result = await libraryWorker_.ExecuteAsync(taskHandler,
+                                                   libraryLoader_,
+                                                   contextName,
+                                                   cancellationToken)
+                                     .ConfigureAwait(false);
     return result;
   }
 }

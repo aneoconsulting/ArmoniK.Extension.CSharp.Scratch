@@ -8,15 +8,15 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["ArmoniK.Extension.CSharp.DllWorker/ArmoniK.Extension.CSharp.DllWorker.csproj", "ArmoniK.Extension.CSharp.DllWorker/"]
-RUN dotnet restore "./ArmoniK.Extension.CSharp.DllWorker/ArmoniK.Extension.CSharp.DllWorker.csproj"
+COPY ["StaticWorkerExample/StaticWorkerExample.csproj", "StaticWorkerExample/"]
+RUN dotnet restore "./StaticWorkerExample/StaticWorkerExample.csproj"
 COPY . .
-WORKDIR "/src/ArmoniK.Extension.CSharp.DllWorker"
-RUN dotnet build "./ArmoniK.Extension.CSharp.DllWorker.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/StaticWorkerExample"
+RUN dotnet build "./StaticWorkerExample.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./ArmoniK.Extension.CSharp.DllWorker.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./StaticWorkerExample.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
@@ -25,4 +25,4 @@ RUN groupadd --gid 5000 armonikuser && useradd --home-dir /home/armonikuser --cr
 RUN mkdir /cache && chown armonikuser: /cache
 USER armonikuser
 EXPOSE 1080
-ENTRYPOINT ["dotnet", "ArmoniK.Extension.CSharp.DllWorker.dll"]
+ENTRYPOINT ["dotnet", "StaticWorkerExample.dll"]

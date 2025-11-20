@@ -24,6 +24,8 @@ using ArmoniK.Extension.CSharp.Common.Exceptions;
 
 using Grpc.Core;
 
+using Microsoft.Extensions.Logging;
+
 namespace ArmoniK.Extension.CSharp.Worker;
 
 /// <summary>
@@ -38,10 +40,10 @@ public class ComputerService : WorkerStreamWrapper
   /// <param name="loggerFactory">The factory to create logger instances.</param>
   /// <param name="computePlaneOptions">The compute plane options for the service.</param>
   /// <param name="provider">The provider for gRPC channels.</param>
-  public ComputerService(ServiceRequestContext serviceRequestContext,
-                         ILoggerFactory        loggerFactory,
-                         ComputePlane          computePlaneOptions,
-                         GrpcChannelProvider   provider)
+  public ComputerService(IServiceRequestContext serviceRequestContext,
+                         ILoggerFactory         loggerFactory,
+                         ComputePlane           computePlaneOptions,
+                         GrpcChannelProvider    provider)
     : base(loggerFactory,
            computePlaneOptions,
            provider)
@@ -53,7 +55,7 @@ public class ComputerService : WorkerStreamWrapper
   /// <summary>
   ///   Gets or sets the service request context.
   /// </summary>
-  public ServiceRequestContext ServiceRequestContext { get; set; }
+  public IServiceRequestContext ServiceRequestContext { get; set; }
 
   /// <summary>
   ///   Gets or sets the logger for the ComputerService.
@@ -130,7 +132,7 @@ public class ComputerService : WorkerStreamWrapper
   public override async Task<HealthCheckReply> HealthCheck(Empty             request,
                                                            ServerCallContext context)
   {
-    var isHealthy = await ServiceRequestContext.LibraryWorker.CheckHealth(context.CancellationToken)
+    var isHealthy = await ServiceRequestContext.CheckHealthAsync(context.CancellationToken)
                                                .ConfigureAwait(false);
 
     return new HealthCheckReply

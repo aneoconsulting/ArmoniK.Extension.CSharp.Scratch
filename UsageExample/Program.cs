@@ -41,7 +41,8 @@ internal class Program
   private static IConfiguration   _configuration;
   private static ILogger<Program> _logger;
 
-  internal static async Task RunAsync(string filePath)
+  internal static async Task RunAsync(string filePath,
+                                      string name)
   {
     Log.Logger = new LoggerConfiguration().MinimumLevel.Override("Microsoft",
                                                                  LogEventLevel.Information)
@@ -77,8 +78,8 @@ internal class Program
 
     var dynamicLib = new DynamicLibrary
                      {
-                       Symbol      = "LibraryExample.Worker",
-                       LibraryPath = "publish/LibraryExample.dll",
+                       Symbol      = "DynamicWorkerExample.HelloWorker",
+                       LibraryPath = "DynamicWorkerExample/1.0.0.0/DynamicWorkerExample.dll",
                      };
 
     var sessionInfo = await client.SessionService.CreateSessionAsync(["dllworker"],
@@ -106,6 +107,9 @@ internal class Program
                            dllBlob.BlobId);
 
     var task = new TaskDefinition().WithLibrary(dynamicLib)
+                                   .WithInput("name",
+                                              BlobDefinition.FromString("name",
+                                                                        name))
                                    .WithOutput("Result",
                                                BlobDefinition.CreateOutput("Result"))
                                    .WithTaskOptions(defaultTaskOptions);
@@ -128,33 +132,33 @@ internal class Program
     var download = await blobService.DownloadBlobAsync(resultBlobInfo,
                                                        CancellationToken.None)
                                     .ConfigureAwait(false);
-    var stringArray = Encoding.ASCII.GetString(download)
-                              .Split(['\n'],
-                                     StringSplitOptions.RemoveEmptyEntries);
+    var hello = Encoding.UTF8.GetString(download);
 
-    foreach (var returnString in stringArray)
-    {
-      _logger.LogInformation("Downloaded: {@ResultContent}",
-                             returnString);
-    }
+    _logger.LogInformation("Downloaded: {Hello}",
+                           hello);
   }
 
   public static async Task<int> Main(string[] args)
   {
     // Define the options for the application with their description and default value
+    var name = new Option<string>("--name",
+                                  "your name.");
+
     var filePath = new Option<string>("--filepath",
                                       description: "FilePath to the zip file.",
-                                      getDefaultValue: () => "library.zip");
+                                      getDefaultValue: () => @"..\DynamicWorkerExample\packages\DynamicWorkerExample-v1.0.0.0.zip");
 
     // Describe the application and its purpose
     var rootCommand = new RootCommand("Hello World demo for ArmoniK Extension.\n");
 
     // Add the options to the parser
     rootCommand.AddOption(filePath);
+    rootCommand.AddOption(name);
 
     // Configure the handler to call the function that will do the work
     rootCommand.SetHandler(RunAsync,
-                           filePath);
+                           filePath,
+                           name);
 
     // Parse the command line parameters and call the function that represents the application
     return await rootCommand.InvokeAsync(args)

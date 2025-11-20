@@ -14,23 +14,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text;
-
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 
-using Microsoft.Extensions.Logging;
-
-namespace LibraryExample;
+namespace StaticWorkerExample;
 
 /// <summary>
 ///   Example implementation of IWorker <see cref="IWorker" /> for demonstration purposes.
-///   This worker processes tasks by sending results back with a "World_" prefix.
 /// </summary>
-public class Worker : IWorker
+internal class HelloWorker : IWorker
 {
   /// <summary>
-  ///   Executes a task asynchronously by processing the first expected result and sending it back with a "World_" prefix.
+  ///   Executes a task asynchronously that return "Hello " before the name received as input.
   /// </summary>
   /// <param name="taskHandler">The task handler containing task details and expected results.</param>
   /// <param name="logger">The logger instance for recording execution information.</param>
@@ -41,15 +36,13 @@ public class Worker : IWorker
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
-    var result = taskHandler.Outputs.Single()
-                            .Value;
+    var name = taskHandler.Inputs["name"]
+                          .GetStringData();
 
-    logger.LogWarning("Sending the following resultId: {resultId}",
-                      result.BlobId);
-
-    await result.SendResultAsync(Encoding.ASCII.GetBytes($"World_ {result.BlobId}"),
-                                 cancellationToken)
-                .ConfigureAwait(false);
+    await taskHandler.Outputs["helloResult"]
+                     .SendStringResultAsync($"Hello {name}!",
+                                            cancellationToken: cancellationToken)
+                     .ConfigureAwait(false);
     return TaskResult.Success;
   }
 
