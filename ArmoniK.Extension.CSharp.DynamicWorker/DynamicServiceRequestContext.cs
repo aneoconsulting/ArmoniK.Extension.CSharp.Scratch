@@ -16,18 +16,18 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
-using ArmoniK.Extension.CSharp.DynamicWorker;
+using ArmoniK.Extension.CSharp.Worker;
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
 
-namespace ArmoniK.Extension.CSharp.Worker;
+namespace ArmoniK.Extension.CSharp.DynamicWorker;
 
 /// <summary>
 ///   Represents the context for handling service requests with dynamic loading capability.
 /// </summary>
 public class DynamicServiceRequestContext : IServiceRequestContext
 {
-  private readonly ILibraryLoader                        libraryLoader_;
-  private readonly ILibraryWorker                        libraryWorker_;
+  private readonly LibraryLoader                         libraryLoader_;
+  private readonly LibraryWorker                         libraryWorker_;
   private readonly ILogger<DynamicServiceRequestContext> logger_;
 
 

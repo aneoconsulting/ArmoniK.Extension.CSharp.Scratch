@@ -29,17 +29,17 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// <summary>
 ///   Represents a worker that handles the execution of tasks within a specific library context.
 /// </summary>
-internal class LibraryWorker : ILibraryWorker
+internal class LibraryWorker
 {
   /// <summary>
   ///   Reference to the last loaded service for health checking.
   /// </summary>
-  private IWorker? lastLoadedService_;
+  private IWorker? currentService_;
 
   /// <summary>
   ///   Key of the last loaded service for logging purposes.
   /// </summary>
-  private string? lastServiceKey_;
+  private string lastServiceKey_ = string.Empty;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="LibraryWorker" /> class.
@@ -79,7 +79,7 @@ internal class LibraryWorker : ILibraryWorker
   /// <returns>A task representing the asynchronous operation, containing the output of the executed task.</returns>
   /// <exception cref="ArmoniKSdkException">When there is a compliance error with the ArmoniK SDK conventions.</exception>
   public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
-                                         ILibraryLoader    libraryLoader,
+                                         LibraryLoader     libraryLoader,
                                          string            libraryContext,
                                          CancellationToken cancellationToken)
   {
@@ -103,13 +103,15 @@ internal class LibraryWorker : ILibraryWorker
       lastServiceKey_ = $"{libraryContext}:{dynamicLibrary.Symbol}";
       Logger.LogDebug("Loading service class: {ServiceKey}",
                       lastServiceKey_);
-      lastLoadedService_ = libraryLoader.GetClassInstance<IWorker>(dynamicLibrary);
+      currentService_ = libraryLoader.GetClassInstance<IWorker>(dynamicLibrary);
 
-      return await SdkTaskRunner.Run(taskHandler,
-                                     lastLoadedService_,
-                                     Logger,
-                                     cancellationToken)
-                                .ConfigureAwait(false);
+      var output = await SdkTaskRunner.Run(taskHandler,
+                                           currentService_,
+                                           Logger,
+                                           cancellationToken)
+                                      .ConfigureAwait(false);
+      currentService_ = null;
+      return output;
     }
     catch (Exception ex)
     {
@@ -145,7 +147,7 @@ internal class LibraryWorker : ILibraryWorker
       testLogger.LogInformation("Health check validation at {Time}",
                                 DateTime.UtcNow);
 
-      if (lastLoadedService_ == null)
+      if (currentService_ == null)
       {
         Logger.LogDebug("No service has been loaded yet");
         return HealthCheckResult.Healthy("Library worker infrastructure is operational (no service loaded yet)");
@@ -157,8 +159,8 @@ internal class LibraryWorker : ILibraryWorker
                         lastServiceKey_);
 
         // Async call to check health of the last loaded service
-        var serviceHealthResult = await lastLoadedService_.CheckHealth(cancellationToken)
-                                                          .ConfigureAwait(false);
+        var serviceHealthResult = await currentService_.CheckHealth(cancellationToken)
+                                                       .ConfigureAwait(false);
 
 
         if (!serviceHealthResult.IsHealthy)
