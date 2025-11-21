@@ -110,7 +110,7 @@ internal class Program
                                    .WithInput("name",
                                               BlobDefinition.FromString("name",
                                                                         name))
-                                   .WithOutput("Result",
+                                   .WithOutput("helloResult",
                                                BlobDefinition.CreateOutput("Result"))
                                    .WithTaskOptions(defaultTaskOptions);
 
@@ -142,11 +142,12 @@ internal class Program
   {
     // Define the options for the application with their description and default value
     var name = new Option<string>("--name",
-                                  "your name.");
+                                  description: "your name.",
+                                  getDefaultValue: () => "unknown user");
 
     var filePath = new Option<string>("--filepath",
                                       description: "FilePath to the zip file.",
-                                      getDefaultValue: () => @"..\DynamicWorkerExample\packages\DynamicWorkerExample-v1.0.0.0.zip");
+                                      getDefaultValue: () => @"..\..\..\..\DynamicWorkerExample\packages\DynamicWorkerExample-v1.0.0.0.zip");
 
     // Describe the application and its purpose
     var rootCommand = new RootCommand("Hello World demo for ArmoniK Extension.\n");

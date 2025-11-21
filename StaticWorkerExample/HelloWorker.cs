@@ -40,7 +40,7 @@ internal class HelloWorker : IWorker
                           .GetStringData();
 
     await taskHandler.Outputs["helloResult"]
-                     .SendStringResultAsync($"Hello {name}!",
+                     .SendStringResultAsync($"Hello {name} from static worker!",
                                             cancellationToken: cancellationToken)
                      .ConfigureAwait(false);
     return TaskResult.Success;
