@@ -19,7 +19,7 @@ using System.Runtime.Loader;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Common.Library;
 
-namespace ArmoniK.Extension.CSharp.Worker;
+namespace ArmoniK.Extension.CSharp.DynamicWorker;
 
 /// <summary>
 ///   Provides functionality to load and manage dynamic libraries for the ArmoniK project.

@@ -16,6 +16,7 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
+using ArmoniK.Extension.CSharp.DynamicWorker;
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
 
 namespace ArmoniK.Extension.CSharp.Worker;

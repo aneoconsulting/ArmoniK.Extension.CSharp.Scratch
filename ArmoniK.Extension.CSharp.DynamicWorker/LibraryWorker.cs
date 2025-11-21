@@ -20,10 +20,11 @@ using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Common.Exceptions;
+using ArmoniK.Extension.CSharp.Worker;
 using ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
 
-namespace ArmoniK.Extension.CSharp.Worker;
+namespace ArmoniK.Extension.CSharp.DynamicWorker;
 
 /// <summary>
 ///   Represents a worker that handles the execution of tasks within a specific library context.
