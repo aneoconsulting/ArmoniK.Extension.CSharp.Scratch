@@ -30,11 +30,12 @@ namespace ArmoniK.Extension.CSharp.Worker;
 public class StaticServiceRequestContext<TW> : IServiceRequestContext
   where TW : class, IWorker, new()
 {
+  private readonly object                                   locker_ = new();
   private readonly ILogger<StaticServiceRequestContext<TW>> logger_;
   private          TW?                                      worker_;
 
   /// <summary>
-  ///   Initializes a new instance of the <see cref="StaticServiceRequestContext" /> class.
+  ///   Initializes a new instance of the <see cref="StaticServiceRequestContext{TW}" /> class.
   /// </summary>
   /// <param name="configuration">The configuration settings.</param>
   /// <param name="loggerFactory">The logger factory to create logger instances.</param>
@@ -49,13 +50,14 @@ public class StaticServiceRequestContext<TW> : IServiceRequestContext
   /// <returns>A task representing the asynchronous operation, containing the heath status of the worker.</returns>
   public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken)
   {
-    if (worker_ == null)
+    var worker = GetWorker();
+    if (worker == null)
     {
-      return HealthCheckResult.Healthy();
+      return HealthCheckResult.Healthy("Library static worker infrastructure is operational (no service loaded yet)");
     }
 
-    return await worker_.CheckHealth(cancellationToken)
-                        .ConfigureAwait(false);
+    return await worker.CheckHealth(cancellationToken)
+                       .ConfigureAwait(false);
   }
 
   /// <summary>
@@ -69,9 +71,10 @@ public class StaticServiceRequestContext<TW> : IServiceRequestContext
   {
     try
     {
-      worker_ = new TW();
+      SetWorker(new TW());
+
       var output = await SdkTaskRunner.Run(taskHandler,
-                                           worker_,
+                                           worker_!,
                                            logger_,
                                            cancellationToken)
                                       .ConfigureAwait(false);
@@ -79,7 +82,23 @@ public class StaticServiceRequestContext<TW> : IServiceRequestContext
     }
     finally
     {
-      worker_ = null;
+      SetWorker(null);
+    }
+  }
+
+  private void SetWorker(TW? worker)
+  {
+    lock (locker_)
+    {
+      worker_ = worker;
+    }
+  }
+
+  private TW? GetWorker()
+  {
+    lock (locker_)
+    {
+      return worker_;
     }
   }
 }
