@@ -150,45 +150,36 @@ internal class LibraryWorker
       if (currentService_ == null)
       {
         Logger.LogDebug("No service has been loaded yet");
-        return HealthCheckResult.Healthy("Library worker infrastructure is operational (no service loaded yet)");
+        return HealthCheckResult.Healthy("Library dynamic worker infrastructure is operational (no service loaded yet)");
       }
 
-      try
+      Logger.LogDebug("Checking health of last loaded service: {ServiceKey}",
+                      lastServiceKey_);
+
+      // Async call to check health of the last loaded service
+      var serviceHealthResult = await currentService_.CheckHealth(cancellationToken)
+                                                     .ConfigureAwait(false);
+
+
+      if (!serviceHealthResult.IsHealthy)
       {
-        Logger.LogDebug("Checking health of last loaded service: {ServiceKey}",
-                        lastServiceKey_);
-
-        // Async call to check health of the last loaded service
-        var serviceHealthResult = await currentService_.CheckHealth(cancellationToken)
-                                                       .ConfigureAwait(false);
-
-
-        if (!serviceHealthResult.IsHealthy)
-        {
-          var errorMessage = $"Service {lastServiceKey_}: {serviceHealthResult.Description}";
-          Logger.LogWarning("Last loaded service is unhealthy: {ErrorMessage}",
-                            errorMessage);
-          return HealthCheckResult.Unhealthy(errorMessage);
-        }
-
-        Logger.LogDebug("Last loaded service {ServiceKey} is healthy",
-                        lastServiceKey_);
-        return HealthCheckResult.Healthy($"Library worker and service {lastServiceKey_} are operational");
-      }
-      catch (Exception ex)
-      {
-        var errorMessage = $"Failed to check health of service {lastServiceKey_}: {ex.Message}";
-        Logger.LogError(ex,
-                        "Health check failed for service {ServiceKey}",
-                        lastServiceKey_);
+        var errorMessage = $"Service {lastServiceKey_}: {serviceHealthResult.Description}";
+        Logger.LogWarning("Last loaded service is unhealthy: {ErrorMessage}",
+                          errorMessage);
         return HealthCheckResult.Unhealthy(errorMessage);
       }
+
+      Logger.LogDebug("Last loaded service {ServiceKey} is healthy",
+                      lastServiceKey_);
+      return HealthCheckResult.Healthy($"Library worker and service {lastServiceKey_} are operational");
     }
     catch (Exception ex)
     {
+      var errorMessage = $"Library worker health check failed {lastServiceKey_}: {ex.Message}";
       Logger?.LogError(ex,
-                       "Library worker health check failed");
-      return HealthCheckResult.Unhealthy("Library worker health check failed",
+                       "Library worker health check failed for service {Service}",
+                       lastServiceKey_);
+      return HealthCheckResult.Unhealthy(errorMessage,
                                          ex);
     }
   }
