@@ -24,12 +24,12 @@ using ArmoniK.Extension.CSharp.Common.Exceptions;
 using ArmoniK.Extension.CSharp.Common.Library;
 using ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 
-namespace ArmoniK.Extension.CSharp.Worker;
+namespace ArmoniK.Extension.CSharp.DynamicWorker;
 
 /// <summary>
 ///   Provides functionality to load and manage dynamic libraries for the ArmoniK project.
 /// </summary>
-internal class LibraryLoader : ILibraryLoader
+internal class LibraryLoader
 {
   private readonly ILogger                                                                            logger_;
   private          ConcurrentDictionary<string, (Assembly assembly, AssemblyLoadContext loadContext)> assemblyLoadContexts_ = new();

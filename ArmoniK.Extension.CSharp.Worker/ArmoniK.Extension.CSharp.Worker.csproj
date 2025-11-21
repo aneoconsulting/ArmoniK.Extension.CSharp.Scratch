@@ -18,8 +18,4 @@
     <ProjectReference Include="..\ArmoniK.Extension.CSharp.Worker.Interfaces\ArmoniK.Extension.CSharp.Worker.Interfaces.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Common\Domain\Blob\" />
-  </ItemGroup>
-
 </Project>
