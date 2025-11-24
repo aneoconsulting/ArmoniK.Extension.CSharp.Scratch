@@ -18,6 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,8 +35,6 @@ using ArmoniK.Utils;
 using Grpc.Core;
 
 using Microsoft.Extensions.Logging;
-
-using Newtonsoft.Json;
 
 using ITasksService = ArmoniK.Extension.CSharp.Client.Common.Services.ITasksService;
 using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
@@ -73,7 +73,7 @@ public class TasksService : ITasksService
 
   /// <inheritdoc />
   public async Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
-                                                             IEnumerable<TaskDefinition> taskDefinitions,
+                                                             ICollection<TaskDefinition> taskDefinitions,
                                                              CancellationToken           cancellationToken = default)
   {
     // Validate each task node
@@ -98,7 +98,8 @@ public class TasksService : ITasksService
                                                                                       i.Value.BlobHandle!.BlobInfo.BlobId))
                        .ToList();
       var outputs = task.Outputs.Select(o => new KeyValuePair<string, string>(o.Key,
-                                                                              o.Value.BlobHandle!.BlobInfo.BlobId));
+                                                                              o.Value.BlobHandle!.BlobInfo.BlobId))
+                        .ToList();
 
       var payload = new Payload(inputs.ToDictionary(b => b.Key,
                                                     b => b.Value),
@@ -124,9 +125,11 @@ public class TasksService : ITasksService
     using var taskEnumerator = taskDefinitions.GetEnumerator();
     var       index          = 0;
     var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
-    var payloadsDefinition = payloads.Select(p => BlobDefinition.FromString("payload",
-                                                                            JsonConvert.SerializeObject(p)))
-                                     .ToList();
+
+    var payloadsJson = payloads.Select(p => JsonSerializer.Serialize(p));
+    var payloadsDefinition = payloadsJson.Select(p => BlobDefinition.FromString("payload",
+                                                                                p))
+                                         .ToList();
     await blobService_.CreateBlobsAsync(session,
                                         payloadsDefinition,
                                         cancellationToken)
@@ -171,8 +174,7 @@ public class TasksService : ITasksService
                                                                     cancellationToken: cancellationToken)
                                                   .ConfigureAwait(false);
 
-    return taskSubmissionResponse.TaskInfos.Select(x => new TaskInfos(x,
-                                                                      session.SessionId))
+    return taskSubmissionResponse.TaskInfos.Select(x => x.ToTaskInfos(session.SessionId))
                                  .AsICollection();
   }
 
@@ -285,10 +287,10 @@ public class TasksService : ITasksService
       Outputs = outputs;
     }
 
-    [JsonProperty("inputs")]
+    [JsonPropertyName("inputs")]
     public IReadOnlyDictionary<string, string> Inputs { get; }
 
-    [JsonProperty("outputs")]
+    [JsonPropertyName("outputs")]
     public IReadOnlyDictionary<string, string> Outputs { get; }
   }
 }

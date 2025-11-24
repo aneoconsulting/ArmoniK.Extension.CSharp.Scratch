@@ -30,7 +30,7 @@ public interface IWorker
   /// <param name="logger">The logger instance for recording execution information.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the execution output.</returns>
-  Task<TaskResult> ExecuteAsync(SdkTaskHandler    taskHandler,
+  Task<TaskResult> ExecuteAsync(ISdkTaskHandler   taskHandler,
                                 ILogger           logger,
                                 CancellationToken cancellationToken);
 

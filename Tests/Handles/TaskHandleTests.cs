@@ -49,8 +49,7 @@ public class TaskHandleTests
                          },
                        };
 
-    mockTaskInfos_ = new TaskInfos(grpcTaskInfo,
-                                   "testSessionId");
+    mockTaskInfos_ = grpcTaskInfo.ToTaskInfos("testSessionId");
   }
 
   private MockedArmoniKClient? mockedArmoniKClient_;
