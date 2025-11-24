@@ -73,7 +73,7 @@ public class TasksService : ITasksService
 
   /// <inheritdoc />
   public async Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
-                                                             IEnumerable<TaskDefinition> taskDefinitions,
+                                                             ICollection<TaskDefinition> taskDefinitions,
                                                              CancellationToken           cancellationToken = default)
   {
     // Validate each task node
@@ -98,7 +98,8 @@ public class TasksService : ITasksService
                                                                                       i.Value.BlobHandle!.BlobInfo.BlobId))
                        .ToList();
       var outputs = task.Outputs.Select(o => new KeyValuePair<string, string>(o.Key,
-                                                                              o.Value.BlobHandle!.BlobInfo.BlobId));
+                                                                              o.Value.BlobHandle!.BlobInfo.BlobId))
+                        .ToList();
 
       var payload = new Payload(inputs.ToDictionary(b => b.Key,
                                                     b => b.Value),

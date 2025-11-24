@@ -112,7 +112,7 @@ public interface ISdkTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns>A task representing the asynchronous operation. The task result contains the collection of TaskInfos</returns>
-  Task<ICollection<TaskInfos>> SubmitTasksAsync(IEnumerable<TaskDefinition> taskDefinitions,
+  Task<ICollection<TaskInfos>> SubmitTasksAsync(ICollection<TaskDefinition> taskDefinitions,
                                                 TaskConfiguration           submissionTaskOptions,
                                                 CancellationToken           cancellationToken = default);
 }
