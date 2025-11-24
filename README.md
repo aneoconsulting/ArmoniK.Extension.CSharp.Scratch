@@ -76,12 +76,21 @@ Users will exchange with ArmoniK by ArmoniKClient, which manages all services an
 - **EventsService:** `Task<IEventsService> GetEventsService(Session session)`
   - Retrieves the service responsible for managing events, including subscribing to, publishing, and handling events within the ArmoniK ecosystem.
 
-## Usage
+## Projects
 
-A project with a simple use case is available.
+The present repository contains the following projects:
+- **ArmoniK.Extension.CSharp.Client:** A library that expose the APIs that can be used by an ArmoniK client.
+- **ArmoniK.Extension.CSharp.Worker:** A library that contain the common logic for dynamic and static workers.
+- **ArmoniK.Extension.CSharp.Common:** A library that contains common classes between `ArmoniK.Extension.CSharp.Client` and `ArmoniK.Extension.CSharp.Worker` libraries.
+- **ArmoniK.Extension.CSharp.Worker.Interfaces:** A library that contains the interface `IWorker` that must be implemented by any worker. A worker that uses the dynamic loading feature only need that project as a dependency.
+- **ArmoniK.Extension.CSharp.DynamicWorker:** A web application that contains the logic for the dynamic loading feature. This is the project that must be deployed as a container in an ArmoniK partition.
+- **StaticWorkerExample:** A web application example that contains an implementation of `IWorker`.That project must be deployed as a container in an ArmoniK partition.
+- **DynamicWorkerExample:** A library that only contains an implementation example of `IWorker`.
+- **UsageExample:** A console application that contains an example of ArmoniK client. Require an ArmoniK dynamic or static worker to be deployed.
+- **Tests:** A unit tests project.
+- **End2EndTests/ArmoniK.EndToEndTests.Client:** A test project that contains a set of clients part of end to end tests.
+- **End2EndTests/ArmoniK.EndToEndTests.Worker:** A library that contains the workers part of the corresponding clients. These workers rely on the dynamic loading feature.
 
 ## Next Step
 
-- End-to-end tests
-- Delagate functions as parameters
-- Send Tasks in chunk
+- Filtering with LINQ requests on tasks and partitions (feature only available for blobs as of now).
