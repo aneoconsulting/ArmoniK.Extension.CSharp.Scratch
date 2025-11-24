@@ -215,7 +215,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains a collection of task handles.</returns>
   /// <exception cref="ArgumentException">When the tasks parameter provided is null</exception>
-  public async Task<ICollection<TaskHandle>> SubmitAsync(IEnumerable<TaskDefinition> tasks,
+  public async Task<ICollection<TaskHandle>> SubmitAsync(ICollection<TaskDefinition> tasks,
                                                          CancellationToken           cancellationToken = default)
   {
     _ = tasks ?? throw new ArgumentException("Tasks parameter should not be null");

@@ -22,6 +22,7 @@ using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.DllCommon.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.DllCommon.Handles;
+using ArmoniK.Utils;
 
 using Google.Protobuf;
 
@@ -132,6 +133,40 @@ public class SdkTaskHandler : ISdkTaskHandler
                    .ToList();
   }
 
+  /// <summary>Send the results computed by the task</summary>
+  /// <param name="blob">The blob handle.</param>
+  /// <param name="data">The data corresponding to the result</param>
+  /// <param name="cancellationToken">
+  ///   Token used to cancel the execution of the method.
+  ///   If null, the cancellation token of the task handler is used
+  /// </param>
+  /// <returns>A task representing the asynchronous operation.</returns>
+  public async Task SendResultAsync(BlobHandle         blob,
+                                    byte[]             data,
+                                    CancellationToken? cancellationToken = null)
+    => await taskHandler_.SendResult(blob.BlobId,
+                                     data,
+                                     cancellationToken)
+                         .ConfigureAwait(false);
+
+  /// <summary>Send the results computed by the task</summary>
+  /// <param name="blob">The blob handle.</param>
+  /// <param name="data">The string result</param>
+  /// <param name="encoding">Encoding used for the string, when null UTF-8 is used</param>
+  /// <param name="cancellationToken">
+  ///   Token used to cancel the execution of the method.
+  ///   If null, the cancellation token of the task handler is used
+  /// </param>
+  /// <returns>A task representing the asynchronous operation.</returns>
+  public async Task SendStringResultAsync(BlobHandle         blob,
+                                          string             data,
+                                          Encoding?          encoding          = null,
+                                          CancellationToken? cancellationToken = null)
+    => await taskHandler_.SendResult(blob.BlobId,
+                                     (encoding ?? Encoding.UTF8).GetBytes(data),
+                                     cancellationToken)
+                         .ConfigureAwait(false);
+
   /// <summary>Submit tasks with existing payloads (results)</summary>
   /// <param name="taskDefinitions">The requests to create tasks</param>
   /// <param name="submissionTaskOptions">optional tasks for the whole submission</param>
@@ -140,7 +175,7 @@ public class SdkTaskHandler : ISdkTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns>A task representing the asynchronous operation. The task result contains the collection of TaskInfos</returns>
-  public async Task<ICollection<TaskInfos>> SubmitTasksAsync(IEnumerable<TaskDefinition> taskDefinitions,
+  public async Task<ICollection<TaskInfos>> SubmitTasksAsync(ICollection<TaskDefinition> taskDefinitions,
                                                              TaskConfiguration           submissionTaskOptions,
                                                              CancellationToken           cancellationToken = default)
   {
@@ -197,42 +232,8 @@ public class SdkTaskHandler : ISdkTaskHandler
                                      .ConfigureAwait(false);
 
     return response.TaskInfos.Select(t => t.ToTaskInfos(taskHandler_.SessionId))
-                   .ToList();
+                   .AsICollection();
   }
-
-  /// <summary>Send the results computed by the task</summary>
-  /// <param name="blob">The blob handle.</param>
-  /// <param name="data">The data corresponding to the result</param>
-  /// <param name="cancellationToken">
-  ///   Token used to cancel the execution of the method.
-  ///   If null, the cancellation token of the task handler is used
-  /// </param>
-  /// <returns>A task representing the asynchronous operation.</returns>
-  public async Task SendResultAsync(BlobHandle         blob,
-                                    byte[]             data,
-                                    CancellationToken? cancellationToken = null)
-    => await taskHandler_.SendResult(blob.BlobId,
-                                     data,
-                                     cancellationToken)
-                         .ConfigureAwait(false);
-
-  /// <summary>Send the results computed by the task</summary>
-  /// <param name="blob">The blob handle.</param>
-  /// <param name="data">The string result</param>
-  /// <param name="encoding">Encoding used for the string, when null UTF-8 is used</param>
-  /// <param name="cancellationToken">
-  ///   Token used to cancel the execution of the method.
-  ///   If null, the cancellation token of the task handler is used
-  /// </param>
-  /// <returns>A task representing the asynchronous operation.</returns>
-  public async Task SendStringResultAsync(BlobHandle         blob,
-                                          string             data,
-                                          Encoding?          encoding          = null,
-                                          CancellationToken? cancellationToken = null)
-    => await taskHandler_.SendResult(blob.BlobId,
-                                     (encoding ?? Encoding.UTF8).GetBytes(data),
-                                     cancellationToken)
-                         .ConfigureAwait(false);
 
   private async Task CreateBlobsAsync(IEnumerable<BlobDefinition> blobs,
                                       CancellationToken           cancellationToken = default)
