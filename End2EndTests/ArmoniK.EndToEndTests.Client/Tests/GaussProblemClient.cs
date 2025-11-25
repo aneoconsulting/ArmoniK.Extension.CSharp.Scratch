@@ -18,6 +18,7 @@ using System.Text;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Handles;
 
 namespace ArmoniK.EndToEndTests.Client.Tests;
 
@@ -40,18 +41,13 @@ public class GaussProblemClient : ClientBase
   [Test]
   public async Task GaussProblem()
   {
-    var    N         = 10;
-    byte[] rawResult = null;
+    var N        = 10;
+    var callback = new Callback();
     var task = new TaskDefinition().WithLibrary(WorkerLibrary)
                                    .WithTaskOptions(TaskConfiguration)
                                    .WithOutput("result",
                                                BlobDefinition.CreateOutput("resultBlob")
-                                                             .WithCallback(async (blobHandle,
-                                                                                  cancellationToken) =>
-                                                                           {
-                                                                             rawResult = await blobHandle.DownloadBlobDataAsync(cancellationToken)
-                                                                                                         .ConfigureAwait(false);
-                                                                           }));
+                                                             .WithCallback(callback));
     for (var i = 1; i <= N; i++)
     {
       task.WithInput("blob" + i,
@@ -65,10 +61,31 @@ public class GaussProblemClient : ClientBase
     await SessionHandle.WaitCallbacksAsync()
                        .ConfigureAwait(false);
 
-    var resultString = Encoding.UTF8.GetString(rawResult);
+    var resultString = Encoding.UTF8.GetString(callback.Result);
 
     var totalExpected = N * (N + 1) / 2; // 55 for N=10, 5050 for N=100
     Assert.That(resultString,
                 Is.EqualTo(totalExpected.ToString()));
+  }
+
+  private class Callback : ICallback
+  {
+    public byte[] Result { get; private set; } = [];
+
+    public ValueTask OnSuccess(BlobHandle        blob,
+                               byte[]            rawData,
+                               CancellationToken cancellationToken)
+    {
+      Result = rawData;
+      return ValueTask.CompletedTask;
+    }
+
+    public ValueTask OnError(BlobHandle        blob,
+                             Exception?        exception,
+                             CancellationToken cancellationToken)
+    {
+      Assert.Fail(exception?.Message ?? $"blob {blob.BlobInfo.BlobId} aborted");
+      return ValueTask.CompletedTask;
+    }
   }
 }

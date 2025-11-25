@@ -20,7 +20,6 @@ using System.Text;
 using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.Client.Services;
@@ -85,7 +84,7 @@ internal class Program
                                     .ConfigureAwait(false);
 
     _logger.LogInformation("sessionId: {SessionId}",
-                           ((SessionInfo)sessionHandle).SessionId);
+                           sessionHandle.SessionInfo.SessionId);
 
     var blobService = client.BlobService;
 

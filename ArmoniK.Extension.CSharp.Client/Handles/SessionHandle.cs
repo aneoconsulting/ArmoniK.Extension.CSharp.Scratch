@@ -37,11 +37,21 @@ namespace ArmoniK.Extension.CSharp.Client.Handles;
 /// </summary>
 public class SessionHandle : IAsyncDisposable, IDisposable
 {
-  private readonly ArmoniKClient   armoniKClient_;
-  private readonly bool            closeOnDispose_;
-  private readonly SessionInfo     sessionInfo_;
-  private          CallbackRunner? callbackRunner_;
-  private          bool            isDisposed_;
+  /// <summary>
+  ///   The ArmoniK client used for performing blob operations.
+  /// </summary>
+  public readonly ArmoniKClient ArmoniKClient;
+
+  private readonly bool   closeOnDispose_;
+  private readonly object locker_ = new();
+
+  /// <summary>
+  ///   The session containing session ID
+  /// </summary>
+  public readonly SessionInfo SessionInfo;
+
+  private CallbackRunner? callbackRunner_;
+  private bool            isDisposed_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="SessionHandle" /> class.
@@ -53,8 +63,8 @@ public class SessionHandle : IAsyncDisposable, IDisposable
                          ArmoniKClient armoniKClient,
                          bool          closeOnDispose = false)
   {
-    armoniKClient_  = armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient));
-    sessionInfo_    = session       ?? throw new ArgumentNullException(nameof(session));
+    ArmoniKClient   = armoniKClient ?? throw new ArgumentNullException(nameof(armoniKClient));
+    SessionInfo     = session       ?? throw new ArgumentNullException(nameof(session));
     closeOnDispose_ = closeOnDispose;
   }
 
@@ -63,17 +73,22 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   public async ValueTask DisposeAsync()
   {
-    if (!isDisposed_)
+    if (!TestAndSetDisposed())
     {
       await AbortCallbacksAsync()
         .ConfigureAwait(false);
       if (closeOnDispose_)
       {
-        await CloseSessionAsync(CancellationToken.None)
-          .ConfigureAwait(false);
+        try
+        {
+          await CloseSessionAsync(CancellationToken.None)
+            .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          // Whenever the session is already closed
+        }
       }
-
-      isDisposed_ = true;
     }
   }
 
@@ -84,6 +99,35 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     => DisposeAsync()
       .WaitSync();
 
+  private bool TestAndSetDisposed()
+  {
+    lock (locker_)
+    {
+      var ret = isDisposed_;
+      isDisposed_ = true;
+      return ret;
+    }
+  }
+
+  private CallbackRunner? TestAndSetCallbackRunner()
+  {
+    lock (locker_)
+    {
+      var ret = callbackRunner_;
+      callbackRunner_ = null;
+      return ret;
+    }
+  }
+
+  private CallbackRunner CreateCallbackRunnerIfNeeded(CancellationToken cancellationToken)
+  {
+    lock (locker_)
+    {
+      return callbackRunner_ ??= new CallbackRunner(ArmoniKClient,
+                                                    cancellationToken);
+    }
+  }
+
   /// <summary>
   ///   Implicit conversion operator from SessionHandle to SessionInfo.
   ///   Allows SessionHandle to be used wherever SessionInfo is expected.
@@ -92,70 +136,70 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// <returns>The SessionInfo contained within the SessionHandle.</returns>
   /// <exception cref="ArgumentNullException">Thrown when sessionHandle is null.</exception>
   public static implicit operator SessionInfo(SessionHandle sessionHandle)
-    => sessionHandle?.sessionInfo_ ?? throw new ArgumentNullException(nameof(sessionHandle));
+    => sessionHandle?.SessionInfo ?? throw new ArgumentNullException(nameof(sessionHandle));
 
   /// <summary>
   ///   Cancels the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task CancelSessionAsync(CancellationToken cancellationToken)
-    => await armoniKClient_.SessionService.CancelSessionAsync(sessionInfo_,
-                                                              cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.SessionService.CancelSessionAsync(SessionInfo,
+                                                             cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Closes the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task CloseSessionAsync(CancellationToken cancellationToken)
-    => await armoniKClient_.SessionService.CloseSessionAsync(sessionInfo_,
-                                                             cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.SessionService.CloseSessionAsync(SessionInfo,
+                                                            cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Pauses the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task PauseSessionAsync(CancellationToken cancellationToken)
-    => await armoniKClient_.SessionService.PauseSessionAsync(sessionInfo_,
-                                                             cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.SessionService.PauseSessionAsync(SessionInfo,
+                                                            cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Stops submissions to the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task StopSubmissionAsync(CancellationToken cancellationToken)
-    => await armoniKClient_.SessionService.StopSubmissionAsync(sessionInfo_,
-                                                               cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.SessionService.StopSubmissionAsync(SessionInfo,
+                                                              cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Resumes the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task ResumeSessionAsync(CancellationToken cancellationToken)
-    => await armoniKClient_.SessionService.ResumeSessionAsync(sessionInfo_,
-                                                              cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.SessionService.ResumeSessionAsync(SessionInfo,
+                                                             cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Purges the session asynchronously, removing all data associated with it.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task PurgeSessionAsync(CancellationToken cancellationToken)
-    => await armoniKClient_.SessionService.PurgeSessionAsync(sessionInfo_,
-                                                             cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.SessionService.PurgeSessionAsync(SessionInfo,
+                                                            cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Deletes the session asynchronously.
   /// </summary>
   /// <param name="cancellationToken">A token that allows processing to be cancelled.</param>
   public async Task DeleteSessionAsync(CancellationToken cancellationToken)
-    => await armoniKClient_.SessionService.DeleteSessionAsync(sessionInfo_,
-                                                              cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.SessionService.DeleteSessionAsync(SessionInfo,
+                                                             cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Asynchronously sends a dynamic library blob to a blob service
@@ -171,12 +215,12 @@ public class SessionHandle : IAsyncDisposable, IDisposable
                                               string            zipPath,
                                               bool              manualDeletion,
                                               CancellationToken cancellationToken)
-    => await armoniKClient_.BlobService.SendDllBlobAsync(sessionInfo_,
-                                                         dynamicLibrary,
-                                                         zipPath,
-                                                         manualDeletion,
-                                                         cancellationToken)
-                           .ConfigureAwait(false);
+    => await ArmoniKClient.BlobService.SendDllBlobAsync(SessionInfo,
+                                                        dynamicLibrary,
+                                                        zipPath,
+                                                        manualDeletion,
+                                                        cancellationToken)
+                          .ConfigureAwait(false);
 
   /// <summary>
   ///   Asynchronously waits for the blobs defined with a callback, and calls their respective callbacks.
@@ -184,13 +228,13 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// <returns>A task representing the asynchronous operation.</returns>
   public async Task WaitCallbacksAsync()
   {
-    if (callbackRunner_ != null)
+    var callbackRunner = TestAndSetCallbackRunner();
+    if (callbackRunner != null)
     {
-      await callbackRunner_.WaitAsync()
-                           .ConfigureAwait(false);
-      await callbackRunner_.DisposeAsync()
-                           .ConfigureAwait(false);
-      callbackRunner_ = null;
+      await callbackRunner.WaitAsync()
+                          .ConfigureAwait(false);
+      await callbackRunner.DisposeAsync()
+                          .ConfigureAwait(false);
     }
   }
 
@@ -200,11 +244,11 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// <returns>A task representing the asynchronous operation.</returns>
   public async Task AbortCallbacksAsync()
   {
-    if (callbackRunner_ != null)
+    var callbackRunner = TestAndSetCallbackRunner();
+    if (callbackRunner != null)
     {
-      await callbackRunner_.DisposeAsync()
-                           .ConfigureAwait(false);
-      callbackRunner_ = null;
+      await callbackRunner.DisposeAsync()
+                          .ConfigureAwait(false);
     }
   }
 
@@ -220,10 +264,10 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   {
     _ = tasks ?? throw new ArgumentException("Tasks parameter should not be null");
 
-    var taskInfos = await armoniKClient_.TasksService.SubmitTasksAsync(sessionInfo_,
-                                                                       tasks,
-                                                                       cancellationToken)
-                                        .ConfigureAwait(false);
+    var taskInfos = await ArmoniKClient.TasksService.SubmitTasksAsync(SessionInfo,
+                                                                      tasks,
+                                                                      cancellationToken)
+                                       .ConfigureAwait(false);
 
     var blobsWithCallbacks = tasks.SelectMany(t => t.Outputs.Values)
                                   .Where(b => b.CallBack != null)
@@ -231,23 +275,25 @@ public class SessionHandle : IAsyncDisposable, IDisposable
 
     if (blobsWithCallbacks.Any())
     {
-      callbackRunner_ ??= new CallbackRunner(armoniKClient_,
-                                             cancellationToken);
+      var callbackRunner = CreateCallbackRunnerIfNeeded(cancellationToken);
 
       foreach (var blob in blobsWithCallbacks)
       {
-        callbackRunner_.Add(blob);
+        callbackRunner.Add(blob);
       }
     }
 
-    return taskInfos.Select(t => new TaskHandle(armoniKClient_,
+    return taskInfos.Select(t => new TaskHandle(ArmoniKClient,
                                                 t))
                     .ToList();
   }
 
   private class CallbackRunner : IAsyncDisposable
   {
-    private readonly ConcurrentDictionary<string, Func<BlobHandle, CancellationToken, Task>> callbacks_ = new();
+    /// <summary>
+    ///   Dictionary taking a blob is as key, a callback as value.
+    /// </summary>
+    private readonly ConcurrentDictionary<string, ICallback> callbacks_ = new();
 
     private readonly ArmoniKClient client_;
 
@@ -264,13 +310,9 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     public CallbackRunner(ArmoniKClient     client,
                           CancellationToken cancellationToken)
     {
-      client_ = client;
-      cts_    = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-      workerTask_ = Task.Run(async () =>
-                             {
-                               await RunAsync()
-                                 .ConfigureAwait(false);
-                             });
+      client_     = client;
+      cts_        = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      workerTask_ = Task.Run(RunAsync);
     }
 
     /// <summary>
@@ -293,8 +335,14 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     public async Task WaitAsync()
     {
-      waitAllAndQuit_ = true;
-      await workerTask_.ConfigureAwait(false);
+      try
+      {
+        waitAllAndQuit_ = true;
+        await workerTask_.ConfigureAwait(false);
+      }
+      catch (OperationCanceledException e)
+      {
+      }
     }
 
     /// <summary>
@@ -312,6 +360,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     {
       while (!cts_.Token.IsCancellationRequested)
       {
+        // Loop on completed blobs
         await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
                                                                                        BlobStatus.Completed,
                                                                                        cts_.Token)
@@ -320,9 +369,50 @@ public class SessionHandle : IAsyncDisposable, IDisposable
           if (callbacks_.TryRemove(blobState.BlobId,
                                    out var func))
           {
-            await func.Invoke(new BlobHandle(blobState,
-                                             client_),
-                              cts_.Token)
+            var blobHandle = new BlobHandle(blobState,
+                                            client_);
+            try
+            {
+              var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
+                                           .ConfigureAwait(false);
+              await func.OnSuccess(blobHandle,
+                                   result,
+                                   cts_.Token)
+                        .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+              await func.OnError(blobHandle,
+                                 ex,
+                                 cts_.Token)
+                        .ConfigureAwait(false);
+            }
+          }
+          else
+          {
+            throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
+          }
+
+          if (cts_.Token.IsCancellationRequested)
+          {
+            return;
+          }
+        }
+
+        // Loop on aborted blobs
+        await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
+                                                                                       BlobStatus.Aborted,
+                                                                                       cts_.Token)
+                                               .ConfigureAwait(false))
+        {
+          if (callbacks_.TryRemove(blobState.BlobId,
+                                   out var func))
+          {
+            var blobHandle = new BlobHandle(blobState,
+                                            client_);
+            await func.OnError(blobHandle,
+                               null,
+                               cts_.Token)
                       .ConfigureAwait(false);
           }
           else

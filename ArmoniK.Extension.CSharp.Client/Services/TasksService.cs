@@ -127,8 +127,13 @@ public class TasksService : ITasksService
     var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
 
     var payloadsJson = payloads.Select(p => JsonSerializer.Serialize(p));
-    var payloadsDefinition = payloadsJson.Select(p => BlobDefinition.FromString("payload",
-                                                                                p))
+    var payloadIndex = 0;
+    var payloadsDefinition = payloadsJson.Select(p =>
+                                                 {
+                                                   payloadIndex++;
+                                                   return BlobDefinition.FromString("payload" + payloadIndex,
+                                                                                    p);
+                                                 })
                                          .ToList();
     await blobService_.CreateBlobsAsync(session,
                                         payloadsDefinition,
