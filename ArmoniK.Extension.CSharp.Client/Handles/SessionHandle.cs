@@ -42,13 +42,13 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   public readonly ArmoniKClient ArmoniKClient;
 
-  private readonly bool   closeOnDispose_;
-  private readonly object locker_ = new();
-
   /// <summary>
   ///   The session containing session ID
   /// </summary>
   public readonly SessionInfo SessionInfo;
+
+  private readonly bool   closeOnDispose_;
+  private readonly object locker_ = new();
 
   private CallbackRunner? callbackRunner_;
   private bool            isDisposed_;
