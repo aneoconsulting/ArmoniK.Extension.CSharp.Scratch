@@ -42,13 +42,13 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   public readonly ArmoniKClient ArmoniKClient;
 
+  private readonly bool   closeOnDispose_;
+  private readonly object locker_ = new();
+
   /// <summary>
   ///   The session containing session ID
   /// </summary>
   public readonly SessionInfo SessionInfo;
-
-  private readonly bool   closeOnDispose_;
-  private readonly object locker_ = new();
 
   private CallbackRunner? callbackRunner_;
   private bool            isDisposed_;
@@ -225,17 +225,23 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// <summary>
   ///   Asynchronously waits for the blobs defined with a callback, and calls their respective callbacks.
   /// </summary>
-  /// <returns>A task representing the asynchronous operation.</returns>
-  public async Task WaitCallbacksAsync()
+  /// <returns>
+  ///   A task representing the asynchronous operation. The task result is true when all callbacks were invoked, false
+  ///   otherwise.
+  /// </returns>
+  public async Task<bool> WaitCallbacksAsync()
   {
     var callbackRunner = TestAndSetCallbackRunner();
     if (callbackRunner != null)
     {
-      await callbackRunner.WaitAsync()
-                          .ConfigureAwait(false);
+      var result = await callbackRunner.WaitAsync()
+                                       .ConfigureAwait(false);
       await callbackRunner.DisposeAsync()
                           .ConfigureAwait(false);
+      return result;
     }
+
+    return true;
   }
 
   /// <summary>
@@ -303,9 +309,10 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     private readonly CancellationTokenSource cts_;
 
-    private readonly Task workerTask_;
-    private volatile bool abort_;
-    private volatile bool waitAllAndQuit_;
+    private readonly object locker_ = new();
+
+    private readonly Task                        workerTask_;
+    private          TaskCompletionSource<bool>? taskCompletionSource_;
 
     public CallbackRunner(ArmoniKClient     client,
                           CancellationToken cancellationToken)
@@ -320,29 +327,49 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-      abort_ = true;
       // Send an abort signal
       cts_.Cancel();
       // Wait for the worker task to complete
-      await WaitAsync()
-        .ConfigureAwait(false);
+      await workerTask_.ConfigureAwait(false);
       // Dispose disposable members
       cts_.Dispose();
+    }
+
+    private TaskCompletionSource<bool>? CreateTaskCompletionSource()
+    {
+      lock (locker_)
+      {
+        return taskCompletionSource_ ??= new TaskCompletionSource<bool>();
+      }
+    }
+
+    private void ResetTaskCompletionSource()
+    {
+      lock (locker_)
+      {
+        taskCompletionSource_ = null;
+      }
+    }
+
+    private TaskCompletionSource<bool>? GetTaskCompletionSource()
+    {
+      lock (locker_)
+      {
+        return taskCompletionSource_;
+      }
     }
 
     /// <summary>
     ///   Wait until all registered callbacks are executed.
     /// </summary>
-    public async Task WaitAsync()
+    /// <returns>
+    ///   A task representing the asynchronous operation. The task result is true when all callbacks were invoked, false
+    ///   otherwise.
+    /// </returns>
+    public async Task<bool> WaitAsync()
     {
-      try
-      {
-        waitAllAndQuit_ = true;
-        await workerTask_.ConfigureAwait(false);
-      }
-      catch (OperationCanceledException e)
-      {
-      }
+      var taskCompletionSource = CreateTaskCompletionSource();
+      return await taskCompletionSource!.Task.ConfigureAwait(false);
     }
 
     /// <summary>
@@ -358,83 +385,87 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     private async Task RunAsync()
     {
-      while (!cts_.Token.IsCancellationRequested)
+      TaskCompletionSource<bool>? taskCompletionSource = null;
+      try
       {
-        // Loop on completed blobs
-        await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
-                                                                                       BlobStatus.Completed,
-                                                                                       cts_.Token)
-                                               .ConfigureAwait(false))
+        while (!cts_.Token.IsCancellationRequested)
         {
-          if (callbacks_.TryRemove(blobState.BlobId,
-                                   out var func))
+          // Loop on completed blobs
+          await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
+                                                                                         BlobStatus.Completed,
+                                                                                         cts_.Token)
+                                                 .ConfigureAwait(false))
           {
-            var blobHandle = new BlobHandle(blobState,
-                                            client_);
-            try
+            if (callbacks_.TryRemove(blobState.BlobId,
+                                     out var func))
             {
-              var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
-                                           .ConfigureAwait(false);
-              await func.OnSuccess(blobHandle,
-                                   result,
+              var blobHandle = new BlobHandle(blobState,
+                                              client_);
+              try
+              {
+                var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
+                                             .ConfigureAwait(false);
+                await func.OnSuccess(blobHandle,
+                                     result,
+                                     cts_.Token)
+                          .ConfigureAwait(false);
+              }
+              catch (Exception ex)
+              {
+                await func.OnError(blobHandle,
+                                   ex,
                                    cts_.Token)
-                        .ConfigureAwait(false);
+                          .ConfigureAwait(false);
+              }
             }
-            catch (Exception ex)
+            else
             {
+              throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
+            }
+          }
+
+          // Loop on aborted blobs
+          await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
+                                                                                         BlobStatus.Aborted,
+                                                                                         cts_.Token)
+                                                 .ConfigureAwait(false))
+          {
+            if (callbacks_.TryRemove(blobState.BlobId,
+                                     out var func))
+            {
+              var blobHandle = new BlobHandle(blobState,
+                                              client_);
               await func.OnError(blobHandle,
-                                 ex,
+                                 null,
                                  cts_.Token)
                         .ConfigureAwait(false);
             }
-          }
-          else
-          {
-            throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
+            else
+            {
+              throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
+            }
           }
 
-          if (cts_.Token.IsCancellationRequested)
+          taskCompletionSource = GetTaskCompletionSource();
+          if (taskCompletionSource != null && callbacks_.IsEmpty)
           {
-            return;
+            taskCompletionSource.SetResult(true);
+            ResetTaskCompletionSource();
           }
+
+          // Wait for 5 second and then retry
+          await Task.Delay(5000,
+                           cts_.Token)
+                    .ConfigureAwait(false);
         }
 
-        // Loop on aborted blobs
-        await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
-                                                                                       BlobStatus.Aborted,
-                                                                                       cts_.Token)
-                                               .ConfigureAwait(false))
-        {
-          if (callbacks_.TryRemove(blobState.BlobId,
-                                   out var func))
-          {
-            var blobHandle = new BlobHandle(blobState,
-                                            client_);
-            await func.OnError(blobHandle,
-                               null,
-                               cts_.Token)
-                      .ConfigureAwait(false);
-          }
-          else
-          {
-            throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
-          }
-
-          if (cts_.Token.IsCancellationRequested)
-          {
-            return;
-          }
-        }
-
-        if (waitAllAndQuit_ && (callbacks_.IsEmpty || abort_))
-        {
-          return;
-        }
-
-        // Wait for 5 second and then retry
-        await Task.Delay(5000,
-                         cts_.Token)
-                  .ConfigureAwait(false);
+        taskCompletionSource = GetTaskCompletionSource();
+        taskCompletionSource?.SetResult(false);
+      }
+      catch (OperationCanceledException ex)
+      {
+        taskCompletionSource = GetTaskCompletionSource();
+        taskCompletionSource?.SetResult(false);
       }
     }
   }
