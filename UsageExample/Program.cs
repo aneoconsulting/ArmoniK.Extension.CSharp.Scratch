@@ -84,7 +84,7 @@ internal class Program
     var sessionHandle = await client.CreateSessionAsync(["dllworker"],
                                                         defaultTaskOptions,
                                                         false)
-                                  .ConfigureAwait(false);
+                                    .ConfigureAwait(false);
 
     _logger.LogInformation("sessionId: {SessionId}",
                            sessionHandle.SessionInfo.SessionId);

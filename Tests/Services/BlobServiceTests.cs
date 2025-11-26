@@ -724,8 +724,7 @@ public class BlobServiceTests
                              Status    = BlobStatus.Completed,
                              BlobName  = "myBlob",
                              OpaqueId  = opaqueId,
-
-                             CreateAt = now,
+                             CreateAt  = now,
                            }));
   }
 }
