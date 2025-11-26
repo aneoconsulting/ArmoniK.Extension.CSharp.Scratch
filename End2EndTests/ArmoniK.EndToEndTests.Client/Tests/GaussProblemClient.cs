@@ -43,8 +43,8 @@ public class GaussProblemClient : ClientBase
   {
     var N        = 10;
     var callback = new Callback();
-    var task = new TaskDefinition().WithLibrary(WorkerLibrary)
-                                   .WithTaskOptions(TaskConfiguration)
+    var task = new TaskDefinition().WithLibrary(WorkerLibrary!)
+                                   .WithTaskOptions(TaskConfiguration!)
                                    .WithOutput("result",
                                                BlobDefinition.CreateOutput("resultBlob")
                                                              .WithCallback(callback));
@@ -55,8 +55,8 @@ public class GaussProblemClient : ClientBase
                                                i.ToString()));
     }
 
-    await SessionHandle.SubmitAsync([task])
-                       .ConfigureAwait(false);
+    await SessionHandle!.SubmitAsync([task])
+                        .ConfigureAwait(false);
 
     await SessionHandle.WaitCallbacksAsync()
                        .ConfigureAwait(false);

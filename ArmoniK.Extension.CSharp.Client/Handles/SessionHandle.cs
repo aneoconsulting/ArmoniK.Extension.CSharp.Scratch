@@ -85,7 +85,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
           await CloseSessionAsync(CancellationToken.None)
             .ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch
         {
           // Whenever the session is already closed
         }
@@ -463,7 +463,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
         taskCompletionSource = GetTaskCompletionSource();
         taskCompletionSource?.SetResult(false);
       }
-      catch (OperationCanceledException ex)
+      catch (OperationCanceledException)
       {
         taskCompletionSource = GetTaskCompletionSource();
         taskCompletionSource?.SetResult(false);
