@@ -42,16 +42,16 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   public readonly ArmoniKClient ArmoniKClient;
 
+  private readonly bool   closeOnDispose_;
+  private readonly object locker_ = new();
+
   /// <summary>
   ///   The session containing session ID
   /// </summary>
   public readonly SessionInfo SessionInfo;
 
-  private readonly bool   closeOnDispose_;
-  private readonly object locker_ = new();
-
   private CallbackRunner? callbackRunner_;
-  private bool            isDisposed_;
+  private int             isDisposed_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="SessionHandle" /> class.
@@ -100,14 +100,8 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       .WaitSync();
 
   private bool TestAndSetDisposed()
-  {
-    lock (locker_)
-    {
-      var ret = isDisposed_;
-      isDisposed_ = true;
-      return ret;
-    }
-  }
+    => Interlocked.Exchange(ref isDisposed_,
+                            1) != 0;
 
   private CallbackRunner? TestAndSetCallbackRunner()
   {

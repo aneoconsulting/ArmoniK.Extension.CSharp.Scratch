@@ -42,10 +42,10 @@ public interface ICallback
   ///   Called when a blob is aborted or when an exception occured while retrieving its data.
   /// </summary>
   /// <param name="blob">The blob handle</param>
-  /// <param name="exception">The exception if any</param>
+  /// <param name="exception">The exception</param>
   /// <param name="cancellationToken">A cancellation token</param>
   /// <returns>A task representing the asynchronous operation.</returns>
   ValueTask OnError(BlobHandle        blob,
-                    Exception?        exception,
+                    Exception         exception,
                     CancellationToken cancellationToken);
 }
