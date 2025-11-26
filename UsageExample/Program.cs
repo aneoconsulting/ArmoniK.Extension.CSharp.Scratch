@@ -21,7 +21,6 @@ using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Services;
 using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
@@ -76,14 +75,13 @@ internal class Program
                        LibraryPath = "DynamicWorkerExample/1.0.0.0/DynamicWorkerExample.dll",
                      };
 
-    var sessionInfo = await client.SessionService.CreateSessionAsync(["dllworker"],
-                                                                     defaultTaskOptions)
+    var sessionHandle = await client.CreateSessionAsync(["dllworker"],
+                                                        defaultTaskOptions,
+                                                        false)
                                   .ConfigureAwait(false);
-    var sessionHandle = new SessionHandle(sessionInfo,
-                                          client);
 
     logger.LogInformation("sessionId: {SessionId}",
-                          sessionInfo.SessionId);
+                           sessionHandle.SessionInfo.SessionId);
 
     var blobService = client.BlobService;
 
@@ -91,7 +89,7 @@ internal class Program
 
     var eventsService = client.EventsService;
 
-    var dllBlob = await blobService.SendDllBlobAsync(sessionInfo,
+    var dllBlob = await blobService.SendDllBlobAsync(sessionHandle,
                                                      dynamicLib,
                                                      filePath,
                                                      false,

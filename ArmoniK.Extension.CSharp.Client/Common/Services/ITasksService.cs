@@ -42,7 +42,7 @@ public interface ITasksService
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation. The task result contains an enumerable of task information.</returns>
   Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
-                                                IEnumerable<TaskDefinition> taskDefinitions,
+                                                ICollection<TaskDefinition> taskDefinitions,
                                                 CancellationToken           cancellationToken = default);
 
   /// <summary>
