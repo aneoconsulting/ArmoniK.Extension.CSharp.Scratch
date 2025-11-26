@@ -68,11 +68,10 @@ public class ClientBase
     Client = new ArmoniKClient(properties,
                                loggerFactory);
 
-    var sessionInfo = await Client.SessionService.CreateSessionAsync([Partition],
-                                                                     TaskConfiguration)
-                                  .ConfigureAwait(false);
-    SessionHandle = new SessionHandle(sessionInfo,
-                                      Client);
+    SessionHandle = await Client.CreateSessionAsync([Partition],
+                                                    TaskConfiguration,
+                                                    true)
+                                .ConfigureAwait(false);
 
     var filePath = Path.Join(AppContext.BaseDirectory,
                              @"..\..\..\..\..\packages\ArmoniK.EndToEndTests.Worker-v1.0.0-100.zip");
@@ -86,7 +85,8 @@ public class ClientBase
 
   protected async Task TearDownBaseAsync()
   {
-    await Client.SessionService.CloseSessionAsync(SessionHandle);
+    await SessionHandle.DisposeAsync()
+                       .ConfigureAwait(false);
     await Client.SessionService.PurgeSessionAsync(SessionHandle);
     await Client.SessionService.DeleteSessionAsync(SessionHandle);
     Properties        = null;

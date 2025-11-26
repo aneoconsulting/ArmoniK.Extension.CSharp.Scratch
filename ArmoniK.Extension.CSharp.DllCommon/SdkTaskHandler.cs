@@ -264,39 +264,45 @@ public class SdkTaskHandler : ISdkTaskHandler
     if (blobsWithData.Any())
     {
       // Creation of blobs with data
-      var response = CreateBlobsWithContentAsync(blobsWithData,
-                                                 cancellationToken);
-      var index = 0;
-      await foreach (var blobId in response.ConfigureAwait(false))
+      foreach (var blobsWithoutDuplicateName in DeDuplicateWithName(blobsWithData))
       {
-        blobsWithData[index].BlobHandle = new BlobHandle(blobId,
-                                                         this);
-        index++;
+        var name2Blob = blobsWithoutDuplicateName.ToDictionary(b => b.Name,
+                                                               b => b);
+        var response = CreateBlobsWithContentAsync(blobsWithoutDuplicateName,
+                                                   cancellationToken);
+        await foreach (var blob in response.ConfigureAwait(false))
+        {
+          name2Blob[blob.Name].BlobHandle = new BlobHandle(blob.ResultId,
+                                                           this);
+        }
       }
     }
 
     if (blobsWithoutData.Any())
     {
       // Creation of blobs without data
-      var blobsCreate = blobsWithoutData.Select(b => new CreateResultsMetaDataRequest.Types.ResultCreate
-                                                     {
-                                                       Name = b.Name,
-                                                     });
-      var response = await taskHandler_.CreateResultsMetaDataAsync(blobsCreate,
-                                                                   cancellationToken)
-                                       .ConfigureAwait(false);
-      var index = 0;
-      foreach (var result in response.Results)
+      foreach (var blobsWithoutDuplicateName in DeDuplicateWithName(blobsWithoutData))
       {
-        blobsWithoutData[index].BlobHandle = new BlobHandle(result.ResultId,
-                                                            this);
-        index++;
+        var name2Blob = blobsWithoutDuplicateName.ToDictionary(b => b.Name,
+                                                               b => b);
+        var blobsCreate = blobsWithoutDuplicateName.Select(b => new CreateResultsMetaDataRequest.Types.ResultCreate
+                                                                {
+                                                                  Name = b.Name,
+                                                                });
+        var response = await taskHandler_.CreateResultsMetaDataAsync(blobsCreate,
+                                                                     cancellationToken)
+                                         .ConfigureAwait(false);
+        foreach (var blob in response.Results)
+        {
+          name2Blob[blob.Name].BlobHandle = new BlobHandle(blob.ResultId,
+                                                           this);
+        }
       }
     }
   }
 
-  private async IAsyncEnumerable<string> CreateBlobsWithContentAsync(IEnumerable<BlobDefinition>                blobDefinitions,
-                                                                     [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  private async IAsyncEnumerable<ResultMetaData> CreateBlobsWithContentAsync(IEnumerable<BlobDefinition>                blobDefinitions,
+                                                                             [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     // This is a bin packing kind of problem for which we apply the first-fit-decreasing strategy
     var batches = GetOptimizedBatches(blobDefinitions,
@@ -315,7 +321,7 @@ public class SdkTaskHandler : ISdkTaskHandler
                                                    .ConfigureAwait(false);
       foreach (var blob in blobCreationResponse.Results)
       {
-        yield return blob.ResultId;
+        yield return blob;
       }
     }
   }
@@ -345,6 +351,37 @@ public class SdkTaskHandler : ISdkTaskHandler
     }
 
     return batches;
+  }
+
+  private static List<List<BlobDefinition>> DeDuplicateWithName(List<BlobDefinition> blobsWithData)
+  {
+    var grouped = blobsWithData.GroupBy(x => x.Name)
+                               .Select(g => g.ToList())
+                               .ToList();
+    var result = new List<List<BlobDefinition>>();
+
+    do
+    {
+      var currentList = new List<BlobDefinition>();
+      foreach (var list in grouped)
+      {
+        var blob = list.LastOrDefault();
+        if (blob != null)
+        {
+          list.RemoveAt(list.Count - 1);
+          currentList.Add(blob);
+        }
+      }
+
+      if (!currentList.Any())
+      {
+        break;
+      }
+
+      result.Add(currentList);
+    } while (true);
+
+    return result;
   }
 
   private class Batch
