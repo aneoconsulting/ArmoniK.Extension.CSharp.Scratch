@@ -18,6 +18,7 @@ using System.Text;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Client.Handles;
 
 namespace ArmoniK.EndToEndTests.Client.Tests;
 
@@ -36,20 +37,20 @@ public class TaskSdkClient : ClientBase
   [Test]
   public async Task TaskSdk()
   {
+    var callback = new Callback();
     var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
                                              .WithInput("inputString",
                                                         BlobDefinition.FromString("blobInputString",
                                                                                   "Hello world!"))
                                              .WithOutput("outputString",
-                                                         BlobDefinition.CreateOutput("blobOutputString"))
+                                                         BlobDefinition.CreateOutput("blobOutputString")
+                                                                       .WithCallback(callback))
                                              .WithTaskOptions(TaskConfiguration);
     await SessionHandle.SubmitAsync([taskDefinition])
                        .ConfigureAwait(false);
 
-    await Client.EventsService.WaitForBlobsAsync(SessionHandle,
-                                                 taskDefinition.Outputs.Values.Select(b => b.BlobHandle!.BlobInfo)
-                                                               .ToList(),
-                                                 CancellationToken.None);
+    await SessionHandle.WaitCallbacksAsync()
+                       .ConfigureAwait(false);
 
     var resultString = "";
     var outputName = taskDefinition.Outputs.Single()
@@ -58,11 +59,9 @@ public class TaskSdkClient : ClientBase
                                          .Value.BlobHandle;
     var inputBlobHandle = taskDefinition.InputDefinitions.Single()
                                         .Value.BlobHandle;
-    var rawData = await outputBlobHandle!.DownloadBlobDataAsync(CancellationToken.None)
-                                         .ConfigureAwait(false);
     if (outputName == "outputString")
     {
-      resultString = Encoding.UTF8.GetString(rawData);
+      resultString = Encoding.UTF8.GetString(callback.Result);
     }
 
     Assert.Multiple(() =>
@@ -74,5 +73,58 @@ public class TaskSdkClient : ClientBase
                       Assert.That(resultString,
                                   Is.EqualTo("Hello world!"));
                     });
+  }
+
+  [Test]
+  public async Task NumerousCallbacks()
+  {
+    var taskDefinitions = new List<TaskDefinition>();
+    for (var i = 0; i < 100; i++)
+    {
+      taskDefinitions.Add(new TaskDefinition().WithLibrary(WorkerLibrary)
+                                              .WithInput("inputString",
+                                                         BlobDefinition.FromString("blobInputString" + i,
+                                                                                   "Hello world!"))
+                                              .WithOutput("outputString",
+                                                          BlobDefinition.CreateOutput("blobOutputString" + i)
+                                                                        .WithCallback(new Callback()))
+                                              .WithTaskOptions(TaskConfiguration));
+    }
+
+    await SessionHandle.SubmitAsync(taskDefinitions)
+                       .ConfigureAwait(false);
+    await SessionHandle.WaitCallbacksAsync()
+                       .ConfigureAwait(false);
+
+    foreach (var task in taskDefinitions)
+    {
+      var resultString = Encoding.UTF8.GetString(((Callback)task.Outputs.Single()
+                                                                .Value.CallBack!).Result);
+
+      Assert.That(resultString,
+                  Is.EqualTo("Hello world!"));
+    }
+  }
+
+
+  private class Callback : ICallback
+  {
+    public byte[] Result { get; private set; } = [];
+
+    public ValueTask OnSuccess(BlobHandle        blob,
+                               byte[]            rawData,
+                               CancellationToken cancellationToken)
+    {
+      Result = rawData;
+      return ValueTask.CompletedTask;
+    }
+
+    public ValueTask OnError(BlobHandle        blob,
+                             Exception?        exception,
+                             CancellationToken cancellationToken)
+    {
+      Assert.Fail(exception?.Message ?? $"blob {blob.BlobInfo.BlobId} aborted");
+      return ValueTask.CompletedTask;
+    }
   }
 }

@@ -351,6 +351,81 @@ public class BlobService : IBlobService
     }
   }
 
+  /// <inheritdoc />
+  public async IAsyncEnumerable<BlobState> GetBlobStatesByStatusAsync(IEnumerable<string>                        blobIds,
+                                                                      BlobStatus                                 status,
+                                                                      [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  {
+    var chunkSize     = 1000;
+    var blobIdsChunks = blobIds.ToChunks(chunkSize);
+
+    foreach (var chunk in blobIdsChunks)
+    {
+      var blobPagination = new BlobPagination
+                           {
+                             Filter = new Filters
+                                      {
+                                        Or =
+                                        {
+                                          chunk.Select(b => new FiltersAnd
+                                                            {
+                                                              And =
+                                                              {
+                                                                new FilterField
+                                                                {
+                                                                  Field = new ResultField
+                                                                          {
+                                                                            ResultRawField = new ResultRawField
+                                                                                             {
+                                                                                               Field = ResultRawEnumField.ResultId,
+                                                                                             },
+                                                                          },
+                                                                  FilterString = new FilterString
+                                                                                 {
+                                                                                   Operator = FilterStringOperator.Equal,
+                                                                                   Value    = b,
+                                                                                 },
+                                                                },
+                                                                new FilterField
+                                                                {
+                                                                  Field = new ResultField
+                                                                          {
+                                                                            ResultRawField = new ResultRawField
+                                                                                             {
+                                                                                               Field = ResultRawEnumField.Status,
+                                                                                             },
+                                                                          },
+                                                                  FilterStatus = new FilterStatus
+                                                                                 {
+                                                                                   Operator = FilterStatusOperator.Equal,
+                                                                                   Value    = status.ToGrpcStatus(),
+                                                                                 },
+                                                                },
+                                                              },
+                                                            }),
+                                        },
+                                      },
+                             Page          = 0,
+                             PageSize      = chunkSize,
+                             SortDirection = SortDirection.Asc,
+                             SortField = new ResultField
+                                         {
+                                           ResultRawField = new ResultRawField
+                                                            {
+                                                              Field = ResultRawEnumField.ResultId,
+                                                            },
+                                         },
+                           };
+      var page = await ListBlobsAsync(blobPagination,
+                                      cancellationToken)
+                   .ConfigureAwait(false);
+      foreach (var blobState in page.Blobs)
+      {
+        yield return blobState;
+      }
+    }
+  }
+
   private async Task LoadBlobServiceConfigurationAsync(CancellationToken cancellationToken = default)
   {
     await using var channel = await channelPool_.GetAsync(cancellationToken)
@@ -523,37 +598,74 @@ public class BlobService : IBlobService
     if (blobsWithoutData.Any())
     {
       // Creation of blobs without data
-      var blobsCreate = blobsWithoutData.Select(b => (b.Name, b.ManualDeletion));
-      var response = CreateBlobsMetadataAsync(session,
-                                              blobsCreate,
-                                              cancellationToken);
-      var index = 0;
-      await foreach (var blob in response.ConfigureAwait(false))
+      foreach (var blobsWithoutDuplicateName in DeDuplicateWithName(blobsWithoutData))
       {
-        blobsWithoutData[index].BlobHandle = new BlobHandle(blob,
-                                                            armoniKClient_);
-        index++;
+        var name2Blob = blobsWithoutDuplicateName.ToDictionary(b => b.Name,
+                                                               b => b);
+        var blobsCreate = blobsWithoutDuplicateName.Select(b => (b.Name, b.ManualDeletion));
+        var response = CreateBlobsMetadataAsync(session,
+                                                blobsCreate,
+                                                cancellationToken);
+        await foreach (var blob in response.ConfigureAwait(false))
+        {
+          name2Blob[blob.BlobName].BlobHandle = new BlobHandle(blob,
+                                                               armoniKClient_);
+        }
       }
     }
 
     if (blobsWithData.Any())
     {
       // Creation of blobs with data
-      var response = CreateBlobsWithContentAsync(session,
-                                                 blobsWithData,
-                                                 cancellationToken);
-      var index = 0;
-      await foreach (var blob in response.ConfigureAwait(false))
+      foreach (var blobsWithoutDuplicateName in DeDuplicateWithName(blobsWithData))
       {
-        blobsWithData[index].BlobHandle = new BlobHandle(blob,
-                                                         armoniKClient_);
-        index++;
+        var name2Blob = blobsWithoutDuplicateName.ToDictionary(b => b.Name,
+                                                               b => b);
+        var response = CreateBlobsWithContentAsync(session,
+                                                   blobsWithoutDuplicateName,
+                                                   cancellationToken);
+        await foreach (var blob in response.ConfigureAwait(false))
+        {
+          name2Blob[blob.BlobName].BlobHandle = new BlobHandle(blob,
+                                                               armoniKClient_);
+        }
       }
     }
   }
 
+  private static List<List<BlobDefinition>> DeDuplicateWithName(List<BlobDefinition> blobsWithData)
+  {
+    var grouped = blobsWithData.GroupBy(x => x.Name)
+                               .Select(g => g.ToList())
+                               .ToList();
+    var result = new List<List<BlobDefinition>>();
+
+    do
+    {
+      var currentList = new List<BlobDefinition>();
+      foreach (var list in grouped)
+      {
+        var blob = list.LastOrDefault();
+        if (blob != null)
+        {
+          list.RemoveAt(list.Count - 1);
+          currentList.Add(blob);
+        }
+      }
+
+      if (!currentList.Any())
+      {
+        break;
+      }
+
+      result.Add(currentList);
+    } while (true);
+
+    return result;
+  }
+
   private async IAsyncEnumerable<BlobInfo> CreateBlobsWithContentAsync(SessionInfo                                session,
-                                                                       IEnumerable<BlobDefinition>                blobDefinitions,
+                                                                       ICollection<BlobDefinition>                blobDefinitions,
                                                                        [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     // This is a bin packing kind of problem for which we apply the first-fit-decreasing strategy
@@ -641,16 +753,13 @@ public class BlobService : IBlobService
 
   private class Batch
   {
-    private readonly List<BlobDefinition> items_ = new();
-
-    public IEnumerable<BlobDefinition> Items
-      => items_;
+    public List<BlobDefinition> Items { get; } = new();
 
     public long Size { get; private set; }
 
     public void AddItem(BlobDefinition item)
     {
-      items_.Add(item);
+      Items.Add(item);
       Size += item.TotalSize;
     }
   }
