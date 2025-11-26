@@ -19,8 +19,17 @@ using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 
+/// <summary>
+///   Provides extension methods to convert protobuf types and SDK types
+/// </summary>
 public static class TaskInfosExt
 {
+  /// <summary>
+  ///   Convert a protobuf TaskInfo to its corresponding SDK type TaskInfos.
+  /// </summary>
+  /// <param name="taskInfo">The protobuf instance</param>
+  /// <param name="sessionId">The current session id</param>
+  /// <returns>The corresponding SDK TaskInfos</returns>
   public static TaskInfos ToTaskInfos(this SubmitTasksResponse.Types.TaskInfo taskInfo,
                                       string                                  sessionId)
     => new()

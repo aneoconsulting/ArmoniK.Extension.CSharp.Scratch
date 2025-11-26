@@ -22,13 +22,13 @@ using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using Microsoft.Extensions.Logging;
 
-namespace ArmoniK.Extension.CSharp.Client.Queryable;
+namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobState;
 
-internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage, BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage, CSharp.Common.Common.Domain.Blob.BlobState, ResultRawEnumField, Filters, FiltersAnd,
+  FilterField>
 {
   private readonly IBlobService          blobService_;
   private readonly ILogger<IBlobService> logger_;
@@ -54,7 +54,8 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
                              .ConfigureAwait(false);
   }
 
-  protected override QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField> CreateQueryExpressionTreeVisitor()
+  protected override QueryExpressionTreeVisitor<CSharp.Common.Common.Domain.Blob.BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+    CreateQueryExpressionTreeVisitor()
     => new BlobStateQueryExpressionTreeVisitor();
 
   protected override BlobPagination CreatePaginationInstance(Filters            filter,
@@ -80,6 +81,6 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
   protected override int GetTotalPageElements(BlobPage page)
     => page.TotalBlobCount;
 
-  protected override BlobState[] GetPageElements(BlobPage page)
+  protected override CSharp.Common.Common.Domain.Blob.BlobState[] GetPageElements(BlobPage page)
     => page.Blobs;
 }

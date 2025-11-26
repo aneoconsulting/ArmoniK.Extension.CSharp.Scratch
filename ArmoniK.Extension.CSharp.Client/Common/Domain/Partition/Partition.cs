@@ -29,17 +29,17 @@ public record Partition
   /// <summary>
   ///   Identifier of the partition.
   /// </summary>
-  public string Id { get; init; }
+  public string Id { get; init; } = string.Empty;
 
   /// <summary>
   ///   Collection of identifiers for parent partitions.
   /// </summary>
-  public IEnumerable<string> ParentPartitionIds { get; init; }
+  public IEnumerable<string> ParentPartitionIds { get; init; } = [];
 
   /// <summary>
   ///   Configuration settings for pods within the partition, represented as key-value pairs.
   /// </summary>
-  public IEnumerable<KeyValuePair<string, string>> PodConfiguration { get; init; }
+  public IEnumerable<KeyValuePair<string, string>> PodConfiguration { get; init; } = [];
 
   /// <summary>
   ///   Maximum number of pods that can be allocated to this partition.

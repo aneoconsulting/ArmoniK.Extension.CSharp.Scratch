@@ -21,8 +21,16 @@ using ArmoniK.Extension.CSharp.Common.Library;
 
 namespace ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 
+/// <summary>
+///   Provides extension methods for TaskOptions
+/// </summary>
 public static class TaskOptionExt
 {
+  /// <summary>
+  ///   Convert the protobuf TaskOptions to its corresponding SDK type TaskConfiguration.
+  /// </summary>
+  /// <param name="taskOption">The protobuf instance</param>
+  /// <returns>The corresponding SDK TaskConfiguration</returns>
   public static TaskConfiguration ToTaskConfiguration(this TaskOptions taskOption)
     => new(taskOption.MaxRetries,
            taskOption.Priority,

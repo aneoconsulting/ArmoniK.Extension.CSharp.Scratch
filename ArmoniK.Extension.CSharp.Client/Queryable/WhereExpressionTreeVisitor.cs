@@ -44,7 +44,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
       HandleBoolExpression(ExpressionType.AndAlso);
     }
 
-    FilterStack.Push(CreateFilterFromStack());
+    FilterStack.Push(CreateFilterFromStack()!);
   }
 
   public TFilterOr GetFilterOrRootNode()
@@ -201,7 +201,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
 
   private void EvaluateExpression(Expression expr)
   {
-    Expression<Func<object>> lambda = null;
+    Expression<Func<object>>? lambda = null;
     try
     {
       var objectExpr = Expression.Convert(expr,
@@ -260,8 +260,6 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
 
   private void OnPropertyMemberAccess(MemberExpression member)
   {
-    Type memberType;
-
     var val = GetValueFromExpression(member);
     if (val != null)
     {
@@ -270,13 +268,12 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
     }
     else
     {
-      TEnumField enumField;
       if (TryGetFieldTypeFromName(member.Member.Name,
-                                  out memberType) && TryGetEnumFieldFromName(member.Member.Name,
-                                                                             out enumField))
+                                  out var memberType) && TryGetEnumFieldFromName(member.Member.Name,
+                                                                                 out var enumField))
       {
         ExpressionTypeStack.Push(memberType);
-        FilterStack.Push(enumField);
+        FilterStack.Push(enumField!);
       }
       else
       {
@@ -451,14 +448,14 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(rhsAndFilter);
             }
 
-            FilterStack.Push(orFilter);
+            FilterStack.Push(orFilter!);
           }
           else if (rhsFilter is TFilterAnd rhsAndFilter)
           {
             // <and expression> || <and expression>
             var orFilter = CreateFilterOr(lhsAndFilter,
                                           rhsAndFilter);
-            FilterStack.Push(orFilter);
+            FilterStack.Push(orFilter!);
           }
           else if (rhsFilter is TFilterField rhsFilterField)
           {
@@ -466,7 +463,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
             var andRhsFilter = CreateFilterAnd(rhsFilterField);
             var orFilter = CreateFilterOr(lhsAndFilter,
                                           andRhsFilter);
-            FilterStack.Push(orFilter);
+            FilterStack.Push(orFilter!);
           }
           else
           {
@@ -486,21 +483,21 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
                 .Add(rhsAndFilter);
             }
 
-            FilterStack.Push(orFilter);
+            FilterStack.Push(orFilter!);
           }
           else if (rhsFilter is TFilterAnd rhsAndFilter)
           {
             // <filter field> || <and expression>
             var orFilter = CreateFilterOr(CreateFilterAnd(lhsFilterField),
                                           rhsAndFilter);
-            FilterStack.Push(orFilter);
+            FilterStack.Push(orFilter!);
           }
           else if (rhsFilter is TFilterField rhsFilterField)
           {
             // <filter field> || <filter field>
             var orFilter = CreateFilterOr(CreateFilterAnd(lhsFilterField),
                                           CreateFilterAnd(rhsFilterField));
-            FilterStack.Push(orFilter);
+            FilterStack.Push(orFilter!);
           }
           else
           {
@@ -618,7 +615,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
             // <filter field> && <filter field>
             var andFilter = CreateFilterAnd(lhsFilterField,
                                             rhsFilterField);
-            FilterStack.Push(andFilter);
+            FilterStack.Push(andFilter!);
           }
           else
           {
