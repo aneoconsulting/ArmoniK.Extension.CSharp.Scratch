@@ -25,8 +25,9 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Exceptions;
-using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.Client.Services;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Common.Library;
 using ArmoniK.Utils;
 
 namespace ArmoniK.Extension.CSharp.Client.Handles;

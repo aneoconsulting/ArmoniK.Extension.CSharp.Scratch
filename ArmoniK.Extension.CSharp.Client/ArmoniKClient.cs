@@ -20,12 +20,12 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Services;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
 using ArmoniK.Utils;
 
 using Grpc.Core;

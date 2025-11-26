@@ -19,8 +19,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 

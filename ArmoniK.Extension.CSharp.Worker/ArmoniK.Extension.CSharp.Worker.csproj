@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -9,10 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="ArmoniK.Api.Worker" Version="3.26.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ArmoniK.Extension.CSharp.DllCommon\ArmoniK.Extension.CSharp.DllCommon.csproj" />
+    <ProjectReference Include="..\ArmoniK.Extension.CSharp.Common\ArmoniK.Extension.CSharp.Common.csproj" />
+    <ProjectReference Include="..\ArmoniK.Extension.CSharp.Worker.Interfaces\ArmoniK.Extension.CSharp.Worker.Interfaces.csproj" />
   </ItemGroup>
 
 </Project>

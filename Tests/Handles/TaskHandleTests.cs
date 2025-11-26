@@ -16,8 +16,8 @@
 
 using ArmoniK.Api.gRPC.V1.Tasks;
 using ArmoniK.Extension.CSharp.Client;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Handles;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
 
 using NUnit.Framework;
 

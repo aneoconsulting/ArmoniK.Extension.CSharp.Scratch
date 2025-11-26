@@ -16,7 +16,8 @@
 
 using System.Text;
 
-using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
+using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 
 using Microsoft.Extensions.Logging;
 

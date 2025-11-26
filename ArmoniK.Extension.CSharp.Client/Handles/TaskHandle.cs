@@ -18,7 +18,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Client.Handles;
 

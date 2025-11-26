@@ -29,7 +29,8 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Common.Library;
 using ArmoniK.Utils;
 
 using Grpc.Core;
@@ -37,7 +38,7 @@ using Grpc.Core;
 using Microsoft.Extensions.Logging;
 
 using ITasksService = ArmoniK.Extension.CSharp.Client.Common.Services.ITasksService;
-using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
+using TaskStatus = ArmoniK.Extension.CSharp.Common.Common.Domain.Task.TaskStatus;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 
@@ -69,6 +70,106 @@ public class TasksService : ITasksService
     logger_        = loggerFactory.CreateLogger<TasksService>();
     armoniKClient_ = armoniKClient;
     blobService_   = blobService;
+  }
+
+  /// <inheritdoc />
+  public async IAsyncEnumerable<TaskPage> ListTasksAsync(TaskPagination                             paginationOptions,
+                                                         [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  {
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+
+    var tasksClient = new Tasks.TasksClient(channel);
+
+    var tasks = await tasksClient.ListTasksAsync(new ListTasksRequest
+                                                 {
+                                                   Filters  = paginationOptions.Filter,
+                                                   Page     = paginationOptions.Page,
+                                                   PageSize = paginationOptions.PageSize,
+                                                   Sort = new ListTasksRequest.Types.Sort
+                                                          {
+                                                            Direction = paginationOptions.SortDirection.ToGrpc(),
+                                                          },
+                                                 },
+                                                 cancellationToken: cancellationToken)
+                                 .ConfigureAwait(false);
+    yield return new TaskPage
+                 {
+                   TotalTasks = tasks.Total,
+                   TasksData = tasks.Tasks.Select(x => new Tuple<string, TaskStatus>(x.Id,
+                                                                                     x.Status.ToInternalStatus())),
+                 };
+  }
+
+
+  /// <inheritdoc />
+  public async Task<TaskState> GetTasksDetailedAsync(string            taskId,
+                                                     CancellationToken cancellationToken = default)
+  {
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+
+    var tasksClient = new Tasks.TasksClient(channel);
+
+    var tasks = await tasksClient.GetTaskAsync(new GetTaskRequest
+                                               {
+                                                 TaskId = taskId,
+                                               },
+                                               cancellationToken: cancellationToken)
+                                 .ConfigureAwait(false);
+
+    return tasks.Task.ToTaskState();
+  }
+
+  /// <inheritdoc />
+  public async IAsyncEnumerable<TaskDetailedPage> ListTasksDetailedAsync(SessionInfo                                session,
+                                                                         TaskPagination                             paginationOptions,
+                                                                         [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  {
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+
+    var tasksClient = new Tasks.TasksClient(channel);
+
+    var tasks = await tasksClient.ListTasksDetailedAsync(new ListTasksRequest
+                                                         {
+                                                           Filters  = paginationOptions.Filter,
+                                                           Page     = paginationOptions.Page,
+                                                           PageSize = paginationOptions.PageSize,
+                                                           Sort = new ListTasksRequest.Types.Sort
+                                                                  {
+                                                                    Direction = paginationOptions.SortDirection.ToGrpc(),
+                                                                  },
+                                                         },
+                                                         cancellationToken: cancellationToken)
+                                 .ConfigureAwait(false);
+
+    yield return new TaskDetailedPage
+                 {
+                   TaskDetails = tasks.Tasks.Select(task => task.ToTaskState()),
+                   TotalTasks  = tasks.Total,
+                 };
+  }
+
+  /// <inheritdoc />
+  public async Task<ICollection<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
+                                                             CancellationToken   cancellationToken = default)
+  {
+    await using var channel = await channelPool_.GetAsync(cancellationToken)
+                                                .ConfigureAwait(false);
+
+    var tasksClient = new Tasks.TasksClient(channel);
+
+    var response = await tasksClient.CancelTasksAsync(new CancelTasksRequest
+                                                      {
+                                                        TaskIds =
+                                                        {
+                                                          taskIds,
+                                                        },
+                                                      })
+                                    .ConfigureAwait(false);
+    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState())
+                   .AsICollection();
   }
 
   /// <inheritdoc />
@@ -181,106 +282,6 @@ public class TasksService : ITasksService
 
     return taskSubmissionResponse.TaskInfos.Select(x => x.ToTaskInfos(session.SessionId))
                                  .AsICollection();
-  }
-
-  /// <inheritdoc />
-  public async IAsyncEnumerable<TaskPage> ListTasksAsync(TaskPagination                             paginationOptions,
-                                                         [EnumeratorCancellation] CancellationToken cancellationToken = default)
-  {
-    await using var channel = await channelPool_.GetAsync(cancellationToken)
-                                                .ConfigureAwait(false);
-
-    var tasksClient = new Tasks.TasksClient(channel);
-
-    var tasks = await tasksClient.ListTasksAsync(new ListTasksRequest
-                                                 {
-                                                   Filters  = paginationOptions.Filter,
-                                                   Page     = paginationOptions.Page,
-                                                   PageSize = paginationOptions.PageSize,
-                                                   Sort = new ListTasksRequest.Types.Sort
-                                                          {
-                                                            Direction = paginationOptions.SortDirection.ToGrpc(),
-                                                          },
-                                                 },
-                                                 cancellationToken: cancellationToken)
-                                 .ConfigureAwait(false);
-    yield return new TaskPage
-                 {
-                   TotalTasks = tasks.Total,
-                   TasksData = tasks.Tasks.Select(x => new Tuple<string, TaskStatus>(x.Id,
-                                                                                     x.Status.ToInternalStatus())),
-                 };
-  }
-
-
-  /// <inheritdoc />
-  public async Task<TaskState> GetTasksDetailedAsync(string            taskId,
-                                                     CancellationToken cancellationToken = default)
-  {
-    await using var channel = await channelPool_.GetAsync(cancellationToken)
-                                                .ConfigureAwait(false);
-
-    var tasksClient = new Tasks.TasksClient(channel);
-
-    var tasks = await tasksClient.GetTaskAsync(new GetTaskRequest
-                                               {
-                                                 TaskId = taskId,
-                                               },
-                                               cancellationToken: cancellationToken)
-                                 .ConfigureAwait(false);
-
-    return tasks.Task.ToTaskState();
-  }
-
-  /// <inheritdoc />
-  public async IAsyncEnumerable<TaskDetailedPage> ListTasksDetailedAsync(SessionInfo                                session,
-                                                                         TaskPagination                             paginationOptions,
-                                                                         [EnumeratorCancellation] CancellationToken cancellationToken = default)
-  {
-    await using var channel = await channelPool_.GetAsync(cancellationToken)
-                                                .ConfigureAwait(false);
-
-    var tasksClient = new Tasks.TasksClient(channel);
-
-    var tasks = await tasksClient.ListTasksDetailedAsync(new ListTasksRequest
-                                                         {
-                                                           Filters  = paginationOptions.Filter,
-                                                           Page     = paginationOptions.Page,
-                                                           PageSize = paginationOptions.PageSize,
-                                                           Sort = new ListTasksRequest.Types.Sort
-                                                                  {
-                                                                    Direction = paginationOptions.SortDirection.ToGrpc(),
-                                                                  },
-                                                         },
-                                                         cancellationToken: cancellationToken)
-                                 .ConfigureAwait(false);
-
-    yield return new TaskDetailedPage
-                 {
-                   TaskDetails = tasks.Tasks.Select(task => task.ToTaskState()),
-                   TotalTasks  = tasks.Total,
-                 };
-  }
-
-  /// <inheritdoc />
-  public async Task<ICollection<TaskState>> CancelTasksAsync(IEnumerable<string> taskIds,
-                                                             CancellationToken   cancellationToken = default)
-  {
-    await using var channel = await channelPool_.GetAsync(cancellationToken)
-                                                .ConfigureAwait(false);
-
-    var tasksClient = new Tasks.TasksClient(channel);
-
-    var response = await tasksClient.CancelTasksAsync(new CancelTasksRequest
-                                                      {
-                                                        TaskIds =
-                                                        {
-                                                          taskIds,
-                                                        },
-                                                      })
-                                    .ConfigureAwait(false);
-    return response.Tasks.Select(taskSummary => taskSummary.ToTaskState())
-                   .AsICollection();
   }
 
   private class Payload

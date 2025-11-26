@@ -14,11 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.DllCommon;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
+using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 
 using Microsoft.Extensions.Logging;
 
-using TaskDefinition = ArmoniK.Extension.CSharp.DllCommon.TaskDefinition;
+using TaskDefinition = ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task.TaskDefinition;
 
 namespace ArmoniK.EndToEndTests.Worker.Tests;
 

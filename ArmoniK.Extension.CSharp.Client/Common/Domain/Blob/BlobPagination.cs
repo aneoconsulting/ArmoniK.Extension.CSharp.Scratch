@@ -16,6 +16,7 @@
 
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Generic;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 

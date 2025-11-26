@@ -21,7 +21,8 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
-using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Common.Library;
 
 using Google.Protobuf.WellKnownTypes;
 
@@ -34,7 +35,7 @@ using NUnit.Framework;
 using Tests.Configuration;
 using Tests.Helpers;
 
-using TaskStatus = ArmoniK.Extension.CSharp.Client.Common.Domain.Task.TaskStatus;
+using TaskStatus = ArmoniK.Extension.CSharp.Common.Common.Domain.Task.TaskStatus;
 using V1_TaskStatus = ArmoniK.Api.gRPC.V1.TaskStatus;
 
 namespace Tests.Services;

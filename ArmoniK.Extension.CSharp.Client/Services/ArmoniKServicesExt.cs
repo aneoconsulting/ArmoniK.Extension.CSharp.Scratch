@@ -19,10 +19,10 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Library;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Common.Library;
 
 namespace ArmoniK.Extension.CSharp.Client.Services;
 

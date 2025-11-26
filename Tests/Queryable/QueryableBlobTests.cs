@@ -15,8 +15,8 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Results;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Queryable;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using NUnit.Framework;
 

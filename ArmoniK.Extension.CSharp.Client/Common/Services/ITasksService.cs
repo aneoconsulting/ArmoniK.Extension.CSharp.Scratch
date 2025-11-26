@@ -25,6 +25,7 @@ using ArmoniK.Api.gRPC.V1.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Services;
 

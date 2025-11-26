@@ -19,6 +19,7 @@ using System.Collections.Generic;
 
 using ArmoniK.Api.gRPC.V1.Tasks;
 using ArmoniK.Extension.CSharp.Client.Common.Generic;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
 
 namespace ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 
@@ -59,5 +60,6 @@ public record TaskDetailedPage
   /// <summary>
   ///   Detailed state information of the task.
   /// </summary>
+
   public IEnumerable<TaskState> TaskDetails { get; init; }
 }
