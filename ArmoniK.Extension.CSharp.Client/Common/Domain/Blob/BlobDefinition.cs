@@ -91,6 +91,11 @@ public class BlobDefinition
   internal bool ManualDeletion { get; private set; }
 
   /// <summary>
+  ///   Defines the callback on the blob once its data is available or when an error occurs.
+  /// </summary>
+  public ICallback? CallBack { get; private set; }
+
+  /// <summary>
   ///   The size in bytes occupied by the blob in an RPC.
   /// </summary>
   internal long TotalSize
@@ -269,6 +274,17 @@ public class BlobDefinition
   public BlobDefinition WithManualDeletion()
   {
     ManualDeletion = true;
+    return this;
+  }
+
+  /// <summary>
+  ///   Defines the callback to be invoked once the data is available.
+  /// </summary>
+  /// <param name="callBack">The callback</param>
+  /// <returns>The updated BlobDefinition</returns>
+  public BlobDefinition WithCallback(ICallback callBack)
+  {
+    CallBack = callBack;
     return this;
   }
 

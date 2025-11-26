@@ -63,7 +63,7 @@ public class TasksServiceTests
     mock.ConfigureBlobMetadataCreationResponse(outputBlob);
 
     // Configure blob creation response
-    var payload = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload");
+    var payload = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload1");
     mock.ConfigureBlobCreationResponseSequence(payload)
         .Stop();
 
@@ -122,8 +122,8 @@ public class TasksServiceTests
                                                outputBlob2);
 
     // Configure payload blobs creation response
-    var payload1 = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload");
-    var payload2 = (sessionId: sessionInfo.SessionId, blobId: "payloadId2", blobName: "payload");
+    var payload1 = (sessionId: sessionInfo.SessionId, blobId: "payloadId1", blobName: "payload1");
+    var payload2 = (sessionId: sessionInfo.SessionId, blobId: "payloadId2", blobName: "payload2");
     mock.ConfigureBlobCreationResponseSequence(payload1,
                                                payload2)
         .Stop();
@@ -217,7 +217,7 @@ public class TasksServiceTests
 
     // Configure blobs creation response
     var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
-    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload1");
     mock.ConfigureBlobCreationResponseSequence(dependency)
         .ConfigureBlobCreationResponseSequence(payload)
         .Stop();
@@ -284,7 +284,7 @@ public class TasksServiceTests
 
     // Configure blobs creation response
     var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
-    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload1");
     mock.ConfigureBlobCreationResponseSequence(dependency)
         .ConfigureBlobCreationResponseSequence(payload)
         .Stop();
@@ -609,7 +609,7 @@ public class TasksServiceTests
 
     // Configure blobs creation response
     var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
-    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload1");
     mock.ConfigureBlobCreationResponseSequence(dependency)
         .ConfigureBlobCreationResponseSequence(payload)
         .Stop();
@@ -656,7 +656,7 @@ public class TasksServiceTests
 
     // Configure blobs creation response
     var dependency = (sessionId: sessionInfo.SessionId, blobId: "dependencyBlobId", blobName: "dependencyBlob");
-    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload");
+    var payload    = (sessionId: sessionInfo.SessionId, blobId: "payloadId", blobName: "payload1");
     mock.ConfigureBlobCreationResponseSequence(dependency)
         .ConfigureBlobCreationResponseSequence(payload)
         .Stop();

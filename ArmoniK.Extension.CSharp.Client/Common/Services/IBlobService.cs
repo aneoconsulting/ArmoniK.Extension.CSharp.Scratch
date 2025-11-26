@@ -151,6 +151,17 @@ public interface IBlobService
                                     CancellationToken cancellationToken = default);
 
   /// <summary>
+  ///   Asynchronously retrieves the states of a blob collection having a specific status.
+  /// </summary>
+  /// <param name="blobIds">The collection blob ids to retrieve the state for.</param>
+  /// <param name="status">The filtering status.</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <returns> An asynchronous enumerable of blob information instances satisfying the filter.</returns>
+  IAsyncEnumerable<BlobState> GetBlobStatesByStatusAsync(IEnumerable<string> blobIds,
+                                                         BlobStatus          status,
+                                                         CancellationToken   cancellationToken = default);
+
+  /// <summary>
   ///   Asynchronously lists blobs based on pagination options.
   /// </summary>
   /// <param name="blobPagination">The options for pagination, including page number, page size, and sorting.</param>

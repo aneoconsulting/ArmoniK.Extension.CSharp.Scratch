@@ -25,6 +25,7 @@ using ArmoniK.Extension.CSharp.Worker.Interfaces;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Handles;
+using ArmoniK.Utils;
 
 using Google.Protobuf;
 
@@ -177,7 +178,7 @@ internal class SdkTaskHandler : ISdkTaskHandler
   ///   If null, the cancellation token of the task handler is used
   /// </param>
   /// <returns>A task representing the asynchronous operation. The task result contains the collection of TaskInfos</returns>
-  public async Task<ICollection<TaskInfos>> SubmitTasksAsync(IEnumerable<TaskDefinition> taskDefinitions,
+  public async Task<ICollection<TaskInfos>> SubmitTasksAsync(ICollection<TaskDefinition> taskDefinitions,
                                                              TaskConfiguration           submissionTaskOptions,
                                                              CancellationToken           cancellationToken = default)
   {
@@ -233,7 +234,7 @@ internal class SdkTaskHandler : ISdkTaskHandler
                                      .ConfigureAwait(false);
 
     return response.TaskInfos.Select(t => t.ToTaskInfos(taskHandler_.SessionId))
-                   .ToList();
+                   .AsICollection();
   }
 
   private async Task CreateBlobsAsync(IEnumerable<BlobDefinition> blobs,

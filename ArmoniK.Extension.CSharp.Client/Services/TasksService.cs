@@ -174,7 +174,7 @@ public class TasksService : ITasksService
 
   /// <inheritdoc />
   public async Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
-                                                             IEnumerable<TaskDefinition> taskDefinitions,
+                                                             ICollection<TaskDefinition> taskDefinitions,
                                                              CancellationToken           cancellationToken = default)
   {
     // Validate each task node
@@ -199,7 +199,8 @@ public class TasksService : ITasksService
                                                                                       i.Value.BlobHandle!.BlobInfo.BlobId))
                        .ToList();
       var outputs = task.Outputs.Select(o => new KeyValuePair<string, string>(o.Key,
-                                                                              o.Value.BlobHandle!.BlobInfo.BlobId));
+                                                                              o.Value.BlobHandle!.BlobInfo.BlobId))
+                        .ToList();
 
       var payload = new Payload(inputs.ToDictionary(b => b.Key,
                                                     b => b.Value),
@@ -227,8 +228,13 @@ public class TasksService : ITasksService
     var       taskCreations  = new List<SubmitTasksRequest.Types.TaskCreation>();
 
     var payloadsJson = payloads.Select(p => JsonSerializer.Serialize(p));
-    var payloadsDefinition = payloadsJson.Select(p => BlobDefinition.FromString("payload",
-                                                                                p))
+    var payloadIndex = 0;
+    var payloadsDefinition = payloadsJson.Select(p =>
+                                                 {
+                                                   payloadIndex++;
+                                                   return BlobDefinition.FromString("payload" + payloadIndex,
+                                                                                    p);
+                                                 })
                                          .ToList();
     await blobService_.CreateBlobsAsync(session,
                                         payloadsDefinition,

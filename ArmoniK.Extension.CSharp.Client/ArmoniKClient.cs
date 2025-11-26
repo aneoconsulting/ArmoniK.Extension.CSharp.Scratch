@@ -15,6 +15,9 @@
 // limitations under the License.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
@@ -185,4 +188,26 @@ public class ArmoniKClient
   public SessionHandle GetSessionHandle(SessionInfo session)
     => new(session,
            this);
+
+  /// <summary>
+  ///   Asynchronously creates a new session.
+  /// </summary>
+  /// <param name="partitionIds">Partitions related to opened session</param>
+  /// <param name="taskOptions">Default task options for the session</param>
+  /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+  /// <param name="closeOnDispose">Whether the session should be closed once the SessionHandle instance is disposed.</param>
+  /// <returns>A task representing the asynchronous operation. The task result contains the created session info.</returns>
+  public async Task<SessionHandle> CreateSessionAsync(IEnumerable<string> partitionIds,
+                                                      TaskConfiguration   taskOptions,
+                                                      bool                closeOnDispose,
+                                                      CancellationToken   cancellationToken = default)
+  {
+    var sessionInfo = await SessionService.CreateSessionAsync(partitionIds,
+                                                              taskOptions,
+                                                              cancellationToken)
+                                          .ConfigureAwait(false);
+    return new SessionHandle(sessionInfo,
+                             this,
+                             closeOnDispose);
+  }
 }
