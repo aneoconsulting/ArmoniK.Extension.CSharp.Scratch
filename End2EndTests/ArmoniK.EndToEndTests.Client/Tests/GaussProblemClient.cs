@@ -72,17 +72,17 @@ public class GaussProblemClient : ClientBase
   {
     public byte[] Result { get; private set; } = [];
 
-    public ValueTask OnSuccess(BlobHandle        blob,
-                               byte[]            rawData,
-                               CancellationToken cancellationToken)
+    public ValueTask OnSuccessAsync(BlobHandle        blob,
+                                    byte[]            rawData,
+                                    CancellationToken cancellationToken)
     {
       Result = rawData;
       return ValueTask.CompletedTask;
     }
 
-    public ValueTask OnError(BlobHandle        blob,
-                             Exception?        exception,
-                             CancellationToken cancellationToken)
+    public ValueTask OnErrorAsync(BlobHandle        blob,
+                                  Exception?        exception,
+                                  CancellationToken cancellationToken)
     {
       Assert.Fail(exception?.Message ?? $"blob {blob.BlobInfo.BlobId} aborted");
       return ValueTask.CompletedTask;

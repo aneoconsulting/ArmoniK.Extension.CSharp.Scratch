@@ -399,16 +399,16 @@ public class SessionHandle : IAsyncDisposable, IDisposable
               {
                 var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
                                              .ConfigureAwait(false);
-                await func.OnSuccess(blobHandle,
-                                     result,
-                                     cts_.Token)
+                await func.OnSuccessAsync(blobHandle,
+                                          result,
+                                          cts_.Token)
                           .ConfigureAwait(false);
               }
               catch (Exception ex)
               {
-                await func.OnError(blobHandle,
-                                   ex,
-                                   cts_.Token)
+                await func.OnErrorAsync(blobHandle,
+                                        ex,
+                                        cts_.Token)
                           .ConfigureAwait(false);
               }
             }
@@ -429,9 +429,9 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             {
               var blobHandle = new BlobHandle(blobState,
                                               client_);
-              await func.OnError(blobHandle,
-                                 new ArmoniKSdkException("blob aborted, call of OnSuccess() was canceled."),
-                                 cts_.Token)
+              await func.OnErrorAsync(blobHandle,
+                                      new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
+                                      cts_.Token)
                         .ConfigureAwait(false);
             }
             else
