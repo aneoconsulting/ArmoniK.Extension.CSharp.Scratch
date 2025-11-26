@@ -53,7 +53,7 @@ public class ArmoniKSdkException : Exception
   /// </summary>
   /// <param name="message">The new message that will override the one from the previous exception</param>
   /// <param name="e">The previous exception</param>
-  public ArmoniKSdkException(string message,
+  public ArmoniKSdkException(string            message,
                              ArgumentException e)
     : base(message,
            e)
@@ -64,7 +64,7 @@ public class ArmoniKSdkException : Exception
   /// </summary>
   /// <param name="message">The new message that will override the one from the previous exception</param>
   /// <param name="e">The previous exception</param>
-  public ArmoniKSdkException(string message,
+  public ArmoniKSdkException(string    message,
                              Exception e)
     : base(message,
            e)
