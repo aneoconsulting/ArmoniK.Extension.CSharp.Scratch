@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 using ArmoniK.Extension.CSharp.Client.Common.Services;
@@ -32,19 +31,21 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 ///   Class query provider that build the protobuf filtering structure
 /// </summary>
 internal abstract class ArmoniKQueryProvider<TPagination, TPage, TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> : IAsyncQueryProvider<TSource>
+  where TPagination : new()
+  where TEnumField : new()
   where TFilterOr : new()
   where TFilterAnd : new()
 {
-  protected readonly ILogger<IBlobService> logger_;
+  protected readonly ILogger<IBlobService> Logger;
 
   /// <summary>
   ///   Create the query provider
   /// </summary>
   /// <param name="logger">The logger</param>
   protected ArmoniKQueryProvider(ILogger<IBlobService> logger)
-    => logger_ = logger;
+    => Logger = logger;
 
-  public QueryExecution<TPagination, TPage, TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> QueryExecution { get; private set; }
+  public QueryExecution<TPagination, TPage, TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField>? QueryExecution { get; private set; }
 
   /// <summary>
   ///   Create the query object
@@ -108,8 +109,8 @@ internal abstract class ArmoniKQueryProvider<TPagination, TPage, TSource, TEnumF
   /// <param name="cancellationToken">The cancellation token</param>
   /// <returns>An asynchronous enumeration of instances compliant with the filter</returns>
   /// <exception cref="InvalidExpressionException">When the filtering expression is invalid</exception>
-  public IAsyncEnumerable<TSource> ExecuteAsync(Expression                                 expression,
-                                                [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  public IAsyncEnumerable<TSource> ExecuteAsync(Expression        expression,
+                                                CancellationToken cancellationToken = default)
   {
     QueryExecution = CreateQueryExecution();
     QueryExecution.VisitExpression(expression);

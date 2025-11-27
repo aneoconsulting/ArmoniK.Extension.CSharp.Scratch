@@ -44,8 +44,17 @@ public enum SortDirection
   Desc,
 }
 
+/// <summary>
+///   Provides extension methods for conversion purpose between protobuf types and SDK types.
+/// </summary>
 public static class SortDirectionExt
 {
+  /// <summary>
+  ///   Converts a SortDirection to its corresponding protobuf enum value.
+  /// </summary>
+  /// <param name="direction"></param>
+  /// <returns></returns>
+  /// <exception cref="ArgumentOutOfRangeException"></exception>
   public static Api.gRPC.V1.SortDirection.SortDirection ToGrpc(this SortDirection direction)
     => direction switch
        {
@@ -57,6 +66,12 @@ public static class SortDirectionExt
                                                     null),
        };
 
+  /// <summary>
+  ///   Converts a protobuf sort direction to its corresponding SortDirection value.
+  /// </summary>
+  /// <param name="direction"></param>
+  /// <returns></returns>
+  /// <exception cref="ArgumentOutOfRangeException"></exception>
   public static SortDirection ToIternal(this Api.gRPC.V1.SortDirection.SortDirection direction)
     => direction switch
        {

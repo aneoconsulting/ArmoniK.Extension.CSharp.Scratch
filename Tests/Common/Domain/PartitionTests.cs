@@ -18,7 +18,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Partition;
 
 using NUnit.Framework;
 
-namespace ArmoniK.Tests.Common.Domain;
+namespace Tests.Common.Domain;
 
 [TestFixture]
 public class PartitionTests

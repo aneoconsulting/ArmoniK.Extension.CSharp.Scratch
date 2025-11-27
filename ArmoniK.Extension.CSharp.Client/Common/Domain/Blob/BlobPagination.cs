@@ -45,5 +45,5 @@ public record BlobPage
   /// <summary>
   ///   Blobs of the page.
   /// </summary>
-  public BlobState[] Blobs { get; init; }
+  public BlobState[] Blobs { get; init; } = [];
 }

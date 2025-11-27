@@ -16,9 +16,6 @@
 
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Api.gRPC.V1.Tasks;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using Grpc.Core;
 
@@ -185,17 +182,6 @@ internal static class MockHelper
                                                            }));
 
     return mockInvoker;
-  }
-
-  public static Mock<IBlobService> SetupCreateBlobMock(this Mock<IBlobService> blobService,
-                                                       List<BlobInfo>          returnData)
-  {
-    blobService.Setup(m => m.CreateBlobsAsync(It.IsAny<SessionInfo>(),
-                                              It.IsAny<IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)>>(),
-                                              It.IsAny<CancellationToken>()))
-               .Returns(returnData.ToAsyncEnumerable);
-
-    return blobService;
   }
 
   /// <summary>

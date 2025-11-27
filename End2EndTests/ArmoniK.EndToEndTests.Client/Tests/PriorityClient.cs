@@ -43,7 +43,7 @@ public class PriorityClient : ClientBase
     foreach (var priority in Enumerable.Range(1,
                                               5))
     {
-      var options = TaskConfiguration with
+      var options = TaskConfiguration! with
                     {
                       Priority = priority,
                       PartitionId = Partition,
@@ -52,15 +52,15 @@ public class PriorityClient : ClientBase
       var taskDefinitions = new List<TaskDefinition>();
       for (var i = 0; i < nTasksPerSessionPerPriority; i++)
       {
-        var priorityBlobInfo = await Client.BlobService.CreateBlobAsync(SessionHandle,
-                                                                        "Priority",
-                                                                        Encoding.UTF8.GetBytes(priority.ToString()))
-                                           .ConfigureAwait(false);
+        var priorityBlobInfo = await Client!.BlobService.CreateBlobAsync(SessionHandle!,
+                                                                         "Priority",
+                                                                         Encoding.UTF8.GetBytes(priority.ToString()))
+                                            .ConfigureAwait(false);
         var priorityBlobHandle = new BlobHandle(priorityBlobInfo,
                                                 Client);
 
         var resultName = "Result" + priority;
-        var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
+        var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary!)
                                                  .WithInput("Priority",
                                                             BlobDefinition.FromBlobHandle(priorityBlobHandle))
                                                  .WithOutput(resultName,
@@ -72,8 +72,8 @@ public class PriorityClient : ClientBase
       allTasks.AddRange(taskDefinitions);
       foreach (var taskDefinition in taskDefinitions)
       {
-        await SessionHandle.SubmitAsync([taskDefinition])
-                           .ConfigureAwait(false);
+        await SessionHandle!.SubmitAsync([taskDefinition])
+                            .ConfigureAwait(false);
       }
 
       taskDefinitions.Clear();
@@ -81,10 +81,10 @@ public class PriorityClient : ClientBase
 
     var allResults = allTasks.SelectMany(t => t.Outputs.Values.Select(o => o.BlobHandle!.BlobInfo))
                              .ToList();
-    await Client.EventsService.WaitForBlobsAsync(SessionHandle,
-                                                 allResults,
-                                                 CancellationToken.None)
-                .ConfigureAwait(false);
+    await Client!.EventsService.WaitForBlobsAsync(SessionHandle!,
+                                                  allResults,
+                                                  CancellationToken.None)
+                 .ConfigureAwait(false);
 
     foreach (var blobInfo in allResults)
     {

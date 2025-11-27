@@ -41,9 +41,9 @@ namespace ArmoniK.Extension.CSharp.Client;
 /// </summary>
 public class ArmoniKClient
 {
-  private readonly ILogger                 logger_;
-  private readonly ServiceProvider         serviceProvider_;
-  private          ObjectPool<ChannelBase> channelPool_;
+  private readonly ILogger                  logger_;
+  private readonly ServiceProvider          serviceProvider_;
+  private          ObjectPool<ChannelBase>? channelPool_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="ArmoniKClient" /> class with the specified properties and logger

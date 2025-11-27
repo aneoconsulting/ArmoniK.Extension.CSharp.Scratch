@@ -41,22 +41,28 @@ internal class BlobStateOrderByExpressionTreeVisitor : OrderByExpressionTreeVisi
                                                                                              nameof(BlobInfo.CreatedBy), ResultRawEnumField.CreatedBy
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.CompletedAt), ResultRawEnumField.CompletedAt
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.CompletedAt),
+                                                                                             ResultRawEnumField.CompletedAt
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.CreateAt), ResultRawEnumField.CreatedAt
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.CreateAt),
+                                                                                             ResultRawEnumField.CreatedAt
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.Status), ResultRawEnumField.Status
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.Status),
+                                                                                             ResultRawEnumField.Status
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.OwnerId), ResultRawEnumField.OwnerTaskId
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.OwnerId),
+                                                                                             ResultRawEnumField.OwnerTaskId
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.OpaqueId), ResultRawEnumField.OpaqueId
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.OpaqueId),
+                                                                                             ResultRawEnumField.OpaqueId
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.Size), ResultRawEnumField.Size
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.Size),
+                                                                                             ResultRawEnumField.Size
                                                                                            },
                                                                                          };
 

@@ -24,17 +24,17 @@ public record BlobInfo
   /// <summary>
   ///   Session ID associated with the blob.
   /// </summary>
-  public string SessionId { get; init; }
+  public string SessionId { get; init; } = string.Empty;
 
   /// <summary>
   ///   Name of the blob.
   /// </summary>
-  public string BlobName { get; init; }
+  public string BlobName { get; init; } = string.Empty;
 
   /// <summary>
   ///   Blob unique identifier.
   /// </summary>
-  public string BlobId { get; init; }
+  public string BlobId { get; init; } = string.Empty;
 
   /// <summary>
   ///   The ID of the Task that as submitted this result.

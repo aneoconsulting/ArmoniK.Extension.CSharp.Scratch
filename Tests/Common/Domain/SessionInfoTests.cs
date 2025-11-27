@@ -18,7 +18,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 
 using NUnit.Framework;
 
-namespace ArmoniK.Tests.Common.Domain;
+namespace Tests.Common.Domain;
 
 [TestFixture]
 public class SessionInfoTests

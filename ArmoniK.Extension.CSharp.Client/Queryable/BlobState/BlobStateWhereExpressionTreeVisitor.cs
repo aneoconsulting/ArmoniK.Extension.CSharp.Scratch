@@ -47,22 +47,22 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
                                                                           nameof(BlobInfo.CreatedBy), typeof(string)
                                                                         },
                                                                         {
-                                                                          nameof(BlobState.CompletedAt), typeof(DateTime?)
+                                                                          nameof(CSharp.Common.Common.Domain.Blob.BlobState.CompletedAt), typeof(DateTime?)
                                                                         },
                                                                         {
-                                                                          nameof(BlobState.CreateAt), typeof(DateTime)
+                                                                          nameof(CSharp.Common.Common.Domain.Blob.BlobState.CreateAt), typeof(DateTime)
                                                                         },
                                                                         {
-                                                                          nameof(BlobState.Status), typeof(BlobStatus)
+                                                                          nameof(CSharp.Common.Common.Domain.Blob.BlobState.Status), typeof(BlobStatus)
                                                                         },
                                                                         {
-                                                                          nameof(BlobState.OwnerId), typeof(string)
+                                                                          nameof(CSharp.Common.Common.Domain.Blob.BlobState.OwnerId), typeof(string)
                                                                         },
                                                                         {
-                                                                          nameof(BlobState.OpaqueId), typeof(byte[])
+                                                                          nameof(CSharp.Common.Common.Domain.Blob.BlobState.OpaqueId), typeof(byte[])
                                                                         },
                                                                         {
-                                                                          nameof(BlobState.Size), typeof(int)
+                                                                          nameof(CSharp.Common.Common.Domain.Blob.BlobState.Size), typeof(int)
                                                                         },
                                                                       };
 
@@ -81,22 +81,28 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
                                                                                              nameof(BlobInfo.CreatedBy), ResultRawEnumField.CreatedBy
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.CompletedAt), ResultRawEnumField.CompletedAt
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.CompletedAt),
+                                                                                             ResultRawEnumField.CompletedAt
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.CreateAt), ResultRawEnumField.CreatedAt
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.CreateAt),
+                                                                                             ResultRawEnumField.CreatedAt
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.Status), ResultRawEnumField.Status
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.Status),
+                                                                                             ResultRawEnumField.Status
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.OwnerId), ResultRawEnumField.OwnerTaskId
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.OwnerId),
+                                                                                             ResultRawEnumField.OwnerTaskId
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.OpaqueId), ResultRawEnumField.OpaqueId
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.OpaqueId),
+                                                                                             ResultRawEnumField.OpaqueId
                                                                                            },
                                                                                            {
-                                                                                             nameof(BlobState.Size), ResultRawEnumField.Size
+                                                                                             nameof(CSharp.Common.Common.Domain.Blob.BlobState.Size),
+                                                                                             ResultRawEnumField.Size
                                                                                            },
                                                                                          };
 

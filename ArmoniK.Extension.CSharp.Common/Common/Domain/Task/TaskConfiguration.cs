@@ -73,7 +73,7 @@ public record TaskConfiguration
   /// <summary>
   ///   Partition identifier used for task segregation.
   /// </summary>
-  public string PartitionId { get; init; }
+  public string PartitionId { get; init; } = string.Empty;
 
   /// <summary>
   ///   Key-value pair options for task configuration.
