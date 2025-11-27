@@ -31,6 +31,8 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// </summary>
 internal class LibraryWorker
 {
+  private readonly object locker_ = new();
+
   /// <summary>
   ///   Reference to the last loaded service for health checking.
   /// </summary>
@@ -39,7 +41,7 @@ internal class LibraryWorker
   /// <summary>
   ///   Key of the last loaded service for logging purposes.
   /// </summary>
-  private string lastServiceKey_ = string.Empty;
+  private string serviceKey_ = string.Empty;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="LibraryWorker" /> class.
@@ -68,6 +70,24 @@ internal class LibraryWorker
   ///   Gets or sets the configuration settings.
   /// </summary>
   public IConfiguration Configuration { get; set; }
+
+  private void SetWorker(IWorker? worker,
+                         string   serviceKey)
+  {
+    lock (locker_)
+    {
+      currentService_ = worker;
+      serviceKey_     = serviceKey;
+    }
+  }
+
+  private (IWorker?, string) GetWorker()
+  {
+    lock (locker_)
+    {
+      return (currentService_, serviceKey_);
+    }
+  }
 
   /// <summary>
   ///   Executes a task asynchronously within a specified library context.
@@ -100,17 +120,19 @@ internal class LibraryWorker
         context.EnterContextualReflection();
       }
 
-      lastServiceKey_ = $"{libraryContext}:{dynamicLibrary.Symbol}";
+      var serviceKey = $"{libraryContext}:{dynamicLibrary.Symbol}";
       Logger.LogDebug("Loading service class: {ServiceKey}",
-                      lastServiceKey_);
-      currentService_ = libraryLoader.GetClassInstance<IWorker>(dynamicLibrary);
+                      serviceKey);
+      SetWorker(libraryLoader.GetClassInstance<IWorker>(dynamicLibrary),
+                serviceKey);
 
       var output = await SdkTaskRunner.Run(taskHandler,
-                                           currentService_,
+                                           currentService_!,
                                            Logger,
                                            cancellationToken)
                                       .ConfigureAwait(false);
-      currentService_ = null;
+      SetWorker(null,
+                string.Empty);
       return output;
     }
     catch (Exception ex)
@@ -134,6 +156,7 @@ internal class LibraryWorker
   /// <returns>A health check result indicating the status of the worker and the last loaded service.</returns>
   public async Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
   {
+    var (service, serviceKey) = GetWorker();
     try
     {
       Logger.LogDebug("Starting library worker health check");
@@ -147,38 +170,37 @@ internal class LibraryWorker
       testLogger.LogInformation("Health check validation at {Time}",
                                 DateTime.UtcNow);
 
-      if (currentService_ == null)
+      if (service == null)
       {
         Logger.LogDebug("No service has been loaded yet");
         return HealthCheckResult.Healthy("Library dynamic worker infrastructure is operational (no service loaded yet)");
       }
 
       Logger.LogDebug("Checking health of last loaded service: {ServiceKey}",
-                      lastServiceKey_);
+                      serviceKey);
 
       // Async call to check health of the last loaded service
-      var serviceHealthResult = await currentService_.CheckHealth(cancellationToken)
-                                                     .ConfigureAwait(false);
-
+      var serviceHealthResult = await service.CheckHealth(cancellationToken)
+                                             .ConfigureAwait(false);
 
       if (!serviceHealthResult.IsHealthy)
       {
-        var errorMessage = $"Service {lastServiceKey_}: {serviceHealthResult.Description}";
+        var errorMessage = $"Service {serviceKey}: {serviceHealthResult.Description}";
         Logger.LogWarning("Last loaded service is unhealthy: {ErrorMessage}",
                           errorMessage);
         return HealthCheckResult.Unhealthy(errorMessage);
       }
 
       Logger.LogDebug("Last loaded service {ServiceKey} is healthy",
-                      lastServiceKey_);
-      return HealthCheckResult.Healthy($"Library worker and service {lastServiceKey_} are operational");
+                      serviceKey);
+      return HealthCheckResult.Healthy($"Library worker and service {serviceKey} are operational");
     }
     catch (Exception ex)
     {
-      var errorMessage = $"Library worker health check failed {lastServiceKey_}: {ex.Message}";
+      var errorMessage = $"Library worker health check failed {serviceKey}: {ex.Message}";
       Logger?.LogError(ex,
                        "Library worker health check failed for service {Service}",
-                       lastServiceKey_);
+                       serviceKey);
       return HealthCheckResult.Unhealthy(errorMessage,
                                          ex);
     }

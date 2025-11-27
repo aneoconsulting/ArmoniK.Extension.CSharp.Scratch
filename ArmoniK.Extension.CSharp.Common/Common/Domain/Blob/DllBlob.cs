@@ -33,5 +33,5 @@ public record DllBlob : BlobInfo
   ///   library's identifier or name.
   /// </param>
   public DllBlob(DynamicLibrary dynamicLibrary)
-    => BlobName = dynamicLibrary.ToString();
+    => BlobName = dynamicLibrary.Symbol;
 }
