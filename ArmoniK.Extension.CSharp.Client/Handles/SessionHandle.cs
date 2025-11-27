@@ -43,16 +43,16 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   public readonly ArmoniKClient ArmoniKClient;
 
-  private readonly bool   closeOnDispose_;
-  private readonly object locker_ = new();
-
   /// <summary>
   ///   The session containing session ID
   /// </summary>
   public readonly SessionInfo SessionInfo;
 
+  private readonly bool   closeOnDispose_;
+  private readonly object locker_ = new();
+
   private CallbackRunner? callbackRunner_;
-  private bool            isDisposed_;
+  private int             isDisposed_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="SessionHandle" /> class.
@@ -101,14 +101,8 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       .WaitSync();
 
   private bool TestAndSetDisposed()
-  {
-    lock (locker_)
-    {
-      var ret = isDisposed_;
-      isDisposed_ = true;
-      return ret;
-    }
-  }
+    => Interlocked.Exchange(ref isDisposed_,
+                            1) != 0;
 
   private CallbackRunner? TestAndSetCallbackRunner()
   {
@@ -406,16 +400,16 @@ public class SessionHandle : IAsyncDisposable, IDisposable
               {
                 var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
                                              .ConfigureAwait(false);
-                await func.OnSuccess(blobHandle,
-                                     result,
-                                     cts_.Token)
+                await func.OnSuccessAsync(blobHandle,
+                                          result,
+                                          cts_.Token)
                           .ConfigureAwait(false);
               }
               catch (Exception ex)
               {
-                await func.OnError(blobHandle,
-                                   ex,
-                                   cts_.Token)
+                await func.OnErrorAsync(blobHandle,
+                                        ex,
+                                        cts_.Token)
                           .ConfigureAwait(false);
               }
             }
@@ -436,9 +430,9 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             {
               var blobHandle = new BlobHandle(blobState,
                                               client_);
-              await func.OnError(blobHandle,
-                                 new ArmoniKSdkException("blob aborted, call of OnSuccess() was canceled."),
-                                 cts_.Token)
+              await func.OnErrorAsync(blobHandle,
+                                      new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
+                                      cts_.Token)
                         .ConfigureAwait(false);
             }
             else

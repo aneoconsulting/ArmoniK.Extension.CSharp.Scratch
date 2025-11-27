@@ -34,18 +34,18 @@ public interface ICallback
   /// <param name="rawData">The blob's raw data</param>
   /// <param name="cancellationToken">A cancellation token</param>
   /// <returns>A task representing the asynchronous operation.</returns>
-  ValueTask OnSuccess(BlobHandle        blob,
-                      byte[]            rawData,
-                      CancellationToken cancellationToken);
+  ValueTask OnSuccessAsync(BlobHandle        blob,
+                           byte[]            rawData,
+                           CancellationToken cancellationToken);
 
   /// <summary>
   ///   Called when a blob is aborted or when an exception occured while retrieving its data.
   /// </summary>
   /// <param name="blob">The blob handle</param>
-  /// <param name="exception">The exception if any</param>
+  /// <param name="exception">The exception</param>
   /// <param name="cancellationToken">A cancellation token</param>
   /// <returns>A task representing the asynchronous operation.</returns>
-  ValueTask OnError(BlobHandle        blob,
-                    Exception?        exception,
-                    CancellationToken cancellationToken);
+  ValueTask OnErrorAsync(BlobHandle        blob,
+                         Exception         exception,
+                         CancellationToken cancellationToken);
 }
