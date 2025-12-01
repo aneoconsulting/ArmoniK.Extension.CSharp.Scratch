@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>1.0.0.0</Version>
+    <AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <OutputPath>bin/$(Configuration)/</OutputPath>
+    <PublishDir>./publish/$(MSBuildProjectName)/$(Version)/</PublishDir>
+    <PublishUrl>./publish/$(MSBuildProjectName)/$(Version)/</PublishUrl>
+    <IsPackable>false</IsPackable>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ArmoniK.Extension.CSharp.Worker.Interfaces\ArmoniK.Extension.CSharp.Worker.Interfaces.csproj" />
+  </ItemGroup>
+
+  <Target Name="CreateDirectories" AfterTargets="Publish">
+    <MakeDir Directories="./packages/" />
+  </Target>
+
+  <Target Name="ZipOutputPath" AfterTargets="CreateDirectories">
+    <ZipDirectory SourceDirectory="./publish/" DestinationFile="./packages/$(MSBuildProjectName)-v$(Version).zip"
+                  Overwrite="true" />
+  </Target>
+
+</Project>

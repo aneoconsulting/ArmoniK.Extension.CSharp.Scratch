@@ -21,7 +21,7 @@ using System.Reflection;
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;

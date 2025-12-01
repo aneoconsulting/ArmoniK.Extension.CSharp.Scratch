@@ -21,8 +21,10 @@ using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.Client.Services;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Common.Library;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -38,7 +40,8 @@ internal class Program
   private static IConfiguration   _configuration;
   private static ILogger<Program> _logger;
 
-  internal static async Task RunAsync(string filePath)
+  internal static async Task RunAsync(string filePath,
+                                      string name)
   {
     Log.Logger = new LoggerConfiguration().MinimumLevel.Override("Microsoft",
                                                                  LogEventLevel.Information)
@@ -74,8 +77,8 @@ internal class Program
 
     var dynamicLib = new DynamicLibrary
                      {
-                       Symbol      = "LibraryExample.Worker",
-                       LibraryPath = "publish/LibraryExample.dll",
+                       Symbol      = "DynamicWorkerExample.HelloWorker",
+                       LibraryPath = "DynamicWorkerExample/1.0.0.0/DynamicWorkerExample.dll",
                      };
 
     var sessionHandle = await client.CreateSessionAsync(["dllworker"],
@@ -102,7 +105,10 @@ internal class Program
                            dllBlob.BlobId);
 
     var task = new TaskDefinition().WithLibrary(dynamicLib)
-                                   .WithOutput("Result",
+                                   .WithInput("name",
+                                              BlobDefinition.FromString("name",
+                                                                        name))
+                                   .WithOutput("helloResult",
                                                BlobDefinition.CreateOutput("Result"))
                                    .WithTaskOptions(defaultTaskOptions);
 
@@ -124,33 +130,34 @@ internal class Program
     var download = await blobService.DownloadBlobAsync(resultBlobInfo,
                                                        CancellationToken.None)
                                     .ConfigureAwait(false);
-    var stringArray = Encoding.ASCII.GetString(download)
-                              .Split(['\n'],
-                                     StringSplitOptions.RemoveEmptyEntries);
+    var hello = Encoding.UTF8.GetString(download);
 
-    foreach (var returnString in stringArray)
-    {
-      _logger.LogInformation("Downloaded: {@ResultContent}",
-                             returnString);
-    }
+    _logger.LogInformation("Downloaded: {Hello}",
+                           hello);
   }
 
   public static async Task<int> Main(string[] args)
   {
     // Define the options for the application with their description and default value
+    var name = new Option<string>("--name",
+                                  description: "your name.",
+                                  getDefaultValue: () => "unknown user");
+
     var filePath = new Option<string>("--filepath",
                                       description: "FilePath to the zip file.",
-                                      getDefaultValue: () => "library.zip");
+                                      getDefaultValue: () => @"..\..\..\..\DynamicWorkerExample\packages\DynamicWorkerExample-v1.0.0.0.zip");
 
     // Describe the application and its purpose
     var rootCommand = new RootCommand("Hello World demo for ArmoniK Extension.\n");
 
     // Add the options to the parser
     rootCommand.AddOption(filePath);
+    rootCommand.AddOption(name);
 
     // Configure the handler to call the function that will do the work
     rootCommand.SetHandler(RunAsync,
-                           filePath);
+                           filePath,
+                           name);
 
     // Parse the command line parameters and call the function that represents the application
     return await rootCommand.InvokeAsync(args)

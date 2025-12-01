@@ -31,6 +31,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Queryable;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 using ArmoniK.Utils;
 
 using Google.Protobuf;

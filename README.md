@@ -76,12 +76,21 @@ Users will exchange with ArmoniK by ArmoniKClient, which manages all services an
 - **EventsService:** `Task<IEventsService> GetEventsService(Session session)`
   - Retrieves the service responsible for managing events, including subscribing to, publishing, and handling events within the ArmoniK ecosystem.
 
-## Usage
+## Projects
 
-A project with a simple use case is available.
+The present repository contains the following projects:
+- **ArmoniK.Extension.CSharp.Client:** A library exposing the APIs that can be used by an ArmoniK client.
+- **ArmoniK.Extension.CSharp.Worker:** A library containing the common logic for dynamic and static workers.
+- **ArmoniK.Extension.CSharp.Common:** A library containing common classes between the `ArmoniK.Extension.CSharp.Client` and `ArmoniK.Extension.CSharp.Worker` libraries.
+- **ArmoniK.Extension.CSharp.Worker.Interfaces:** A library containing the interface `IWorker` which is required to be implemented by any worker. A worker relying on the dynamic loading feature only needs that library as a dependency.
+- **ArmoniK.Extension.CSharp.DynamicWorker:** A web application containing the logic for the dynamic loading feature. This application must be deployed as a container in an ArmoniK partition.
+- **StaticWorkerExample:** A web application example containing an implementation example of the `IWorker` interface. This application must be deployed as a container in an ArmoniK partition.
+- **DynamicWorkerExample:** A library only containing an implementation example of the `IWorker` interface.
+- **UsageExample:** A console application containing an example of an ArmoniK client. Require an ArmoniK dynamic or static worker to be deployed.
+- **Tests:** A unit tests project.
+- **End2EndTests/ArmoniK.EndToEndTests.Client:** A test project containing a set of clients part for end to end tests.
+- **End2EndTests/ArmoniK.EndToEndTests.Worker:** A library containing the workers part of the corresponding clients. That library of workers rely on the dynamic loading feature.
 
-## Next Step
+## Next Steps
 
-- End-to-end tests
-- Delagate functions as parameters
-- Send Tasks in chunk
+- Filtering with LINQ requests on tasks and partitions (feature only available for blobs as of now).

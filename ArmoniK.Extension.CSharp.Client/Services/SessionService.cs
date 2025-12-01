@@ -21,8 +21,8 @@ using System.Threading.Tasks;
 using ArmoniK.Api.gRPC.V1.Sessions;
 using ArmoniK.Extension.CSharp.Client.Common;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
 using ArmoniK.Utils;
 
 using Grpc.Core;

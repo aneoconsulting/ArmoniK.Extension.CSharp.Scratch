@@ -16,10 +16,10 @@
 
 using ArmoniK.Extension.CSharp.Client;
 using ArmoniK.Extension.CSharp.Client.Common;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Handles;
-using ArmoniK.Extension.CSharp.Client.Library;
 using ArmoniK.Extension.CSharp.Client.Services;
+using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Common.Library;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
