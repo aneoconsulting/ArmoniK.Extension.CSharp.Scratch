@@ -42,19 +42,6 @@ internal class LibraryLoader
     => logger_ = loggerFactory.CreateLogger<LibraryLoader>();
 
   /// <summary>
-  ///   Disposes the current instance and unloads the assembly load contexts.
-  /// </summary>
-  public void Dispose()
-  {
-    foreach (var pair in assemblyLoadContexts_)
-    {
-      AssemblyLoadContext.GetLoadContext(pair.Value)!.Unload();
-    }
-
-    assemblyLoadContexts_.Clear();
-  }
-
-  /// <summary>
   ///   Gets the assembly load context for the specified library context key.
   /// </summary>
   /// <param name="libraryContextKey">The key of the library context.</param>
@@ -73,10 +60,17 @@ internal class LibraryLoader
   }
 
   /// <summary>
-  ///   Resets the service by disposing the current instance.
+  ///   Resets the service by unloading workers.
   /// </summary>
   public void ResetService()
-    => Dispose();
+  {
+    foreach (var pair in assemblyLoadContexts_)
+    {
+      AssemblyLoadContext.GetLoadContext(pair.Value)!.Unload();
+    }
+
+    assemblyLoadContexts_.Clear();
+  }
 
   /// <summary>
   ///   Loads a library asynchronously based on the task handler and cancellation token provided.
