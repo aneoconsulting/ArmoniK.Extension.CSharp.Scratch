@@ -160,6 +160,18 @@ internal class LibraryWorker
       var healthCheckResult = await currentService_!.CheckHealth(cancellationToken)
                                                     .ConfigureAwait(false);
       SetLastHealthStatus(healthCheckResult);
+
+      // Dispose the worker if necessary
+      if (currentService_ is IAsyncDisposable asyncDisposable)
+      {
+        await asyncDisposable.DisposeAsync()
+                             .ConfigureAwait(false);
+      }
+      else if (currentService_ is IDisposable disposable)
+      {
+        disposable.Dispose();
+      }
+
       SetCurrentWorker(null,
                        string.Empty);
       return output;
