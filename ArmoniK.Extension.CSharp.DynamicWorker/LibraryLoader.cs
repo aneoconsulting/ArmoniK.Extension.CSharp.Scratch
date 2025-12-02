@@ -31,8 +31,8 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// </summary>
 internal class LibraryLoader
 {
-  private readonly ILogger                                                                            logger_;
-  private          ConcurrentDictionary<string, (Assembly assembly, AssemblyLoadContext loadContext)> assemblyLoadContexts_ = new();
+  private readonly ConcurrentDictionary<string, Assembly> assemblyLoadContexts_ = new();
+  private readonly ILogger                                logger_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="LibraryLoader" /> class.
@@ -42,12 +42,6 @@ internal class LibraryLoader
     => logger_ = loggerFactory.CreateLogger<LibraryLoader>();
 
   /// <summary>
-  ///   Disposes the current instance and resets the assembly load contexts.
-  /// </summary>
-  public void Dispose()
-    => assemblyLoadContexts_ = new ConcurrentDictionary<string, (Assembly, AssemblyLoadContext)>();
-
-  /// <summary>
   ///   Gets the assembly load context for the specified library context key.
   /// </summary>
   /// <param name="libraryContextKey">The key of the library context.</param>
@@ -55,22 +49,28 @@ internal class LibraryLoader
   /// <exception cref="ArmoniKSdkException">Thrown when the key is not found in the dictionary.</exception>
   public AssemblyLoadContext GetAssemblyLoadContext(string libraryContextKey)
   {
-    var exists = assemblyLoadContexts_.TryGetValue(libraryContextKey,
-                                                   out var value);
-    if (!exists)
+    if (!assemblyLoadContexts_.TryGetValue(libraryContextKey,
+                                           out var assembly))
     {
       logger_.LogError($"AssemblyLoadContexts does not have key {libraryContextKey}");
       throw new ArmoniKSdkException("No key found on AssemblyLoadContexts dictionary");
     }
 
-    return value.loadContext;
+    return AssemblyLoadContext.GetLoadContext(assembly)!;
   }
 
   /// <summary>
-  ///   Resets the service by disposing the current instance.
+  ///   Resets the service by unloading workers.
   /// </summary>
   public void ResetService()
-    => Dispose();
+  {
+    foreach (var pair in assemblyLoadContexts_)
+    {
+      AssemblyLoadContext.GetLoadContext(pair.Value)!.Unload();
+    }
+
+    assemblyLoadContexts_.Clear();
+  }
 
   /// <summary>
   ///   Loads a library asynchronously based on the task handler and cancellation token provided.
@@ -102,12 +102,13 @@ internal class LibraryLoader
       logger_.LogInformation($"Starting Dynamic loading - FileName: {filename}, FilePath: {filePath}, DestinationToUnZip:{destinationPath}, LibraryPath:{libraryPath}, Symbol: {dynamicLibrary.Symbol}");
 
       // if the context is already loaded
-      if (assemblyLoadContexts_.ContainsKey(dynamicLibrary.ToString()))
+      if (assemblyLoadContexts_.ContainsKey(dynamicLibrary.Symbol))
       {
-        return dynamicLibrary.ToString();
+        return dynamicLibrary.Symbol;
       }
 
-      var loadContext = new AssemblyLoadContext(dynamicLibrary.ToString());
+      var loadContext = new AssemblyLoadContext(dynamicLibrary.Symbol,
+                                                true);
 
       var dllExists = taskHandler.DataDependencies.TryGetValue(dynamicLibrary.LibraryBlobId,
                                                                out var libraryBytes);
@@ -157,8 +158,8 @@ internal class LibraryLoader
 
       var assembly = loadContext.LoadFromAssemblyPath(extractedFilePath);
 
-      if (!assemblyLoadContexts_.TryAdd(dynamicLibrary.ToString(),
-                                        (assembly, loadContext)))
+      if (!assemblyLoadContexts_.TryAdd(dynamicLibrary.Symbol,
+                                        assembly))
       {
         throw new ArmoniKSdkException($"Unable to add load context {dynamicLibrary}");
       }
@@ -166,7 +167,7 @@ internal class LibraryLoader
       logger_.LogInformation("Nb of current loaded assemblies: {nbAssemblyLoadContexts}",
                              assemblyLoadContexts_.Count);
 
-      return dynamicLibrary.ToString();
+      return dynamicLibrary.Symbol;
     }
     catch (Exception ex)
     {
@@ -187,43 +188,49 @@ internal class LibraryLoader
   {
     try
     {
-      assemblyLoadContexts_.TryGetValue(dynamicLibrary.ToString(),
-                                        out var assembly);
-      using (assembly.loadContext.EnterContextualReflection())
+      if (assemblyLoadContexts_.TryGetValue(dynamicLibrary.Symbol,
+                                            out var assembly))
       {
-        // Create an instance of a class from the assembly.
-        var classType = assembly.assembly.GetType($"{dynamicLibrary.Symbol}");
-        logger_.LogInformation("Types found in the assembly: {assemblyTypes}",
-                               string.Join(",",
-                                           assembly.assembly.GetTypes()
-                                                   .Select(x => x.ToString())));
-        if (classType is null)
+        using (AssemblyLoadContext.GetLoadContext(assembly)!.EnterContextualReflection())
         {
-          var message = $"Type {dynamicLibrary.Symbol} could not be loaded";
-          logger_.LogError(message);
-          throw new ArmoniKSdkException(message);
+          // Create an instance of a class from the assembly.
+          var classType = assembly.GetType($"{dynamicLibrary.Symbol}");
+          logger_.LogInformation("Types found in the assembly: {assemblyTypes}",
+                                 string.Join(",",
+                                             assembly.GetTypes()
+                                                     .Select(x => x.ToString())));
+          if (classType is null)
+          {
+            var message = $"Failure to create an instance of {dynamicLibrary.Symbol}: type not found";
+            logger_.LogError(message);
+            throw new ArmoniKSdkException(message);
+          }
+
+          logger_.LogInformation($"Type {dynamicLibrary.Symbol}: {classType} loaded");
+
+          var serviceContainer = Activator.CreateInstance(classType);
+          if (serviceContainer is null)
+          {
+            var message = $"Could not create an instance of type {classType.Name} (default constructor missing?)";
+            logger_.LogError(message);
+            throw new ArmoniKSdkException(message);
+          }
+
+          var typedServiceContainer = serviceContainer as T;
+          if (typedServiceContainer is null)
+          {
+            var message = $"The type {classType.Name} is not convertible to {typeof(T)}";
+            logger_.LogError(message);
+            throw new ArmoniKSdkException(message);
+          }
+
+          return typedServiceContainer;
         }
-
-        logger_.LogInformation($"Type {dynamicLibrary.Symbol}: {classType} loaded");
-
-        var serviceContainer = Activator.CreateInstance(classType);
-        if (serviceContainer is null)
-        {
-          var message = $"Could not create an instance of type {classType.Name} (default constructor missing?)";
-          logger_.LogError(message);
-          throw new ArmoniKSdkException(message);
-        }
-
-        var typedServiceContainer = serviceContainer as T;
-        if (typedServiceContainer is null)
-        {
-          var message = $"The type {classType.Name} is not convertible to {typeof(T)}";
-          logger_.LogError(message);
-          throw new ArmoniKSdkException(message);
-        }
-
-        return typedServiceContainer;
       }
+
+      var libNotFoundMessage = $"Failure to create an instance of {dynamicLibrary.Symbol}: the library was not found";
+      logger_.LogError(libNotFoundMessage);
+      throw new ArmoniKSdkException(libNotFoundMessage);
     }
     catch (Exception e)
     {
