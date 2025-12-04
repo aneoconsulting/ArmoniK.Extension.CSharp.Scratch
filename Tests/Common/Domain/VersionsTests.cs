@@ -18,7 +18,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Versions;
 
 using NUnit.Framework;
 
-namespace ArmoniK.Tests.Common.Domain;
+namespace Tests.Common.Domain;
 
 [TestFixture]
 public class VersionsInfoTests
@@ -81,7 +81,7 @@ public class VersionsInfoTests
   {
     var versionsInfo = new VersionsInfo
                        {
-                         Core = null,
+                         Core = null!,
                          Api  = string.Empty,
                        };
 

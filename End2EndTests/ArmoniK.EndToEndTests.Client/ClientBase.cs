@@ -31,12 +31,12 @@ namespace ArmoniK.EndToEndTests.Client;
 
 public class ClientBase
 {
-  protected const string            Partition = "dllworker";
-  protected       Properties        Properties        { get; set; }
-  protected       TaskConfiguration TaskConfiguration { get; set; }
-  protected       SessionHandle     SessionHandle     { get; set; }
-  protected       ArmoniKClient     Client            { get; set; }
-  protected       DynamicLibrary    WorkerLibrary     { get; set; }
+  protected const string             Partition = "dllworker";
+  protected       Properties?        Properties        { get; set; }
+  protected       TaskConfiguration? TaskConfiguration { get; set; }
+  protected       SessionHandle?     SessionHandle     { get; set; }
+  protected       ArmoniKClient?     Client            { get; set; }
+  protected       DynamicLibrary?    WorkerLibrary     { get; set; }
 
   protected async Task SetupBaseAsync(string workerName)
   {
@@ -85,9 +85,9 @@ public class ClientBase
 
   protected async Task TearDownBaseAsync()
   {
-    await SessionHandle.DisposeAsync()
-                       .ConfigureAwait(false);
-    await Client.SessionService.PurgeSessionAsync(SessionHandle);
+    await SessionHandle!.DisposeAsync()
+                        .ConfigureAwait(false);
+    await Client!.SessionService.PurgeSessionAsync(SessionHandle);
     await Client.SessionService.DeleteSessionAsync(SessionHandle);
     Properties        = null;
     TaskConfiguration = null;

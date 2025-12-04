@@ -33,15 +33,16 @@ namespace ArmoniK.Extension.CSharp.Client.Queryable;
 /// <typeparam name="TFilterAnd">The type representing AND filter operations.</typeparam>
 /// <typeparam name="TFilterField">The type representing individual field filters.</typeparam>
 internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField>
+  where TEnumField : new()
   where TFilterOr : new()
   where TFilterAnd : new()
 {
   public Func<IAsyncEnumerable<TSource>, TSource?>? FuncReturnNullableTSource { get; private set; }
   public Func<IAsyncEnumerable<TSource>, TSource>?  FuncReturnTSource         { get; private set; }
 
-  public TFilterOr Filters { get; private set; }
+  public TFilterOr Filters { get; private set; } = new();
 
-  public TEnumField SortCriteria { get; protected set; }
+  public TEnumField SortCriteria { get; protected set; } = new();
 
   public bool IsSortAscending { get; protected set; }
 
@@ -60,10 +61,6 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
     {
       // A Where() was found
       Filters = WhereExpressionTreeVisitor.GetFilterOrRootNode();
-    }
-    else
-    {
-      Filters = new TFilterOr();
     }
   }
 

@@ -25,6 +25,8 @@ namespace ArmoniK.Extension.CSharp.Client.Common.Generic;
 /// <typeparam name="TFilter">The type of data being paginated.</typeparam>
 /// <typeparam name="TField">The enum type of fields, used as sorting criteria.</typeparam>
 public record Pagination<TFilter, TField>
+  where TFilter : new()
+  where TField : new()
 {
   /// <summary>
   ///   The current page number.
@@ -53,11 +55,11 @@ public record Pagination<TFilter, TField>
   /// <summary>
   ///   The sorting criteria
   /// </summary>
-  public TField SortField { get; set; }
+  public TField SortField { get; set; } = new();
 
   /// <summary>
   ///   The filter used for the pagination.
   /// </summary>
   /// <value>The filter criteria used to determine which items appear in the pagination.</value>
-  public TFilter Filter { get; set; }
+  public TFilter Filter { get; set; } = new();
 }

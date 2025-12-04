@@ -16,6 +16,8 @@
 
 using System;
 
+using ArmoniK.Extension.CSharp.Client.Exceptions;
+
 using JetBrains.Annotations;
 
 using Microsoft.Extensions.Configuration;
@@ -58,14 +60,14 @@ public record Properties
   /// <param name="clientP12">The client certificate in a P12/Pkcs12/PFX format</param>
   /// <param name="caCertPem">The Server certificate file to validate mTLS</param>
   /// <param name="sslValidation">Disable the ssl strong validation of ssl certificate (default : enable => true)</param>
-  public Properties(string connectionAddress,
-                    int    connectionPort = 0,
-                    string protocol       = null,
-                    string clientCertPem  = null,
-                    string clientKeyPem   = null,
-                    string clientP12      = null,
-                    string caCertPem      = null,
-                    bool?  sslValidation  = null)
+  public Properties(string  connectionAddress,
+                    int     connectionPort = 0,
+                    string? protocol       = null,
+                    string? clientCertPem  = null,
+                    string? clientKeyPem   = null,
+                    string? clientP12      = null,
+                    string? caCertPem      = null,
+                    bool?   sslValidation  = null)
     : this(new ConfigurationBuilder().AddEnvironmentVariables()
                                      .Build(),
            connectionAddress,
@@ -96,13 +98,13 @@ public record Properties
   /// <param name="retryMaxBackoff">Max retry backoff</param>
   /// <exception cref="ArgumentException"></exception>
   public Properties(IConfiguration configuration,
-                    string         connectionAddress      = null,
+                    string?        connectionAddress      = null,
                     int            connectionPort         = 0,
-                    string         protocol               = null,
-                    string         clientCertFilePem      = null,
-                    string         clientKeyFilePem       = null,
-                    string         clientP12              = null,
-                    string         caCertPem              = null,
+                    string?        protocol               = null,
+                    string?        clientCertFilePem      = null,
+                    string?        clientKeyFilePem       = null,
+                    string?        clientP12              = null,
+                    string?        caCertPem              = null,
                     bool?          sslValidation          = null,
                     TimeSpan       retryInitialBackoff    = new(),
                     double         retryBackoffMultiplier = 0,
@@ -111,6 +113,10 @@ public record Properties
     Configuration = configuration;
 
     var sectionGrpc = configuration.GetSection(Grpc);
+    if (sectionGrpc == null)
+    {
+      throw new ArmoniKSdkException($"Missing section {Grpc} in configuration file");
+    }
 
     if (connectionAddress != null)
     {
@@ -157,27 +163,27 @@ public record Properties
     {
       RetryInitialBackoff = retryInitialBackoff;
     }
-    else if (!string.IsNullOrWhiteSpace(sectionGrpc?[SectionRetryInitialBackoff]))
+    else if (!string.IsNullOrWhiteSpace(sectionGrpc[SectionRetryInitialBackoff]))
     {
-      RetryInitialBackoff = TimeSpan.Parse(sectionGrpc[SectionRetryInitialBackoff]);
+      RetryInitialBackoff = TimeSpan.Parse(sectionGrpc[SectionRetryInitialBackoff]!);
     }
 
     if (retryBackoffMultiplier != 0)
     {
       RetryBackoffMultiplier = retryBackoffMultiplier;
     }
-    else if (!string.IsNullOrWhiteSpace(sectionGrpc?[SectionRetryBackoffMultiplier]))
+    else if (!string.IsNullOrWhiteSpace(sectionGrpc[SectionRetryBackoffMultiplier]))
     {
-      RetryBackoffMultiplier = double.Parse(sectionGrpc[SectionRetryBackoffMultiplier]);
+      RetryBackoffMultiplier = double.Parse(sectionGrpc[SectionRetryBackoffMultiplier]!);
     }
 
     if (retryMaxBackoff != TimeSpan.Zero)
     {
       RetryMaxBackoff = retryMaxBackoff;
     }
-    else if (!string.IsNullOrWhiteSpace(sectionGrpc?[SectionRetryMaxBackoff]))
+    else if (!string.IsNullOrWhiteSpace(sectionGrpc[SectionRetryMaxBackoff]))
     {
-      RetryMaxBackoff = TimeSpan.Parse(sectionGrpc[SectionRetryMaxBackoff]);
+      RetryMaxBackoff = TimeSpan.Parse(sectionGrpc[SectionRetryMaxBackoff]!);
     }
 
     if (connectionPort != 0)

@@ -17,6 +17,7 @@
 using System.Linq.Expressions;
 
 using ArmoniK.Extension.CSharp.Client.Queryable;
+using ArmoniK.Extension.CSharp.Client.Queryable.BlobState;
 using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using NUnit.Framework;
@@ -94,7 +95,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -162,7 +163,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -191,7 +192,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -259,7 +260,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -327,7 +328,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -356,7 +357,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -417,7 +418,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -446,7 +447,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -472,7 +473,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -517,7 +518,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -595,7 +596,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -627,7 +628,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -705,7 +706,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -777,7 +778,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -806,7 +807,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 
@@ -832,7 +833,7 @@ public class BooleanExpressionFilterBlobTests : BaseBlobFilterTests
                       .ToListAsync();
 
     var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution.PaginationInstance,
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
                 Is.EqualTo(BuildBlobPagination(filter)));
   }
 }
