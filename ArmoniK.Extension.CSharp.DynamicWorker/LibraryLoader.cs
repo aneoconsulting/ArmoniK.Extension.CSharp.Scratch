@@ -31,8 +31,8 @@ internal class LibraryLoader : IDisposable
 {
   private readonly SemaphoreSlim                               binarySemaphore_;
   private readonly ExecutionSingleizer<HealthCheckResult>      checkHealthSingleizer_ = new();
-  private readonly ILogger                                     logger_;
   private readonly ILoggerFactory                              loggerFactory_;
+  private readonly ILogger                                     logger_;
   private readonly ConcurrentDictionary<string, WorkerService> workerServices_ = new();
   private          bool                                        disposed_;
 
