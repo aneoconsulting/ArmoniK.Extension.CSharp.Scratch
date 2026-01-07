@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2025. All rights reserved.
+// Copyright (C) ANEO, 2021-2026. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -15,356 +15,190 @@
 // limitations under the License.
 
 using System.Collections.Concurrent;
-using System.IO.Compression;
-using System.Reflection;
-using System.Runtime.Loader;
 
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Common.Exceptions;
 using ArmoniK.Extension.CSharp.Common.Library;
-using ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
+using ArmoniK.Extension.CSharp.Worker.Interfaces;
+using ArmoniK.Utils;
 
 namespace ArmoniK.Extension.CSharp.DynamicWorker;
 
 /// <summary>
 ///   Provides functionality to load and manage dynamic libraries for the ArmoniK project.
 /// </summary>
-internal class LibraryLoader
+internal class LibraryLoader : IDisposable
 {
-  private readonly ConcurrentDictionary<string, Assembly> assemblyLoadContexts_ = new();
-  private readonly ILogger                                logger_;
+  private readonly SemaphoreSlim                               binarySemaphore_;
+  private readonly ExecutionSingleizer<HealthCheckResult>      checkHealthSingleizer_ = new();
+  private readonly ILogger                                     logger_;
+  private readonly ILoggerFactory                              loggerFactory_;
+  private readonly ConcurrentDictionary<string, WorkerService> workerServices_ = new();
+  private          bool                                        disposed_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="LibraryLoader" /> class.
   /// </summary>
   /// <param name="loggerFactory">The logger factory to create logger instances.</param>
   public LibraryLoader(ILoggerFactory loggerFactory)
-    => logger_ = loggerFactory.CreateLogger<LibraryLoader>();
-
-  /// <summary>
-  ///   Gets the assembly load context for the specified library context key.
-  /// </summary>
-  /// <param name="libraryContextKey">The key of the library context.</param>
-  /// <returns>The assembly load context associated with the specified key.</returns>
-  /// <exception cref="ArmoniKSdkException">Thrown when the key is not found in the dictionary.</exception>
-  public AssemblyLoadContext GetAssemblyLoadContext(string libraryContextKey)
   {
-    if (!assemblyLoadContexts_.TryGetValue(libraryContextKey,
-                                           out var assembly))
-    {
-      logger_.LogError($"AssemblyLoadContexts does not have key {libraryContextKey}");
-      throw new ArmoniKSdkException("No key found on AssemblyLoadContexts dictionary");
-    }
+    logger_        = loggerFactory.CreateLogger<LibraryLoader>();
+    loggerFactory_ = loggerFactory;
+    binarySemaphore_ = new SemaphoreSlim(0,
+                                         1);
+  }
 
-    return AssemblyLoadContext.GetLoadContext(assembly)!;
+  public void Dispose()
+  {
+    if (!disposed_)
+    {
+      ResetServiceAsync(CancellationToken.None)
+        .WaitSync();
+      binarySemaphore_.Dispose();
+      checkHealthSingleizer_.Dispose();
+      disposed_ = true;
+    }
   }
 
   /// <summary>
   ///   Resets the service by unloading workers.
   /// </summary>
-  public void ResetService()
+  public async Task ResetServiceAsync(CancellationToken cancellationToken)
   {
-    foreach (var pair in assemblyLoadContexts_)
+    try
     {
-      AssemblyLoadContext.GetLoadContext(pair.Value)!.Unload();
-    }
+      // Take the semaphore token to avoid data races with CheckHealth()
+      await binarySemaphore_.WaitAsync(cancellationToken)
+                            .ConfigureAwait(false);
+      logger_.LogInformation("Unloading existing workers.");
+      foreach (var service in workerServices_.Values)
+      {
+        // Dispose the worker if necessary
+        if (service.Worker is IAsyncDisposable asyncDisposable)
+        {
+          await asyncDisposable.DisposeAsync()
+                               .ConfigureAwait(false);
+        }
+        else if (service.Worker is IDisposable disposable)
+        {
+          disposable.Dispose();
+        }
 
-    assemblyLoadContexts_.Clear();
+        service.Dispose();
+      }
+
+      workerServices_.Clear();
+    }
+    finally
+    {
+      binarySemaphore_.Release();
+    }
   }
+
+  /// <summary>
+  ///   Checks the health of the library worker and the last loaded service.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+  /// <returns>A health check result indicating the status of the worker and the last loaded service.</returns>
+  public async Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
+    => await checkHealthSingleizer_.Call(async token =>
+                                         {
+                                           var serviceName = "Unknown service";
+                                           try
+                                           {
+                                             // Take the semaphore token to avoid conflicts with ResetServiceAsync()
+                                             await binarySemaphore_.WaitAsync(token)
+                                                                   .ConfigureAwait(false);
+                                             logger_.LogInformation("Starting health check of loaded workers.");
+                                             foreach (var service in workerServices_.Values)
+                                             {
+                                               serviceName = service.ServiceName;
+
+                                               var health = await service.Worker.CheckHealth(token)
+                                                                         .ConfigureAwait(false);
+
+                                               if (health.IsHealthy)
+                                               {
+                                                 logger_.LogInformation("Service {Service} is healthy: {Message}",
+                                                                        serviceName,
+                                                                        health.Description ?? "");
+                                               }
+                                               else
+                                               {
+                                                 logger_.LogError("Service {Service} is unhealthy: {Message}",
+                                                                  serviceName,
+                                                                  health.Description);
+                                                 return health;
+                                               }
+                                             }
+
+                                             logger_.LogInformation("Ended health check successfully.");
+
+                                             return HealthCheckResult.Healthy();
+                                           }
+                                           catch (Exception ex)
+                                           {
+                                             logger_.LogError(ex,
+                                                              "Library worker health check failed for service '{Service}'",
+                                                              serviceName);
+                                             return HealthCheckResult.Unhealthy($"Library worker health check failed for service '{serviceName}': {ex.Message}",
+                                                                                ex);
+                                           }
+                                           finally
+                                           {
+                                             binarySemaphore_.Release();
+                                           }
+                                         },
+                                         cancellationToken)
+                                   .ConfigureAwait(false);
 
   /// <summary>
   ///   Loads a library asynchronously based on the task handler and cancellation token provided.
   /// </summary>
   /// <param name="taskHandler">The task handler containing the task options.</param>
+  /// <param name="dynamicLibrary">The worker library.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the name of the dynamic library loaded.</returns>
   /// <exception cref="ArmoniKSdkException">Thrown when there is an error loading the library.</exception>
-  public async Task<string> LoadLibraryAsync(ITaskHandler      taskHandler,
-                                             CancellationToken cancellationToken)
+  public async Task<IWorker> GetWorkerInstanceAsync(ITaskHandler      taskHandler,
+                                                    DynamicLibrary    dynamicLibrary,
+                                                    CancellationToken cancellationToken)
   {
     try
     {
       logger_.LogInformation("Starting to LoadLibrary");
       logger_.LogInformation("Nb of current loaded assemblies: {nbAssemblyLoadContexts}",
-                             assemblyLoadContexts_.Count);
-
-      // Get the data about the dynamic library
-      var dynamicLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
-
-      var filename = $"{dynamicLibrary}.zip";
-
-      var filePath = @"/tmp/zip";
-
-      var destinationPath = @"/tmp/assemblies";
-
-      var libraryPath = dynamicLibrary.LibraryPath;
-
-      logger_.LogInformation($"Starting Dynamic loading - FileName: {filename}, FilePath: {filePath}, DestinationToUnZip:{destinationPath}, LibraryPath:{libraryPath}, Symbol: {dynamicLibrary.Symbol}");
+                             workerServices_.Count);
 
       // if the context is already loaded
-      if (assemblyLoadContexts_.ContainsKey(dynamicLibrary.Symbol))
+      var key = $"{dynamicLibrary.Symbol}|{dynamicLibrary.LibraryBlobId}";
+      if (workerServices_.TryGetValue(key,
+                                      out var srv))
       {
-        return dynamicLibrary.Symbol;
+        return srv.Worker;
       }
 
-      var loadContext = new AssemblyLoadContext(dynamicLibrary.Symbol,
-                                                true);
+      var service = await WorkerService.CreateWorkerService(taskHandler,
+                                                            dynamicLibrary,
+                                                            loggerFactory_,
+                                                            cancellationToken)
+                                       .ConfigureAwait(false);
 
-      var dllExists = taskHandler.DataDependencies.TryGetValue(dynamicLibrary.LibraryBlobId,
-                                                               out var libraryBytes);
-      if (!dllExists || libraryBytes is null)
-      {
-        throw new ArmoniKSdkException($"No library found on data dependencies. (Library BlobId is {dynamicLibrary.LibraryBlobId})");
-      }
-
-      try
-      {
-        Directory.CreateDirectory(filePath);
-
-        // Create the full path to the zip file
-        var zipFilePath = Path.Combine(filePath,
-                                       filename);
-
-        await File.WriteAllBytesAsync(zipFilePath,
-                                      libraryBytes,
-                                      cancellationToken)
-                  .ConfigureAwait(false);
-      }
-      catch (Exception ex)
-      {
-        throw new ArmoniKSdkException(ex);
-      }
-
-      logger_.LogInformation("Extracting from archive {localZip}",
-                             Path.Join(filePath,
-                                       filename));
-
-      var extractedFilePath = ExtractArchive(filename,
-                                             filePath,
-                                             destinationPath,
-                                             libraryPath);
-
-      var zipFile = Path.Join(filePath,
-                              filename);
-
-      File.Delete(zipFile);
-
-      logger_.LogInformation("Package {dynamicLibrary} successfully extracted from {localAssembly}",
-                             dynamicLibrary,
-                             extractedFilePath);
-
-      logger_.LogInformation("Trying to load: {dllPath}",
-                             extractedFilePath);
-
-      var assembly = loadContext.LoadFromAssemblyPath(extractedFilePath);
-
-      if (!assemblyLoadContexts_.TryAdd(dynamicLibrary.Symbol,
-                                        assembly))
+      if (!workerServices_.TryAdd(key,
+                                  service))
       {
         throw new ArmoniKSdkException($"Unable to add load context {dynamicLibrary}");
       }
 
       logger_.LogInformation("Nb of current loaded assemblies: {nbAssemblyLoadContexts}",
-                             assemblyLoadContexts_.Count);
+                             workerServices_.Count);
 
-      return dynamicLibrary.Symbol;
+      return service.Worker;
     }
     catch (Exception ex)
     {
       logger_.LogError(ex.Message);
       throw new ArmoniKSdkException(ex);
-    }
-  }
-
-  /// <summary>
-  ///   Gets an instance of a class from the dynamic library.
-  /// </summary>
-  /// <typeparam name="T">Type that the created instance must be convertible to.</typeparam>
-  /// <param name="dynamicLibrary">The dynamic library definition.</param>
-  /// <returns>An instance of the class specified by <paramref name="dynamicLibrary" />.</returns>
-  /// <exception cref="ArmoniKSdkException">Thrown when there is an error loading the class instance.</exception>
-  public T GetClassInstance<T>(DynamicLibrary dynamicLibrary)
-    where T : class
-  {
-    try
-    {
-      if (assemblyLoadContexts_.TryGetValue(dynamicLibrary.Symbol,
-                                            out var assembly))
-      {
-        using (AssemblyLoadContext.GetLoadContext(assembly)!.EnterContextualReflection())
-        {
-          // Create an instance of a class from the assembly.
-          var classType = assembly.GetType($"{dynamicLibrary.Symbol}");
-          logger_.LogInformation("Types found in the assembly: {assemblyTypes}",
-                                 string.Join(",",
-                                             assembly.GetTypes()
-                                                     .Select(x => x.ToString())));
-          if (classType is null)
-          {
-            var message = $"Failure to create an instance of {dynamicLibrary.Symbol}: type not found";
-            logger_.LogError(message);
-            throw new ArmoniKSdkException(message);
-          }
-
-          logger_.LogInformation($"Type {dynamicLibrary.Symbol}: {classType} loaded");
-
-          var serviceContainer = Activator.CreateInstance(classType);
-          if (serviceContainer is null)
-          {
-            var message = $"Could not create an instance of type {classType.Name} (default constructor missing?)";
-            logger_.LogError(message);
-            throw new ArmoniKSdkException(message);
-          }
-
-          var typedServiceContainer = serviceContainer as T;
-          if (typedServiceContainer is null)
-          {
-            var message = $"The type {classType.Name} is not convertible to {typeof(T)}";
-            logger_.LogError(message);
-            throw new ArmoniKSdkException(message);
-          }
-
-          return typedServiceContainer;
-        }
-      }
-
-      var libNotFoundMessage = $"Failure to create an instance of {dynamicLibrary.Symbol}: the library was not found";
-      logger_.LogError(libNotFoundMessage);
-      throw new ArmoniKSdkException(libNotFoundMessage);
-    }
-    catch (Exception e)
-    {
-      logger_.LogError("Error loading class instance: {errorMessage}",
-                       e.Message);
-      throw new ArmoniKSdkException(e);
-    }
-  }
-
-  /// <summary>
-  ///   Determines whether the specified file is a ZIP file.
-  /// </summary>
-  /// <param name="assemblyNameFilePath">The file path of the assembly.</param>
-  /// <returns><c>true</c> if the file is a ZIP file; otherwise, <c>false</c>.</returns>
-  public static bool IsZipFile(string assemblyNameFilePath)
-  {
-    var extension = Path.GetExtension(assemblyNameFilePath);
-    return extension?.ToLower() == ".zip";
-  }
-
-  /// <summary>
-  ///   Extracts the archive to the specified destination.
-  /// </summary>
-  /// <param name="filename">The name of the ZIP file.</param>
-  /// <param name="filePath">The path to the ZIP file.</param>
-  /// <param name="destinationPath">The destination path to extract the files to.</param>
-  /// <param name="libraryPath">The path to the DLL file within the extracted files.</param>
-  /// <param name="overwrite">Whether to overwrite existing files.</param>
-  /// <returns>The path to the DLL file within the destination directory.</returns>
-  /// <exception cref="ArmoniKSdkException">Thrown when the extraction fails or the file is not a ZIP file.</exception>
-  public string ExtractArchive(string filename,
-                               string filePath,
-                               string destinationPath,
-                               string libraryPath,
-                               bool   overwrite = false)
-  {
-    if (!IsZipFile(filename))
-    {
-      throw new ArmoniKSdkException("Cannot yet extract or manage raw data other than zip archive");
-    }
-
-    var originFile = Path.Join(filePath,
-                               filename);
-
-    if (!Directory.Exists(destinationPath))
-    {
-      Directory.CreateDirectory(destinationPath);
-    }
-
-    var dllFile = Path.Join(destinationPath,
-                            libraryPath);
-
-    var temporaryDirectory = Path.Join(destinationPath,
-                                       $"zip-{Guid.NewGuid()}");
-
-    Directory.CreateDirectory(temporaryDirectory);
-
-    logger_.LogInformation("Dll should be in the following folder {dllFile}",
-                           dllFile);
-
-    if (overwrite || !File.Exists(dllFile))
-    {
-      try
-      {
-        ZipFile.ExtractToDirectory(originFile,
-                                   temporaryDirectory);
-
-        logger_.LogInformation("Extracted zip file");
-
-        logger_.LogInformation("Moving unzipped file");
-        MoveDirectoryContent(temporaryDirectory,
-                             destinationPath);
-      }
-      catch (Exception e)
-      {
-        throw new ArmoniKSdkException(e);
-      }
-    }
-    else
-    {
-      logger_.LogInformation("Could not extract zip, file exists already");
-    }
-
-    if (!File.Exists(dllFile))
-    {
-      logger_.LogError("Dll should in the following folder {dllFile}",
-                       dllFile);
-      throw new ArmoniKSdkException($"Fail to find assembly {dllFile}");
-    }
-
-    return dllFile;
-  }
-
-  /// <summary>
-  ///   Moves the content of the source directory to the destination directory.
-  /// </summary>
-  /// <param name="sourceDirectory">The source directory.</param>
-  /// <param name="destinationDirectory">The destination directory.</param>
-  /// <exception cref="ArmoniKSdkException">Thrown when there is an error moving the directory content.</exception>
-  public void MoveDirectoryContent(string sourceDirectory,
-                                   string destinationDirectory)
-  {
-    try
-    {
-      // Create all directories in destination if they do not exist
-      foreach (var dirPath in Directory.GetDirectories(sourceDirectory,
-                                                       "*",
-                                                       SearchOption.AllDirectories))
-      {
-        Directory.CreateDirectory(dirPath.Replace(sourceDirectory,
-                                                  destinationDirectory));
-      }
-
-      // Move all files from the source to the destination
-      foreach (var newPath in Directory.GetFiles(sourceDirectory,
-                                                 "*.*",
-                                                 SearchOption.AllDirectories))
-      {
-        File.Move(newPath,
-                  newPath.Replace(sourceDirectory,
-                                  destinationDirectory));
-      }
-
-      // Optionally, delete the source directory if needed
-      Directory.Delete(sourceDirectory,
-                       true);
-
-      logger_.LogInformation("All files and folders have been moved successfully.");
-    }
-    catch (Exception ex)
-    {
-      logger_.LogError(ex,
-                       "Could not move file");
-      throw;
     }
   }
 }
