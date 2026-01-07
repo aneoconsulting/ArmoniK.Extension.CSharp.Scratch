@@ -44,7 +44,7 @@ internal class LibraryLoader : IDisposable
   {
     logger_        = loggerFactory.CreateLogger<LibraryLoader>();
     loggerFactory_ = loggerFactory;
-    binarySemaphore_ = new SemaphoreSlim(0,
+    binarySemaphore_ = new SemaphoreSlim(1,
                                          1);
   }
 
