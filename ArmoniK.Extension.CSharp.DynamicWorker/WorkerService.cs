@@ -63,8 +63,8 @@ internal sealed class WorkerService : IDisposable
 
   private void OnUnload(AssemblyLoadContext context)
   {
-    logger_.LogError("Service {Service} Unloaded",
-                     ServiceName);
+    logger_.LogInformation("Service {Service} Unloaded",
+                           ServiceName);
     context.Unloading -= OnUnload;
   }
 
