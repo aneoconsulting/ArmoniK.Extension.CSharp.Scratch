@@ -27,19 +27,15 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 
 internal sealed class WorkerService : IDisposable
 {
-  private readonly string  extractionPath_;
-  private readonly object  locker_ = new();
   private readonly ILogger logger_;
   private          bool    disposed_;
 
   private WorkerService(string              serviceName,
-                        string              extractionPath,
                         AssemblyLoadContext loadContext,
                         IWorker             worker,
                         ILogger             logger)
   {
     ServiceName           =  serviceName;
-    extractionPath_       =  extractionPath;
     LoadContext           =  loadContext;
     Worker                =  worker;
     logger_               =  logger;
@@ -128,7 +124,6 @@ internal sealed class WorkerService : IDisposable
                                                      logger,
                                                      assembly);
       return new WorkerService(dynamicLibrary.Symbol,
-                               libUnzipPath,
                                loadContext,
                                workerInstance,
                                logger);

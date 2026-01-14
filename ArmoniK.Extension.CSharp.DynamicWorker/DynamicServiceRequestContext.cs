@@ -25,14 +25,13 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// <summary>
 ///   Represents the context for handling service requests with dynamic loading capability.
 /// </summary>
-public class DynamicServiceRequestContext : IServiceRequestContext, IDisposable
+public class DynamicServiceRequestContext : IServiceRequestContext, IAsyncDisposable
 {
   private readonly LibraryLoader libraryLoader_;
   private readonly LibraryWorker libraryWorker_;
   private readonly ILogger       logger_;
 
   private string currentSession_ = string.Empty;
-  private bool   disposed_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="DynamicServiceRequestContext" /> class.
@@ -58,13 +57,11 @@ public class DynamicServiceRequestContext : IServiceRequestContext, IDisposable
   /// <summary>
   ///   Release instance's resources
   /// </summary>
-  public void Dispose()
+  public async ValueTask DisposeAsync()
   {
-    if (!disposed_)
-    {
-      libraryLoader_.Dispose();
-      disposed_ = true;
-    }
+    await libraryLoader_.DisposeAsync()
+                        .ConfigureAwait(false);
+    logger_.LogInformation("The DynamicServiceRequestContext instance was disposed");
   }
 
   /// <summary>

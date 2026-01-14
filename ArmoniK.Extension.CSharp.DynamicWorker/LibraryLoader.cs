@@ -27,14 +27,13 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// <summary>
 ///   Provides functionality to load and manage dynamic libraries for the ArmoniK project.
 /// </summary>
-internal class LibraryLoader : IDisposable
+internal class LibraryLoader : IAsyncDisposable
 {
   private readonly SemaphoreSlim                               binarySemaphore_;
   private readonly ExecutionSingleizer<HealthCheckResult>      checkHealthSingleizer_ = new();
-  private readonly ILoggerFactory                              loggerFactory_;
   private readonly ILogger                                     logger_;
+  private readonly ILoggerFactory                              loggerFactory_;
   private readonly ConcurrentDictionary<string, WorkerService> workerServices_ = new();
-  private          bool                                        disposed_;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="LibraryLoader" /> class.
@@ -48,40 +47,38 @@ internal class LibraryLoader : IDisposable
                                          1);
   }
 
-  public void Dispose()
+  public async ValueTask DisposeAsync()
   {
-    if (!disposed_)
-    {
-      ResetServiceAsync(CancellationToken.None)
-        .WaitSync();
-      binarySemaphore_.Dispose();
-      checkHealthSingleizer_.Dispose();
-      disposed_ = true;
-    }
+    await ResetServiceAsync(CancellationToken.None)
+      .ConfigureAwait(false);
+    binarySemaphore_.Dispose();
+    checkHealthSingleizer_.Dispose();
+    logger_.LogInformation("The LibraryLoader instance was disposed");
   }
 
   /// <summary>
   ///   Resets the service by unloading workers.
   /// </summary>
-  public async Task ResetServiceAsync(CancellationToken cancellationToken)
+  public async ValueTask ResetServiceAsync(CancellationToken cancellationToken)
   {
+    // Take the semaphore token to avoid data races between a Dispose() on a worker and CheckHealth()
+    await binarySemaphore_.WaitAsync(cancellationToken)
+                          .ConfigureAwait(false);
     try
     {
-      // Take the semaphore token to avoid data races with CheckHealth()
-      await binarySemaphore_.WaitAsync(cancellationToken)
-                            .ConfigureAwait(false);
       logger_.LogInformation("Unloading existing workers.");
       foreach (var service in workerServices_.Values)
       {
         // Dispose the worker if necessary
-        if (service.Worker is IAsyncDisposable asyncDisposable)
+        switch (service.Worker)
         {
-          await asyncDisposable.DisposeAsync()
-                               .ConfigureAwait(false);
-        }
-        else if (service.Worker is IDisposable disposable)
-        {
-          disposable.Dispose();
+          case IAsyncDisposable asyncDisposable:
+            await asyncDisposable.DisposeAsync()
+                                 .ConfigureAwait(false);
+            break;
+          case IDisposable disposable:
+            disposable.Dispose();
+            break;
         }
 
         service.Dispose();
@@ -104,11 +101,11 @@ internal class LibraryLoader : IDisposable
     => await checkHealthSingleizer_.Call(async token =>
                                          {
                                            var serviceName = "Unknown service";
+                                           // Take the semaphore token to avoid data races between a CheckHealth() on a worker and a Dispose() called in ResetServiceAsync()
+                                           await binarySemaphore_.WaitAsync(token)
+                                                                 .ConfigureAwait(false);
                                            try
                                            {
-                                             // Take the semaphore token to avoid conflicts with ResetServiceAsync()
-                                             await binarySemaphore_.WaitAsync(token)
-                                                                   .ConfigureAwait(false);
                                              logger_.LogInformation("Starting health check of loaded workers.");
                                              foreach (var service in workerServices_.Values)
                                              {
@@ -187,6 +184,7 @@ internal class LibraryLoader : IDisposable
       if (!workerServices_.TryAdd(key,
                                   service))
       {
+        service.Dispose();
         throw new ArmoniKSdkException($"Unable to add load context {dynamicLibrary}");
       }
 
