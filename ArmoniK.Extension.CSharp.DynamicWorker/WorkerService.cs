@@ -28,7 +28,6 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 internal sealed class WorkerService : IDisposable
 {
   private readonly ILogger logger_;
-  private          bool    disposed_;
 
   private WorkerService(string              serviceName,
                         AssemblyLoadContext loadContext,
@@ -48,13 +47,9 @@ internal sealed class WorkerService : IDisposable
 
   public void Dispose()
   {
-    if (!disposed_)
-    {
-      Worker = null!;
-      LoadContext!.Unload();
-      LoadContext = null;
-      disposed_   = true;
-    }
+    Worker = null!;
+    LoadContext?.Unload();
+    LoadContext = null;
   }
 
   private void OnUnload(AssemblyLoadContext context)

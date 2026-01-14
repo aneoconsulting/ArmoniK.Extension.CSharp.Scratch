@@ -27,12 +27,12 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// <summary>
 ///   Provides functionality to load and manage dynamic libraries for the ArmoniK project.
 /// </summary>
-internal class LibraryLoader : IAsyncDisposable
+internal sealed class LibraryLoader : IAsyncDisposable, IDisposable
 {
   private readonly SemaphoreSlim                               binarySemaphore_;
   private readonly ExecutionSingleizer<HealthCheckResult>      checkHealthSingleizer_ = new();
-  private readonly ILoggerFactory                              loggerFactory_;
   private readonly ILogger                                     logger_;
+  private readonly ILoggerFactory                              loggerFactory_;
   private readonly ConcurrentDictionary<string, WorkerService> workerServices_ = new();
 
   /// <summary>
@@ -55,6 +55,10 @@ internal class LibraryLoader : IAsyncDisposable
     checkHealthSingleizer_.Dispose();
     logger_.LogInformation("The LibraryLoader instance was disposed");
   }
+
+  public void Dispose()
+    => DisposeAsync()
+      .WaitSync();
 
   /// <summary>
   ///   Resets the service by unloading workers.
