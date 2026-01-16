@@ -60,16 +60,16 @@ public class ArmoniKClientTests
   [Test]
   public void Constructor_ThrowsArgumentNullException_IfPropertiesIsNull()
     // Act & Assert
-    => Assert.That(() => new ArmoniKClient(null,
-                                           loggerFactoryMock_.Object),
+    => Assert.That(() => new ArmoniKClient(null!,
+                                           loggerFactoryMock_!.Object),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                          .EqualTo("properties"));
 
   [Test]
   public void Constructor_ThrowsArgumentNullException_IfLoggerFactoryIsNull()
     // Act & Assert
-    => Assert.That(() => new ArmoniKClient(defaultProperties_,
-                                           null),
+    => Assert.That(() => new ArmoniKClient(defaultProperties_!,
+                                           null!),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                          .EqualTo("loggerFactory"));
 

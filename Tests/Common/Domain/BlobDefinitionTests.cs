@@ -22,21 +22,21 @@ namespace Tests.Common.Domain;
 
 public class BlobDefinitionTests
 {
-  private byte[] Data;
-  private string TestFileName;
+  private byte[] data_         = [];
+  private string testFileName_ = string.Empty;
 
   [SetUp]
   public async Task Setup()
   {
     var tempPath = Path.GetTempPath();
-    TestFileName = Path.Combine(tempPath,
-                                "TestBlobFile");
-    Data = Enumerable.Range(0,
-                            100)
-                     .Select(i => (byte)i)
-                     .ToArray();
-    await File.WriteAllBytesAsync(TestFileName,
-                                  Data)
+    testFileName_ = Path.Combine(tempPath,
+                                 "TestBlobFile");
+    data_ = Enumerable.Range(0,
+                             100)
+                      .Select(i => (byte)i)
+                      .ToArray();
+    await File.WriteAllBytesAsync(testFileName_,
+                                  data_)
               .ConfigureAwait(false);
   }
 
@@ -44,21 +44,21 @@ public class BlobDefinitionTests
   public async Task TestBlobFile1()
   {
     var blob = BlobDefinition.FromFile("file1",
-                                       TestFileName);
+                                       testFileName_);
     blob.RefreshFile();
     var result = await blob.GetDataAsync()
                            .SingleAsync()
                            .ConfigureAwait(false);
 
     Assert.That(result.ToArray(),
-                Is.EqualTo(Data));
+                Is.EqualTo(data_));
   }
 
   [Test]
   public async Task TestBlobFile2()
   {
     var blob = BlobDefinition.FromFile("file1",
-                                       TestFileName);
+                                       testFileName_);
     blob.RefreshFile();
     var globalBytes = new List<byte>();
     await foreach (var result in blob.GetDataAsync(30)
@@ -68,20 +68,20 @@ public class BlobDefinitionTests
     }
 
     Assert.That(globalBytes.ToArray(),
-                Is.EqualTo(Data));
+                Is.EqualTo(data_));
   }
 
   [Test]
   public async Task TestBlobFile3()
   {
     var blob = BlobDefinition.FromFile("file1",
-                                       TestFileName);
+                                       testFileName_);
     blob.RefreshFile();
     var result = await blob.GetDataAsync(200)
                            .SingleAsync()
                            .ConfigureAwait(false);
 
     Assert.That(result.ToArray(),
-                Is.EqualTo(Data));
+                Is.EqualTo(data_));
   }
 }

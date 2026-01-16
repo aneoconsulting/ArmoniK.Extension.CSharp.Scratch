@@ -21,7 +21,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Generic;
 
 using NUnit.Framework;
 
-namespace ArmoniK.Tests.Common;
+namespace Tests.Common.Domain;
 
 [TestFixture]
 public class SortDirectionTests
@@ -59,13 +59,13 @@ public class PaginationTests
   [Test]
   public void CreatePaginationTest()
   {
-    var pagination = new Pagination<string, int>
+    var pagination = new Pagination<Filters, PartitionRawEnumField>
                      {
                        Page          = 1,
                        PageSize      = 10,
                        Total         = 100,
                        SortDirection = SortDirection.Asc,
-                       Filter        = "testFilter",
+                       Filter        = new Filters(),
                      };
 
     Assert.That(pagination.Page,
@@ -77,7 +77,7 @@ public class PaginationTests
     Assert.That(pagination.SortDirection,
                 Is.EqualTo(SortDirection.Asc));
     Assert.That(pagination.Filter,
-                Is.EqualTo("testFilter"));
+                Is.TypeOf<Filters>());
   }
 
   [Test]

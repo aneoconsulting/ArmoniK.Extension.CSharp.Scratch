@@ -212,7 +212,7 @@ public static class BlobStateExt
          BlobName       = resultRaw.Name,
          CreatedBy      = resultRaw.CreatedBy,
          OwnerId        = resultRaw.OwnerTaskId,
-         OpaqueId       = resultRaw.OpaqueId?.ToByteArray(),
+         OpaqueId       = resultRaw.OpaqueId?.ToByteArray() ?? [],
          Size           = (int)resultRaw.Size,
          ManualDeletion = resultRaw.ManualDeletion,
          Status         = resultRaw.Status.ToInternalStatus(),

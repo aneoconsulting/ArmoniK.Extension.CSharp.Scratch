@@ -31,6 +31,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Services;
 using ArmoniK.Extension.CSharp.Client.Exceptions;
 using ArmoniK.Extension.CSharp.Client.Handles;
 using ArmoniK.Extension.CSharp.Client.Queryable;
+using ArmoniK.Extension.CSharp.Client.Queryable.BlobState;
 using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 using ArmoniK.Utils;
 
@@ -318,38 +319,6 @@ public class BlobService : IBlobService
     => CreateBlobsMetadataAsync(session,
                                 names.Select(n => (n, manualDeletion)),
                                 cancellationToken);
-
-  /// <inheritdoc />
-  public async IAsyncEnumerable<BlobInfo> CreateBlobsAsync(SessionInfo                                                                   session,
-                                                           IEnumerable<(string name, ReadOnlyMemory<byte> content, bool manualDeletion)> blobContents,
-                                                           [EnumeratorCancellation] CancellationToken                                    cancellationToken = default)
-  {
-    var tasks = blobContents.Select(blob => Task.Run(async () =>
-                                                     {
-                                                       var blobInfo = await CreateBlobAsync(session,
-                                                                                            blob.name,
-                                                                                            blob.content,
-                                                                                            blob.manualDeletion,
-                                                                                            cancellationToken)
-                                                                        .ConfigureAwait(false);
-                                                       return blobInfo;
-                                                     },
-                                                     cancellationToken))
-                            .ToList();
-
-    var blobCreationResponse = await Task.WhenAll(tasks)
-                                         .ConfigureAwait(false);
-
-    foreach (var blob in blobCreationResponse)
-    {
-      yield return new BlobInfo
-                   {
-                     BlobName  = blob.BlobName,
-                     BlobId    = blob.BlobId,
-                     SessionId = session.SessionId,
-                   };
-    }
-  }
 
   /// <inheritdoc />
   public async IAsyncEnumerable<BlobState> GetBlobStatesByStatusAsync(IEnumerable<string>                        blobIds,
@@ -668,9 +637,15 @@ public class BlobService : IBlobService
                                                                        ICollection<BlobDefinition>                blobDefinitions,
                                                                        [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
+    if (serviceConfiguration_ is null)
+    {
+      await LoadBlobServiceConfigurationAsync(cancellationToken)
+        .ConfigureAwait(false);
+    }
+
     // This is a bin packing kind of problem for which we apply the first-fit-decreasing strategy
     var batches = GetOptimizedBatches(blobDefinitions,
-                                      serviceConfiguration_.DataChunkMaxSize);
+                                      serviceConfiguration_!.DataChunkMaxSize);
 
     await using var channel = await channelPool_.GetAsync(cancellationToken)
                                                 .ConfigureAwait(false);

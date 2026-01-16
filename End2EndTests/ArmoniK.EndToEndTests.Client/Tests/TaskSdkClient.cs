@@ -38,16 +38,16 @@ public class TaskSdkClient : ClientBase
   public async Task TaskSdk()
   {
     var callback = new Callback();
-    var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary)
+    var taskDefinition = new TaskDefinition().WithLibrary(WorkerLibrary!)
                                              .WithInput("inputString",
                                                         BlobDefinition.FromString("blobInputString",
                                                                                   "Hello world!"))
                                              .WithOutput("outputString",
                                                          BlobDefinition.CreateOutput("blobOutputString")
                                                                        .WithCallback(callback))
-                                             .WithTaskOptions(TaskConfiguration);
-    await SessionHandle.SubmitAsync([taskDefinition])
-                       .ConfigureAwait(false);
+                                             .WithTaskOptions(TaskConfiguration!);
+    await SessionHandle!.SubmitAsync([taskDefinition])
+                        .ConfigureAwait(false);
 
     await SessionHandle.WaitCallbacksAsync()
                        .ConfigureAwait(false);
@@ -81,18 +81,18 @@ public class TaskSdkClient : ClientBase
     var taskDefinitions = new List<TaskDefinition>();
     for (var i = 0; i < 100; i++)
     {
-      taskDefinitions.Add(new TaskDefinition().WithLibrary(WorkerLibrary)
+      taskDefinitions.Add(new TaskDefinition().WithLibrary(WorkerLibrary!)
                                               .WithInput("inputString",
                                                          BlobDefinition.FromString("blobInputString" + i,
                                                                                    "Hello world!"))
                                               .WithOutput("outputString",
                                                           BlobDefinition.CreateOutput("blobOutputString" + i)
                                                                         .WithCallback(new Callback()))
-                                              .WithTaskOptions(TaskConfiguration));
+                                              .WithTaskOptions(TaskConfiguration!));
     }
 
-    await SessionHandle.SubmitAsync(taskDefinitions)
-                       .ConfigureAwait(false);
+    await SessionHandle!.SubmitAsync(taskDefinitions)
+                        .ConfigureAwait(false);
     await SessionHandle.WaitCallbacksAsync()
                        .ConfigureAwait(false);
 

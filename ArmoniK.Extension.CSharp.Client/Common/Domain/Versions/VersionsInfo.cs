@@ -24,10 +24,10 @@ public record VersionsInfo
   /// <summary>
   ///   Version of ArmoniK Core
   /// </summary>
-  public string Core { get; init; }
+  public string Core { get; init; } = string.Empty;
 
   /// <summary>
   ///   Version of ArmoniK Api
   /// </summary>
-  public string Api { get; init; }
+  public string Api { get; init; } = string.Empty;
 }

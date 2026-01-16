@@ -28,12 +28,12 @@ public record Health
   /// <summary>
   ///   Name of the component.
   /// </summary>
-  public string Name { get; init; }
+  public string Name { get; init; } = string.Empty;
 
   /// <summary>
   ///   Message providing additional details about the health status.
   /// </summary>
-  public string Message { get; init; }
+  public string Message { get; init; } = string.Empty;
 
   /// <summary>
   ///   Current health status of the component.
@@ -71,8 +71,17 @@ public enum HealthStatusEnum
   Unhealthy,
 }
 
+/// <summary>
+///   Provides extension methods for conversion purpose between protobuf types and SDK types.
+/// </summary>
 public static class HealthStatusExt
 {
+  /// <summary>
+  ///   Converts a HealthStatusEnum to its corresponding protobuf enum value.
+  /// </summary>
+  /// <param name="status">The health status</param>
+  /// <returns>The corresponding protobuf value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">When the input status is unknown</exception>
   public static Api.gRPC.V1.HealthChecks.HealthStatusEnum ToGrpcStatus(this HealthStatusEnum status)
     => status switch
        {
@@ -85,6 +94,12 @@ public static class HealthStatusExt
                                                     null),
        };
 
+  /// <summary>
+  ///   Converts a protobuf health status to its corresponding HealthStatusEnum value.
+  /// </summary>
+  /// <param name="status">The protobuf health status</param>
+  /// <returns>The corresponding HealthStatusEnum value</returns>
+  /// <exception cref="ArgumentOutOfRangeException">When the input status is unknown</exception>
   public static HealthStatusEnum ToInternalStatus(this Api.gRPC.V1.HealthChecks.HealthStatusEnum status)
     => status switch
        {

@@ -45,7 +45,7 @@ public class BlobHandleTests
   [Test]
   public void ConstructorWithBlobInfosShouldInitializeProperties()
   {
-    var blobHandle = new BlobHandle(mockBlobInfo_,
+    var blobHandle = new BlobHandle(mockBlobInfo_!,
                                     mockedArmoniKClient_!);
 
     Assert.Multiple(() =>
@@ -86,22 +86,22 @@ public class BlobHandleTests
 
   [Test]
   public void ConstructorWithBlobInfoThrowsArgumentNullExceptionWhenBlobInfoIsNull()
-    => Assert.That(() => new BlobHandle(null,
+    => Assert.That(() => new BlobHandle(null!,
                                         mockedArmoniKClient_!),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                          .EqualTo("blobInfo"));
 
   [Test]
   public void ConstructorWithBlobInfo_ThrowsArgumentNullException_WhenClientIsNull()
-    => Assert.That(() => new BlobHandle(mockBlobInfo_,
-                                        null),
+    => Assert.That(() => new BlobHandle(mockBlobInfo_!,
+                                        null!),
                    Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                          .EqualTo("armoniKClient"));
 
   [Test]
   public void ImplicitConversionToBlobInfoShouldReturnCorrectBlobInfo()
   {
-    var blobHandle = new BlobHandle(mockBlobInfo_,
+    var blobHandle = new BlobHandle(mockBlobInfo_!,
                                     mockedArmoniKClient_!);
 
     BlobInfo convertedBlobInfo = blobHandle;
@@ -117,7 +117,7 @@ public class BlobHandleTests
 
     Assert.That(() =>
                 {
-                  BlobInfo _ = nullHandle;
+                  BlobInfo _ = nullHandle!;
                 },
                 Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                       .EqualTo("blobHandle"));
@@ -126,7 +126,7 @@ public class BlobHandleTests
   [Test]
   public void ImplicitConversionWorksInMethodParameters()
   {
-    var blobHandle = new BlobHandle(mockBlobInfo_,
+    var blobHandle = new BlobHandle(mockBlobInfo_!,
                                     mockedArmoniKClient_!);
 
     // we make sure that we can use BlobHandle where BlobInfo is expected

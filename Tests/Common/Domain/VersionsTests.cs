@@ -18,7 +18,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Versions;
 
 using NUnit.Framework;
 
-namespace ArmoniK.Tests.Common.Domain;
+namespace Tests.Common.Domain;
 
 [TestFixture]
 public class VersionsInfoTests
@@ -74,20 +74,5 @@ public class VersionsInfoTests
 
     Assert.That(versionsInfo1,
                 Is.Not.EqualTo(versionsInfo2));
-  }
-
-  [Test]
-  public void VersionsInfoNullOrEmptyTest()
-  {
-    var versionsInfo = new VersionsInfo
-                       {
-                         Core = null,
-                         Api  = string.Empty,
-                       };
-
-    Assert.That(versionsInfo.Core,
-                Is.Null);
-    Assert.That(versionsInfo.Api,
-                Is.Empty);
   }
 }

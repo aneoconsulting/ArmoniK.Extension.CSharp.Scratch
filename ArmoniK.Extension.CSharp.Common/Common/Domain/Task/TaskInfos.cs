@@ -28,27 +28,27 @@ public record TaskInfos
   /// <summary>
   ///   Identifier of the task.
   /// </summary>
-  public string TaskId { get; init; }
+  public string TaskId { get; init; } = string.Empty;
 
   /// <summary>
   ///   Collection of expected output IDs.
   /// </summary>
-  public IEnumerable<string> ExpectedOutputs { get; init; }
+  public IEnumerable<string> ExpectedOutputs { get; init; } = [];
 
   /// <summary>
   ///   Collection of data dependencies IDs.
   /// </summary>
-  public IEnumerable<string> DataDependencies { get; init; }
+  public IEnumerable<string> DataDependencies { get; init; } = [];
 
   /// <summary>
   ///   Identifier for the payload associated with the task.
   /// </summary>
-  public string PayloadId { get; init; }
+  public string PayloadId { get; init; } = string.Empty;
 
   /// <summary>
   ///   Session ID associated with the task.
   /// </summary>
-  public string SessionId { get; init; }
+  public string SessionId { get; init; } = string.Empty;
 }
 
 /// <summary>

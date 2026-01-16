@@ -1,4 +1,4 @@
-﻿// This file is part of the ArmoniK project
+// This file is part of the ArmoniK project
 // 
 // Copyright (C) ANEO, 2021-2026. All rights reserved.
 // 
@@ -38,8 +38,8 @@ public class ClientServiceConnector
   /// <param name="properties">Configuration Properties</param>
   /// <param name="loggerFactory">Optional logger factory</param>
   /// <returns>The connection pool</returns>
-  public static ObjectPool<ChannelBase> ControlPlaneConnectionPool(Properties     properties,
-                                                                   ILoggerFactory loggerFactory = null)
+  public static ObjectPool<ChannelBase> ControlPlaneConnectionPool(Properties      properties,
+                                                                   ILoggerFactory? loggerFactory = null)
   {
     var options = new GrpcClient
                   {

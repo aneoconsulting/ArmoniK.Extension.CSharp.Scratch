@@ -21,7 +21,7 @@ using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
 using NUnit.Framework;
 
-namespace ArmoniK.Tests.Common.Domain;
+namespace Tests.Common.Domain;
 
 [TestFixture]
 public class BlobTests
@@ -342,7 +342,7 @@ public class BlobTests
     Assert.That(blobPagination.SortDirection,
                 Is.EqualTo(SortDirection.Unspecified));
     Assert.That(blobPagination.Filter,
-                Is.Null);
+                Is.EqualTo(new Filters()));
   }
 
   [Test]
@@ -354,10 +354,8 @@ public class BlobTests
                            PageSize      = 10,
                            Total         = 100,
                            SortDirection = SortDirection.Asc,
-                           Filter        = null,
+                           Filter        = new Filters(),
                          };
-
-    blobPagination.Filter = new Filters();
 
     Assert.That(blobPagination.Filter,
                 Is.Not.Null);

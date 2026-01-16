@@ -37,9 +37,6 @@ namespace UsageExample;
 
 internal class Program
 {
-  private static IConfiguration   _configuration;
-  private static ILogger<Program> _logger;
-
   internal static async Task RunAsync(string filePath,
                                       string name)
   {
@@ -49,28 +46,25 @@ internal class Program
                                           .WriteTo.Console()
                                           .CreateLogger();
 
-    var factory = new LoggerFactory(new[]
-                                    {
-                                      new SerilogLoggerProvider(Log.Logger),
-                                    },
+    var factory = new LoggerFactory([new SerilogLoggerProvider(Log.Logger)],
                                     new LoggerFilterOptions().AddFilter("Grpc",
                                                                         LogLevel.Error));
 
-    _logger = factory.CreateLogger<Program>();
+    var logger = factory.CreateLogger<Program>();
 
     var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
                                             .AddJsonFile("appsettings.json",
                                                          false)
                                             .AddEnvironmentVariables();
 
-    _configuration = builder.Build();
+    var configuration = builder.Build();
 
     var defaultTaskOptions = new TaskConfiguration(2,
                                                    1,
                                                    "dllworker",
                                                    TimeSpan.FromHours(1));
 
-    var props = new Properties(_configuration);
+    var props = new Properties(configuration);
 
     var client = new ArmoniKClient(props,
                                    factory);
@@ -86,8 +80,8 @@ internal class Program
                                                         false)
                                     .ConfigureAwait(false);
 
-    _logger.LogInformation("sessionId: {SessionId}",
-                           sessionHandle.SessionInfo.SessionId);
+    logger.LogInformation("sessionId: {SessionId}",
+                          sessionHandle.SessionInfo.SessionId);
 
     var blobService = client.BlobService;
 
@@ -101,8 +95,8 @@ internal class Program
                                                      false,
                                                      CancellationToken.None)
                                    .ConfigureAwait(false);
-    _logger.LogInformation("libraryId: {BlobId}",
-                           dllBlob.BlobId);
+    logger.LogInformation("libraryId: {BlobId}",
+                          dllBlob.BlobId);
 
     var task = new TaskDefinition().WithLibrary(dynamicLib)
                                    .WithInput("name",
@@ -118,10 +112,10 @@ internal class Program
 
     BlobInfo resultBlobInfo = task.Outputs.Values.First()
                                   .BlobHandle!;
-    _logger.LogInformation("resultId: {ResultId}",
-                           resultBlobInfo.BlobId);
-    _logger.LogInformation("taskId: {TaskId}",
-                           ((TaskInfos)taskHandle.First()).TaskId);
+    logger.LogInformation("resultId: {ResultId}",
+                          resultBlobInfo.BlobId);
+    logger.LogInformation("taskId: {TaskId}",
+                          ((TaskInfos)taskHandle.First()).TaskId);
 
     await eventsService.WaitForBlobsAsync(sessionHandle,
                                           [resultBlobInfo])
@@ -132,8 +126,8 @@ internal class Program
                                     .ConfigureAwait(false);
     var hello = Encoding.UTF8.GetString(download);
 
-    _logger.LogInformation("Downloaded: {Hello}",
-                           hello);
+    logger.LogInformation("Downloaded: {Hello}",
+                          hello);
   }
 
   public static async Task<int> Main(string[] args)

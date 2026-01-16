@@ -15,13 +15,13 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Results;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 
-namespace ArmoniK.Extension.CSharp.Client.Queryable;
+namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobState;
 
-internal class BlobStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
+internal class BlobStateQueryExpressionTreeVisitor : QueryExpressionTreeVisitor<CSharp.Common.Common.Domain.Blob.BlobState, ResultRawEnumField, Filters, FiltersAnd,
+  FilterField>
 {
-  private OrderByExpressionTreeVisitor<ResultRawEnumField>                                  orderByVisitor_;
+  private OrderByExpressionTreeVisitor<ResultRawEnumField>?                                 orderByVisitor_;
   private WhereExpressionTreeVisitor<ResultRawEnumField, Filters, FiltersAnd, FilterField>? whereVisitor_;
 
   public BlobStateQueryExpressionTreeVisitor()
