@@ -54,9 +54,7 @@ public sealed class DynamicServiceRequestContext : IServiceRequestContext, IAsyn
   /// </summary>
   public ILoggerFactory LoggerFactory { get; set; }
 
-  /// <summary>
-  ///   Release instance's resources
-  /// </summary>
+  /// <inheritdoc />
   public async ValueTask DisposeAsync()
   {
     await libraryLoader_.DisposeAsync()
@@ -64,8 +62,12 @@ public sealed class DynamicServiceRequestContext : IServiceRequestContext, IAsyn
     logger_.LogInformation("The DynamicServiceRequestContext instance was disposed");
   }
 
+  /// <inheritdoc />
   public void Dispose()
-    => libraryLoader_.Dispose();
+  {
+    libraryLoader_.Dispose();
+    logger_.LogInformation("The DynamicServiceRequestContext instance was disposed");
+  }
 
   /// <summary>
   ///   Check the health of the library worker.
