@@ -572,15 +572,15 @@ public class BlobService : IBlobService
         var name2Blob = blobsWithoutDuplicateName.ToDictionary(b => b.Name,
                                                                b => b);
         var blobsCreate = blobsWithoutDuplicateName.Select(b => (b.Name, b.ManualDeletion));
-      var response = CreateBlobsMetadataAsync(session,
-                                              blobsCreate,
-                                              cancellationToken);
-      await foreach (var blob in response.ConfigureAwait(false))
-      {
+        var response = CreateBlobsMetadataAsync(session,
+                                                blobsCreate,
+                                                cancellationToken);
+        await foreach (var blob in response.ConfigureAwait(false))
+        {
           name2Blob[blob.BlobName].BlobHandle = new BlobHandle(blob,
-                                                            armoniKClient_);
+                                                               armoniKClient_);
+        }
       }
-    }
     }
 
     if (blobsWithData.Any())
@@ -590,16 +590,16 @@ public class BlobService : IBlobService
       {
         var name2Blob = blobsWithoutDuplicateName.ToDictionary(b => b.Name,
                                                                b => b);
-      var response = CreateBlobsWithContentAsync(session,
+        var response = CreateBlobsWithContentAsync(session,
                                                    blobsWithoutDuplicateName,
-                                                 cancellationToken);
-      await foreach (var blob in response.ConfigureAwait(false))
-      {
+                                                   cancellationToken);
+        await foreach (var blob in response.ConfigureAwait(false))
+        {
           name2Blob[blob.BlobName].BlobHandle = new BlobHandle(blob,
-                                                         armoniKClient_);
+                                                               armoniKClient_);
+        }
       }
     }
-  }
   }
 
   private static List<List<BlobDefinition>> DeDuplicateWithName(List<BlobDefinition> blobsWithData)

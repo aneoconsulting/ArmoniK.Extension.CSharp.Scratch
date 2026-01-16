@@ -81,7 +81,7 @@ internal class Program
                                     .ConfigureAwait(false);
 
     logger.LogInformation("sessionId: {SessionId}",
-                           sessionHandle.SessionInfo.SessionId);
+                          sessionHandle.SessionInfo.SessionId);
 
     var blobService = client.BlobService;
 
