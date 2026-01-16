@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2025. All rights reserved.
+// Copyright (C) ANEO, 2021-2026. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -43,13 +44,13 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   public readonly ArmoniKClient ArmoniKClient;
 
+  private readonly bool   closeOnDispose_;
+  private readonly object locker_ = new();
+
   /// <summary>
   ///   The session containing session ID
   /// </summary>
   public readonly SessionInfo SessionInfo;
-
-  private readonly bool   closeOnDispose_;
-  private readonly object locker_ = new();
 
   private CallbackRunner? callbackRunner_;
   private int             isDisposed_;
@@ -296,6 +297,8 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     private readonly ConcurrentDictionary<string, ICallback> callbacks_ = new();
 
+    private readonly CallbackChannel channel_;
+
     private readonly ArmoniKClient client_;
 
     /// <summary>
@@ -312,8 +315,10 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     public CallbackRunner(ArmoniKClient     client,
                           CancellationToken cancellationToken)
     {
-      client_     = client;
-      cts_        = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      client_ = client;
+      cts_    = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      channel_ = new CallbackChannel(ExecuteCallback,
+                                     cts_.Token);
       workerTask_ = Task.Run(RunAsync);
     }
 
@@ -322,6 +327,9 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
+      // Wait for execution of pending callbacks
+      await channel_.WaitAsync()
+                    .ConfigureAwait(false);
       // Send an abort signal
       cts_.Cancel();
       // Wait for the worker task to complete
@@ -375,12 +383,45 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       => callbacks_.GetOrAdd(blob.BlobHandle!.BlobInfo.BlobId,
                              blob.CallBack!);
 
+    private async Task ExecuteCallback((ICallback callback, BlobState blobState, bool abort) tuple)
+    {
+      var blobHandle = new BlobHandle(tuple.blobState,
+                                      client_);
+      if (tuple.abort)
+      {
+        await tuple.callback.OnErrorAsync(blobHandle,
+                                          new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
+                                          cts_.Token)
+                   .ConfigureAwait(false);
+      }
+      else
+      {
+        try
+        {
+          var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
+                                       .ConfigureAwait(false);
+          await tuple.callback.OnSuccessAsync(blobHandle,
+                                              result,
+                                              cts_.Token)
+                     .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          await tuple.callback.OnErrorAsync(blobHandle,
+                                            ex,
+                                            cts_.Token)
+                     .ConfigureAwait(false);
+        }
+      }
+    }
+
     /// <summary>
     ///   Execution loop
     /// </summary>
     private async Task RunAsync()
     {
       TaskCompletionSource<bool>? taskCompletionSource = null;
+
       try
       {
         while (!cts_.Token.IsCancellationRequested)
@@ -394,27 +435,12 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              var blobHandle = new BlobHandle(blobState,
-                                              client_);
-              try
-              {
-                var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
-                                             .ConfigureAwait(false);
-                await func.OnSuccessAsync(blobHandle,
-                                          result,
-                                          cts_.Token)
-                          .ConfigureAwait(false);
-              }
-              catch (Exception ex)
-              {
-                await func.OnErrorAsync(blobHandle,
-                                        ex,
-                                        cts_.Token)
-                          .ConfigureAwait(false);
-              }
+              await channel_.WriteAsync((func, blobState, false))
+                            .ConfigureAwait(false);
             }
             else
             {
+              channel_.Abort();
               throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
             }
           }
@@ -428,15 +454,12 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              var blobHandle = new BlobHandle(blobState,
-                                              client_);
-              await func.OnErrorAsync(blobHandle,
-                                      new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
-                                      cts_.Token)
-                        .ConfigureAwait(false);
+              await channel_.WriteAsync((func, blobState, true))
+                            .ConfigureAwait(false);
             }
             else
             {
+              channel_.Abort();
               throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
             }
           }
@@ -444,6 +467,8 @@ public class SessionHandle : IAsyncDisposable, IDisposable
           taskCompletionSource = GetTaskCompletionSource();
           if (taskCompletionSource != null && callbacks_.IsEmpty)
           {
+            await channel_.WaitAsync()
+                          .ConfigureAwait(false);
             taskCompletionSource.SetResult(true);
             ResetTaskCompletionSource();
           }
@@ -462,6 +487,68 @@ public class SessionHandle : IAsyncDisposable, IDisposable
         taskCompletionSource = GetTaskCompletionSource();
         taskCompletionSource?.SetResult(false);
       }
+    }
+
+    private sealed class CallbackChannel : IAsyncDisposable
+    {
+      private readonly CancellationTokenSource                                           cts_;
+      private readonly Func<(ICallback callback, BlobState blobState, bool abort), Task> executeCallback_;
+      private          Channel<(ICallback callback, BlobState blobState, bool abort)>    channel_;
+      private          Task                                                              channelConsumerTask_;
+      private          bool                                                              disposed_;
+
+      public CallbackChannel(Func<(ICallback callback, BlobState blobState, bool abort), Task> executeCallback,
+                             CancellationToken                                                 token)
+      {
+        executeCallback_ = executeCallback;
+        cts_             = CancellationTokenSource.CreateLinkedTokenSource(token);
+        Initialize();
+      }
+
+      public async ValueTask DisposeAsync()
+      {
+        if (!disposed_)
+        {
+          await WaitAsync(false)
+            .ConfigureAwait(false);
+          cts_.Dispose();
+          disposed_ = true;
+        }
+      }
+
+      private void Initialize()
+      {
+        channel_ = Channel.CreateUnbounded<(ICallback callback, BlobState blobState, bool abort)>();
+        channelConsumerTask_ = Task.Run(async () =>
+                                        {
+                                          await channel_.Reader.ToAsyncEnumerable(CancellationToken.None)
+                                                        .ParallelForEach(new ParallelTaskOptions
+                                                                         {
+                                                                           ParallelismLimit  = 10,
+                                                                           Unordered         = true,
+                                                                           CancellationToken = cts_.Token,
+                                                                         },
+                                                                         executeCallback_)
+                                                        .ConfigureAwait(false);
+                                        });
+      }
+
+      public async Task WriteAsync((ICallback callback, BlobState blobState, bool abort) tuple)
+        => await channel_.Writer.WriteAsync(tuple)
+                         .ConfigureAwait(false);
+
+      public async ValueTask WaitAsync(bool reinitializeChannel = true)
+      {
+        channel_.Writer.Complete();
+        await channelConsumerTask_.ConfigureAwait(false);
+        if (reinitializeChannel)
+        {
+          Initialize();
+        }
+      }
+
+      public void Abort()
+        => cts_.Cancel();
     }
   }
 }

@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2025. All rights reserved.
+// Copyright (C) ANEO, 2021-2026. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -32,12 +32,14 @@ public class TaskSdkWorker : IWorker
                                              ILogger           logger,
                                              CancellationToken cancellationToken)
   {
-    var resultString = taskHandler.GetStringDependency("inputString");
+    var resultString = taskHandler.Inputs["inputString"]
+                                  .GetStringData(Encoding.UTF8);
 
     // Send the input as results as is.
     await taskHandler.Outputs["outputString"]
-                     .SendResultAsync(Encoding.ASCII.GetBytes(resultString),
-                                      CancellationToken.None)
+                     .SendStringResultAsync(resultString,
+                                            Encoding.UTF8,
+                                            CancellationToken.None)
                      .ConfigureAwait(false);
 
     return TaskResult.Success;
