@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2025. All rights reserved.
+// Copyright (C) ANEO, 2021-2026. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Runtime.Loader;
-
 using ArmoniK.Api.Common.Utils;
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Common.Exceptions;
+using ArmoniK.Extension.CSharp.Common.Library;
 using ArmoniK.Extension.CSharp.Worker;
-using ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
 
 namespace ArmoniK.Extension.CSharp.DynamicWorker;
@@ -31,18 +29,6 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// </summary>
 internal class LibraryWorker
 {
-  private readonly object locker_ = new();
-
-  /// <summary>
-  ///   Reference to the last loaded service for health checking.
-  /// </summary>
-  private IWorker? currentService_;
-
-  /// <summary>
-  ///   Key of the last loaded service for logging purposes.
-  /// </summary>
-  private string serviceKey_ = string.Empty;
-
   /// <summary>
   ///   Initializes a new instance of the <see cref="LibraryWorker" /> class.
   /// </summary>
@@ -71,36 +57,18 @@ internal class LibraryWorker
   /// </summary>
   public IConfiguration Configuration { get; set; }
 
-  private void SetWorker(IWorker? worker,
-                         string   serviceKey)
-  {
-    lock (locker_)
-    {
-      currentService_ = worker;
-      serviceKey_     = serviceKey;
-    }
-  }
-
-  private (IWorker?, string) GetWorker()
-  {
-    lock (locker_)
-    {
-      return (currentService_, serviceKey_);
-    }
-  }
-
   /// <summary>
   ///   Executes a task asynchronously within a specified library context.
   /// </summary>
   /// <param name="taskHandler">The task handler.</param>
-  /// <param name="libraryLoader">The library loader to load the necessary assemblies.</param>
-  /// <param name="libraryContext">The context of the library to execute the task in.</param>
+  /// <param name="dynamicLibrary">The worker library.</param>
+  /// <param name="worker">The worker instance to invoke execution on.</param>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the output of the executed task.</returns>
   /// <exception cref="ArmoniKSdkException">When there is a compliance error with the ArmoniK SDK conventions.</exception>
   public async Task<Output> ExecuteAsync(ITaskHandler      taskHandler,
-                                         LibraryLoader     libraryLoader,
-                                         string            libraryContext,
+                                         DynamicLibrary    dynamicLibrary,
+                                         IWorker           worker,
                                          CancellationToken cancellationToken)
   {
     try
@@ -108,32 +76,15 @@ internal class LibraryWorker
       using var _ = Logger.BeginPropertyScope(("sessionId", taskHandler.SessionId),
                                               ("taskId", $"{taskHandler.TaskId}"));
 
-      var dynamicLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
+      Logger.LogDebug("Executing service class: {ServiceKey}",
+                      dynamicLibrary.Symbol);
 
-      Logger.LogInformation("DynamicLibrary.Symbol: {Service}",
-                            dynamicLibrary.Symbol);
-      Logger.LogInformation("Entering Context");
-
-      var context = libraryLoader.GetAssemblyLoadContext(libraryContext);
-      if (AssemblyLoadContext.CurrentContextualReflectionContext == null || AssemblyLoadContext.CurrentContextualReflectionContext?.Name != context.Name)
-      {
-        context.EnterContextualReflection();
-      }
-
-      var serviceKey = $"{libraryContext}:{dynamicLibrary.Symbol}";
-      Logger.LogDebug("Loading service class: {ServiceKey}",
-                      serviceKey);
-      SetWorker(libraryLoader.GetClassInstance<IWorker>(dynamicLibrary),
-                serviceKey);
-
-      var output = await SdkTaskRunner.Run(taskHandler,
-                                           currentService_!,
-                                           Logger,
-                                           cancellationToken)
-                                      .ConfigureAwait(false);
-      SetWorker(null,
-                string.Empty);
-      return output;
+      return await Task.Run(async () => await SdkTaskRunner.Run(taskHandler,
+                                                                worker,
+                                                                Logger,
+                                                                cancellationToken)
+                                                           .ConfigureAwait(false),
+                            cancellationToken);
     }
     catch (Exception ex)
     {
@@ -146,63 +97,6 @@ internal class LibraryWorker
                          Details = ex.Message,
                        },
              };
-    }
-  }
-
-  /// <summary>
-  ///   Checks the health of the library worker and the last loaded service.
-  /// </summary>
-  /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-  /// <returns>A health check result indicating the status of the worker and the last loaded service.</returns>
-  public async Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
-  {
-    var (service, serviceKey) = GetWorker();
-    try
-    {
-      Logger.LogDebug("Starting library worker health check");
-
-      var testLogger = LoggerFactory.CreateLogger<LibraryWorker>();
-      if (testLogger == null)
-      {
-        return HealthCheckResult.Unhealthy("Cannot create logger instance");
-      }
-
-      testLogger.LogInformation("Health check validation at {Time}",
-                                DateTime.UtcNow);
-
-      if (service == null)
-      {
-        Logger.LogDebug("No service has been loaded yet");
-        return HealthCheckResult.Healthy("Library dynamic worker infrastructure is operational (no service loaded yet)");
-      }
-
-      Logger.LogDebug("Checking health of last loaded service: {ServiceKey}",
-                      serviceKey);
-
-      // Async call to check health of the last loaded service
-      var serviceHealthResult = await service.CheckHealth(cancellationToken)
-                                             .ConfigureAwait(false);
-
-      if (!serviceHealthResult.IsHealthy)
-      {
-        var errorMessage = $"Service {serviceKey}: {serviceHealthResult.Description}";
-        Logger.LogWarning("Last loaded service is unhealthy: {ErrorMessage}",
-                          errorMessage);
-        return HealthCheckResult.Unhealthy(errorMessage);
-      }
-
-      Logger.LogDebug("Last loaded service {ServiceKey} is healthy",
-                      serviceKey);
-      return HealthCheckResult.Healthy($"Library worker and service {serviceKey} are operational");
-    }
-    catch (Exception ex)
-    {
-      var errorMessage = $"Library worker health check failed {serviceKey}: {ex.Message}";
-      Logger?.LogError(ex,
-                       "Library worker health check failed for service {Service}",
-                       serviceKey);
-      return HealthCheckResult.Unhealthy(errorMessage,
-                                         ex);
     }
   }
 }
