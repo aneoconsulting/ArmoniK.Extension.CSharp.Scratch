@@ -52,7 +52,7 @@ public static class ArmoniKServicesExt
                                                      CancellationToken    cancellationToken)
   {
     var blobInfo = await blobService.CreateBlobAsync(session,
-                                                     dynamicLibrary.ToString(),
+                                                     dynamicLibrary.Symbol,
                                                      content,
                                                      manualDeletion,
                                                      cancellationToken)

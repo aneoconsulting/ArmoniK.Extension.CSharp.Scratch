@@ -17,6 +17,7 @@
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extension.CSharp.Worker;
+using ArmoniK.Extension.CSharp.Worker.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
 
 namespace ArmoniK.Extension.CSharp.DynamicWorker;
@@ -24,14 +25,13 @@ namespace ArmoniK.Extension.CSharp.DynamicWorker;
 /// <summary>
 ///   Represents the context for handling service requests with dynamic loading capability.
 /// </summary>
-public class DynamicServiceRequestContext : IServiceRequestContext
+public sealed class DynamicServiceRequestContext : IServiceRequestContext, IAsyncDisposable, IDisposable
 {
-  private readonly LibraryLoader                         libraryLoader_;
-  private readonly LibraryWorker                         libraryWorker_;
-  private readonly ILogger<DynamicServiceRequestContext> logger_;
+  private readonly LibraryLoader libraryLoader_;
+  private readonly LibraryWorker libraryWorker_;
+  private readonly ILogger       logger_;
 
-
-  private string? currentSession_;
+  private string currentSession_ = string.Empty;
 
   /// <summary>
   ///   Initializes a new instance of the <see cref="DynamicServiceRequestContext" /> class.
@@ -42,8 +42,7 @@ public class DynamicServiceRequestContext : IServiceRequestContext
                                       ILoggerFactory loggerFactory)
   {
     LoggerFactory = loggerFactory;
-
-    logger_ = loggerFactory.CreateLogger<DynamicServiceRequestContext>();
+    logger_       = loggerFactory.CreateLogger<DynamicServiceRequestContext>();
 
     libraryLoader_ = new LibraryLoader(loggerFactory);
     libraryWorker_ = new LibraryWorker(configuration,
@@ -55,13 +54,28 @@ public class DynamicServiceRequestContext : IServiceRequestContext
   /// </summary>
   public ILoggerFactory LoggerFactory { get; set; }
 
+  /// <inheritdoc />
+  public async ValueTask DisposeAsync()
+  {
+    await libraryLoader_.DisposeAsync()
+                        .ConfigureAwait(false);
+    logger_.LogInformation("The DynamicServiceRequestContext instance was disposed");
+  }
+
+  /// <inheritdoc />
+  public void Dispose()
+  {
+    libraryLoader_.Dispose();
+    logger_.LogInformation("The DynamicServiceRequestContext instance was disposed");
+  }
+
   /// <summary>
   ///   Check the health of the library worker.
   /// </summary>
   /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
   /// <returns>A task representing the asynchronous operation, containing the heath status of the worker.</returns>
   public async Task<HealthCheckResult> CheckHealthAsync(CancellationToken cancellationToken)
-    => await libraryWorker_.CheckHealth(cancellationToken)
+    => await libraryLoader_.CheckHealth(cancellationToken)
                            .ConfigureAwait(false);
 
   /// <summary>
@@ -73,19 +87,28 @@ public class DynamicServiceRequestContext : IServiceRequestContext
   public async Task<Output> ExecuteTaskAsync(ITaskHandler      taskHandler,
                                              CancellationToken cancellationToken)
   {
-    if (string.IsNullOrEmpty(currentSession_) || taskHandler.SessionId != currentSession_)
+    if (taskHandler.SessionId != currentSession_)
     {
+      logger_.LogInformation("New session is {Session}",
+                             taskHandler.SessionId);
       currentSession_ = taskHandler.SessionId;
-      libraryLoader_.ResetService();
+      await libraryLoader_.ResetServiceAsync(cancellationToken)
+                          .ConfigureAwait(false);
     }
 
-    var contextName = await libraryLoader_.LoadLibraryAsync(taskHandler,
-                                                            cancellationToken)
-                                          .ConfigureAwait(false);
+    logger_.LogInformation("New request received");
+
+    // Get the data about the dynamic library
+    var dynamicLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
+
+    var workerInstance = await libraryLoader_.GetWorkerInstanceAsync(taskHandler,
+                                                                     dynamicLibrary,
+                                                                     cancellationToken)
+                                             .ConfigureAwait(false);
 
     var result = await libraryWorker_.ExecuteAsync(taskHandler,
-                                                   libraryLoader_,
-                                                   contextName,
+                                                   dynamicLibrary,
+                                                   workerInstance,
                                                    cancellationToken)
                                      .ConfigureAwait(false);
     return result;
