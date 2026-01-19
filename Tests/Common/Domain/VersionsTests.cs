@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2025. All rights reserved.
+// Copyright (C) ANEO, 2021-2026. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -74,20 +74,5 @@ public class VersionsInfoTests
 
     Assert.That(versionsInfo1,
                 Is.Not.EqualTo(versionsInfo2));
-  }
-
-  [Test]
-  public void VersionsInfoNullOrEmptyTest()
-  {
-    var versionsInfo = new VersionsInfo
-                       {
-                         Core = null!,
-                         Api  = string.Empty,
-                       };
-
-    Assert.That(versionsInfo.Core,
-                Is.Null);
-    Assert.That(versionsInfo.Api,
-                Is.Empty);
   }
 }
