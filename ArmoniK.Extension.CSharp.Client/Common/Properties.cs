@@ -1,6 +1,6 @@
 // This file is part of the ArmoniK project
 // 
-// Copyright (C) ANEO, 2021-2025. All rights reserved.
+// Copyright (C) ANEO, 2021-2026. All rights reserved.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
@@ -112,6 +112,13 @@ public record Properties
   {
     Configuration = configuration;
 
+    var sectionApplicationConfig = configuration.GetSection("ApplicationConfig");
+    if (sectionApplicationConfig != null)
+    {
+      ParallelismLimit = sectionApplicationConfig.GetValue("ParallelismLimit",
+                                                           0);
+    }
+
     var sectionGrpc = configuration.GetSection(Grpc);
     if (sectionGrpc == null)
     {
@@ -198,6 +205,11 @@ public record Properties
 
     ControlPlaneUri = new Uri(ConnectionString);
   }
+
+  /// <summary>
+  ///   Maximum parallelism limit for fetching results
+  /// </summary>
+  public int ParallelismLimit { get; set; }
 
   /// <summary>
   ///   The control plane url to connect

@@ -318,6 +318,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       client_ = client;
       cts_    = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       channel_ = new CallbackChannel(ExecuteCallback,
+                                     client.Properties.ParallelismLimit,
                                      cts_.Token);
       workerTask_ = Task.Run(RunAsync);
     }
@@ -328,7 +329,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     public async ValueTask DisposeAsync()
     {
       // Wait for execution of pending callbacks
-      await channel_.WaitAsync()
+      await channel_.DisposeAsync()
                     .ConfigureAwait(false);
       // Send an abort signal
       cts_.Cancel();
@@ -493,15 +494,19 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     {
       private readonly CancellationTokenSource                                           cts_;
       private readonly Func<(ICallback callback, BlobState blobState, bool abort), Task> executeCallback_;
-      private          Channel<(ICallback callback, BlobState blobState, bool abort)>    channel_;
-      private          Task                                                              channelConsumerTask_;
+      private readonly int                                                               parallelismLimit_;
+      private readonly SemaphoreSlim                                                     semaphore_ = new(1);
+      private          Channel<(ICallback callback, BlobState blobState, bool abort)>?   channel_;
+      private          Task?                                                             channelConsumerTask_;
       private          bool                                                              disposed_;
 
       public CallbackChannel(Func<(ICallback callback, BlobState blobState, bool abort), Task> executeCallback,
+                             int                                                               parallelismLimit,
                              CancellationToken                                                 token)
       {
-        executeCallback_ = executeCallback;
-        cts_             = CancellationTokenSource.CreateLinkedTokenSource(token);
+        executeCallback_  = executeCallback;
+        parallelismLimit_ = parallelismLimit;
+        cts_              = CancellationTokenSource.CreateLinkedTokenSource(token);
         Initialize();
       }
 
@@ -511,6 +516,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
         {
           await WaitAsync(false)
             .ConfigureAwait(false);
+          semaphore_.Dispose();
           cts_.Dispose();
           disposed_ = true;
         }
@@ -518,29 +524,84 @@ public class SessionHandle : IAsyncDisposable, IDisposable
 
       private void Initialize()
       {
-        channel_ = Channel.CreateUnbounded<(ICallback callback, BlobState blobState, bool abort)>();
-        channelConsumerTask_ = Task.Run(async () =>
-                                        {
-                                          await channel_.Reader.ToAsyncEnumerable(CancellationToken.None)
-                                                        .ParallelForEach(new ParallelTaskOptions
-                                                                         {
-                                                                           ParallelismLimit  = 10,
-                                                                           Unordered         = true,
-                                                                           CancellationToken = cts_.Token,
-                                                                         },
-                                                                         executeCallback_)
-                                                        .ConfigureAwait(false);
-                                        });
+        semaphore_.Wait();
+        try
+        {
+          channel_ = Channel.CreateUnbounded<(ICallback callback, BlobState blobState, bool abort)>(new UnboundedChannelOptions
+                                                                                                    {
+                                                                                                      SingleReader = true,
+                                                                                                      SingleWriter = true,
+                                                                                                    });
+          channelConsumerTask_ = Task.Run(async () =>
+                                          {
+                                            if (channel_ != null)
+                                            {
+                                              await channel_.Reader.ToAsyncEnumerable(CancellationToken.None)
+                                                            .ParallelForEach(new ParallelTaskOptions
+                                                                             {
+                                                                               ParallelismLimit  = parallelismLimit_,
+                                                                               Unordered         = true,
+                                                                               CancellationToken = cts_.Token,
+                                                                             },
+                                                                             executeCallback_)
+                                                            .ConfigureAwait(false);
+                                              channel_ = null;
+                                            }
+                                          });
+        }
+        finally
+        {
+          semaphore_.Release();
+        }
       }
 
-      public async Task WriteAsync((ICallback callback, BlobState blobState, bool abort) tuple)
-        => await channel_.Writer.WriteAsync(tuple)
-                         .ConfigureAwait(false);
+      public async Task<bool> WriteAsync((ICallback callback, BlobState blobState, bool abort) tuple)
+      {
+        var written = false;
+        await semaphore_.WaitAsync()
+                        .ConfigureAwait(false);
+        try
+        {
+          if (channel_ != null)
+          {
+            try
+            {
+              await channel_.Writer.WriteAsync(tuple)
+                            .ConfigureAwait(false);
+              written = true;
+            }
+            catch (ChannelClosedException)
+            {
+            }
+          }
+        }
+        finally
+        {
+          semaphore_.Release();
+        }
+
+        return written;
+      }
 
       public async ValueTask WaitAsync(bool reinitializeChannel = true)
       {
-        channel_.Writer.Complete();
-        await channelConsumerTask_.ConfigureAwait(false);
+        await semaphore_.WaitAsync()
+                        .ConfigureAwait(false);
+        try
+        {
+          channel_?.Writer.TryComplete();
+        }
+        finally
+        {
+          semaphore_.Release();
+        }
+
+        if (channelConsumerTask_ != null)
+        {
+          await channelConsumerTask_!.ConfigureAwait(false);
+          channelConsumerTask_ = null;
+        }
+
         if (reinitializeChannel)
         {
           Initialize();
