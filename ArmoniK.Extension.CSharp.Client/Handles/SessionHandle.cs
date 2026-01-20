@@ -384,35 +384,37 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       => callbacks_.GetOrAdd(blob.BlobHandle!.BlobInfo.BlobId,
                              blob.CallBack!);
 
-    private async Task ExecuteCallback((ICallback callback, BlobState blobState, bool abort) tuple)
+    private async Task ExecuteCallback((ICallback callback, BlobState blobState) tuple)
     {
       var blobHandle = new BlobHandle(tuple.blobState,
                                       client_);
-      if (tuple.abort)
+      switch (tuple.blobState.Status)
       {
-        await tuple.callback.OnErrorAsync(blobHandle,
-                                          new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
-                                          cts_.Token)
-                   .ConfigureAwait(false);
-      }
-      else
-      {
-        try
-        {
-          var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
-                                       .ConfigureAwait(false);
-          await tuple.callback.OnSuccessAsync(blobHandle,
-                                              result,
+        case BlobStatus.Completed:
+          try
+          {
+            var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
+                                         .ConfigureAwait(false);
+            await tuple.callback.OnSuccessAsync(blobHandle,
+                                                result,
+                                                cts_.Token)
+                       .ConfigureAwait(false);
+          }
+          catch (Exception ex)
+          {
+            await tuple.callback.OnErrorAsync(blobHandle,
+                                              ex,
                                               cts_.Token)
-                     .ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
+                       .ConfigureAwait(false);
+          }
+
+          break;
+        case BlobStatus.Aborted:
           await tuple.callback.OnErrorAsync(blobHandle,
-                                            ex,
+                                            new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
                                             cts_.Token)
                      .ConfigureAwait(false);
-        }
+          break;
       }
     }
 
@@ -436,7 +438,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              await channel_.WriteAsync((func, blobState, false))
+              await channel_.WriteAsync((func, blobState))
                             .ConfigureAwait(false);
             }
             else
@@ -455,7 +457,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              await channel_.WriteAsync((func, blobState, true))
+              await channel_.WriteAsync((func, blobState))
                             .ConfigureAwait(false);
             }
             else
@@ -492,17 +494,17 @@ public class SessionHandle : IAsyncDisposable, IDisposable
 
     private sealed class CallbackChannel : IAsyncDisposable
     {
-      private readonly CancellationTokenSource                                           cts_;
-      private readonly Func<(ICallback callback, BlobState blobState, bool abort), Task> executeCallback_;
-      private readonly int                                                               parallelismLimit_;
-      private readonly SemaphoreSlim                                                     semaphore_ = new(1);
-      private          Channel<(ICallback callback, BlobState blobState, bool abort)>?   channel_;
-      private          Task?                                                             channelConsumerTask_;
-      private          bool                                                              disposed_;
+      private readonly CancellationTokenSource                               cts_;
+      private readonly Func<(ICallback callback, BlobState blobState), Task> executeCallback_;
+      private readonly int                                                   parallelismLimit_;
+      private readonly SemaphoreSlim                                         semaphore_ = new(1);
+      private          Channel<(ICallback callback, BlobState blobState)>?   channel_;
+      private          Task?                                                 channelConsumerTask_;
+      private          bool                                                  disposed_;
 
-      public CallbackChannel(Func<(ICallback callback, BlobState blobState, bool abort), Task> executeCallback,
-                             int                                                               parallelismLimit,
-                             CancellationToken                                                 token)
+      public CallbackChannel(Func<(ICallback callback, BlobState blobState), Task> executeCallback,
+                             int                                                   parallelismLimit,
+                             CancellationToken                                     token)
       {
         executeCallback_  = executeCallback;
         parallelismLimit_ = parallelismLimit;
@@ -527,11 +529,11 @@ public class SessionHandle : IAsyncDisposable, IDisposable
         semaphore_.Wait();
         try
         {
-          channel_ = Channel.CreateUnbounded<(ICallback callback, BlobState blobState, bool abort)>(new UnboundedChannelOptions
-                                                                                                    {
-                                                                                                      SingleReader = true,
-                                                                                                      SingleWriter = true,
-                                                                                                    });
+          channel_ = Channel.CreateUnbounded<(ICallback callback, BlobState blobState)>(new UnboundedChannelOptions
+                                                                                        {
+                                                                                          SingleReader = true,
+                                                                                          SingleWriter = true,
+                                                                                        });
           channelConsumerTask_ = Task.Run(async () =>
                                           {
                                             if (channel_ != null)
@@ -555,7 +557,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
         }
       }
 
-      public async Task<bool> WriteAsync((ICallback callback, BlobState blobState, bool abort) tuple)
+      public async Task<bool> WriteAsync((ICallback callback, BlobState blobState) tuple)
       {
         var written = false;
         await semaphore_.WaitAsync()
