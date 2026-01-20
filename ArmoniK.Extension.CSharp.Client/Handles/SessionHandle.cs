@@ -44,13 +44,13 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   public readonly ArmoniKClient ArmoniKClient;
 
-  private readonly bool   closeOnDispose_;
-  private readonly object locker_ = new();
-
   /// <summary>
   ///   The session containing session ID
   /// </summary>
   public readonly SessionInfo SessionInfo;
+
+  private readonly bool   closeOnDispose_;
+  private readonly object locker_ = new();
 
   private CallbackRunner? callbackRunner_;
   private int             isDisposed_;
@@ -498,8 +498,8 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       private readonly Func<(ICallback callback, BlobState blobState), Task> executeCallback_;
       private readonly int                                                   parallelismLimit_;
       private readonly SemaphoreSlim                                         semaphore_ = new(1);
-      private          Channel<(ICallback callback, BlobState blobState)>?   channel_;
       private          Task?                                                 channelConsumerTask_;
+      private          Channel<(ICallback callback, BlobState blobState)>?   channel_;
       private          bool                                                  disposed_;
 
       public CallbackChannel(Func<(ICallback callback, BlobState blobState), Task> executeCallback,
