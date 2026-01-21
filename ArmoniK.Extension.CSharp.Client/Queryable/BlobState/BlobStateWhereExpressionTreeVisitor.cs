@@ -502,6 +502,131 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
     }
   }
 
+  protected override void OnCollectionContains(ResultRawEnumField enumField,
+                                               object             collection,
+                                               bool               notOp = false)
+  {
+    var isEmpty = true;
+    var orNode  = new Filters();
+    if (notOp)
+    {
+      orNode.Or.Add(new FiltersAnd());
+    }
+
+    switch (enumField)
+    {
+      case ResultRawEnumField.OpaqueId:
+        foreach (var val in (IEnumerable<byte[]>)collection)
+        {
+          isEmpty = false;
+          var resultField = new ResultField
+                            {
+                              ResultRawField = new ResultRawField
+                                               {
+                                                 Field = enumField,
+                                               },
+                            };
+
+          if (notOp)
+          {
+            orNode.Or[0]
+                  .And.Add(new FilterField
+                           {
+                             Field = resultField,
+                             FilterArray = new FilterArray
+                                           {
+                                             Operator = FilterArrayOperator.NotContains,
+                                             Value    = Convert.ToBase64String(val),
+                                           },
+                           });
+          }
+          else
+          {
+            orNode.Or.Add(new FiltersAnd
+                          {
+                            And =
+                            {
+                              new FilterField
+                              {
+                                Field = resultField,
+                                FilterArray = new FilterArray
+                                              {
+                                                Operator = FilterArrayOperator.Contains,
+                                                Value    = Convert.ToBase64String(val),
+                                              },
+                              },
+                            },
+                          });
+          }
+        }
+
+        break;
+
+      case ResultRawEnumField.CreatedBy:
+      case ResultRawEnumField.Name:
+      case ResultRawEnumField.OwnerTaskId:
+      case ResultRawEnumField.ResultId:
+      case ResultRawEnumField.SessionId:
+        foreach (var val in (IEnumerable<string>)collection)
+        {
+          isEmpty = false;
+          var resultField = new ResultField
+                            {
+                              ResultRawField = new ResultRawField
+                                               {
+                                                 Field = enumField,
+                                               },
+                            };
+          if (notOp)
+          {
+            orNode.Or[0]
+                  .And.Add(new FilterField
+                           {
+                             Field = resultField,
+                             FilterString = new FilterString
+                                            {
+                                              Operator = FilterStringOperator.NotEqual,
+                                              Value    = val,
+                                            },
+                           });
+          }
+          else
+          {
+            orNode.Or.Add(new FiltersAnd
+                          {
+                            And =
+                            {
+                              new FilterField
+                              {
+                                Field = resultField,
+                                FilterString = new FilterString
+                                               {
+                                                 Operator = FilterStringOperator.Equal,
+                                                 Value    = val,
+                                               },
+                              },
+                            },
+                          });
+          }
+        }
+
+        break;
+      default:
+        throw new InvalidOperationException($"Cannot apply Contains method on a collection containing '{enumField}' values.");
+    }
+
+    if (isEmpty)
+    {
+      FilterStack.Push(notOp);
+    }
+    else
+    {
+      FilterStack.Push(orNode);
+    }
+
+    ExpressionTypeStack.Push(typeof(bool));
+  }
+
   protected override void OnByteArrayMethodOperator(MethodInfo method,
                                                     bool       notOp = false)
   {

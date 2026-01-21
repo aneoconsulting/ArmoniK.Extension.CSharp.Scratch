@@ -66,9 +66,15 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
       throw new InvalidOperationException("VisitExpression() must be called before ExecuteAsync()");
     }
 
-    PaginationInstance = CreatePaginationInstance(visitor_.Filters,
+    if (visitor_.Filters == null)
+    {
+      yield break;
+    }
+
+    PaginationInstance = CreatePaginationInstance((TFilterOr)visitor_.Filters,
                                                   visitor_.SortCriteria,
                                                   visitor_.IsSortAscending);
+
     var   total = 0;
     TPage page;
     do

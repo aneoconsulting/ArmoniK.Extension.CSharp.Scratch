@@ -40,7 +40,7 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
   public Func<IAsyncEnumerable<TSource>, TSource?>? FuncReturnNullableTSource { get; private set; }
   public Func<IAsyncEnumerable<TSource>, TSource>?  FuncReturnTSource         { get; private set; }
 
-  public TFilterOr Filters { get; private set; } = new();
+  public TFilterOr? Filters { get; private set; } = new();
 
   public TEnumField SortCriteria { get; protected set; } = new();
 

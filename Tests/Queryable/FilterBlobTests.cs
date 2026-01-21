@@ -20,6 +20,7 @@ using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Queryable;
 using ArmoniK.Extension.CSharp.Client.Queryable.BlobState;
 using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Utils;
 
 using NUnit.Framework;
 
@@ -711,6 +712,274 @@ public class FilterBlobTests : BaseBlobFilterTests
 
     var query = client.BlobService.AsQueryable()
                       .Where(blobState => !blobState.OpaqueId.Contains<byte>(1));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void ContainsOnBlobIdCollection()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1")),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob2")),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob3")));
+
+    string[] blobIds = ["blob1", "blob2", "blob3"];
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobIds.Contains(blobState.BlobId));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void NotContainsOnBlobIdCollection()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "!=",
+                                                    "blob1"),
+                                  BuildFilterString("BlobId",
+                                                    "!=",
+                                                    "blob2"),
+                                  BuildFilterString("BlobId",
+                                                    "!=",
+                                                    "blob3")));
+
+    string[] blobIds = ["blob1", "blob2", "blob3"];
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => !blobIds.Contains(blobState.BlobId));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void NotContainsOnBlobIdEmptyCollection()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr();
+
+    string[] blobIds = [];
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => !blobIds.Contains(blobState.BlobId));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public async Task ContainsOnBlobIdEmptyEnumerable()
+  {
+    var client = new MockedArmoniKClient();
+
+    string[] blobIds = [];
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobIds.Contains(blobState.BlobId));
+
+    // Execute the query
+    var result = await query.AsAsyncEnumerable()
+                            .ToListAsync()
+                            .ConfigureAwait(false);
+
+    Assert.That(result,
+                Is.Empty);
+  }
+
+  [Test]
+  public async Task ContainsOnAsIListOfBlobIds()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1")),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob2")),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob3")));
+
+    var blobIds = new Dictionary<string, int>
+                  {
+                    {
+                      "blob1", 0
+                    },
+                    {
+                      "blob2", 0
+                    },
+                    {
+                      "blob3", 0
+                    },
+                  };
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobIds.Keys.AsIList()
+                                                 .Contains(blobState.BlobId));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public async Task ContainsOnAsDictionaryKeyOfBlobIds()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1")),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob2")),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob3")));
+
+    var blobIds = new Dictionary<string, int>
+                  {
+                    {
+                      "blob1", 0
+                    },
+                    {
+                      "blob2", 0
+                    },
+                    {
+                      "blob3", 0
+                    },
+                  };
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobIds.Keys.Contains(blobState.BlobId));
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public async Task ContainsOnBlobIdEmptyCollectionAndStatusFilter()
+  {
+    var client = new MockedArmoniKClient();
+
+    string[] blobIds = [];
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobIds.Contains(blobState.BlobId) && blobState.Status == BlobStatus.Completed);
+
+    // Execute the query
+    var result = await query.AsAsyncEnumerable()
+                            .ToListAsync()
+                            .ConfigureAwait(false);
+
+    Assert.That(result,
+                Is.Empty);
+  }
+
+  [Test]
+  public async Task NotContainsOnBlobIdEmptyCollectionAndStatusFilter()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Completed)));
+
+    string[] blobIds = [];
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => !blobIds.Contains(blobState.BlobId) && blobState.Status == BlobStatus.Completed);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
+                Is.EqualTo(BuildBlobPagination(filter)));
+  }
+
+  [Test]
+  public void ContainsOnBlobIdCollectionAndStatusFilter()
+  {
+    var client = new MockedArmoniKClient();
+
+    var filter = BuildOr(BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Completed)),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob1"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Aborted)),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob2"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Completed)),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob2"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Aborted)),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob3"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Completed)),
+                         BuildAnd(BuildFilterString("BlobId",
+                                                    "==",
+                                                    "blob3"),
+                                  BuildFilterStatus("Status",
+                                                    "==",
+                                                    BlobStatus.Aborted)));
+
+    string[] blobIds = ["blob1", "blob2", "blob3"];
+    var query = client.BlobService.AsQueryable()
+                      .Where(blobState => blobIds.Contains(blobState.BlobId) && (blobState.Status == BlobStatus.Completed || blobState.Status == BlobStatus.Aborted));
 
     // Execute the query
     var result = query.AsAsyncEnumerable()
