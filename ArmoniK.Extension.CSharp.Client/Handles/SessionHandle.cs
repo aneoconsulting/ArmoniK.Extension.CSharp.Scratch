@@ -297,8 +297,6 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     private readonly ConcurrentDictionary<string, ICallback> callbacks_ = new();
 
-    private readonly CallbackChannel channel_;
-
     private readonly ArmoniKClient client_;
 
     /// <summary>
@@ -310,16 +308,14 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     private readonly object locker_ = new();
 
     private readonly Task                        workerTask_;
+    private          long                        continueLoop_ = 1;
     private          TaskCompletionSource<bool>? taskCompletionSource_;
 
     public CallbackRunner(ArmoniKClient     client,
                           CancellationToken cancellationToken)
     {
-      client_ = client;
-      cts_    = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-      channel_ = new CallbackChannel(ExecuteCallback,
-                                     client.Properties.ParallelismLimit,
-                                     cts_.Token);
+      client_     = client;
+      cts_        = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       workerTask_ = Task.Run(RunAsync);
     }
 
@@ -328,11 +324,9 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-      // Wait for execution of pending callbacks
-      await channel_.DisposeAsync()
-                    .ConfigureAwait(false);
-      // Send an abort signal
-      cts_.Cancel();
+      // Exit the execution loop
+      Interlocked.Exchange(ref continueLoop_,
+                           0);
       // Wait for the worker task to complete
       await workerTask_.ConfigureAwait(false);
       // Dispose disposable members
@@ -425,9 +419,23 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     {
       TaskCompletionSource<bool>? taskCompletionSource = null;
 
+      var channel = Channel.CreateUnbounded<(ICallback callback, BlobState blobState)>(new UnboundedChannelOptions
+                                                                                       {
+                                                                                         SingleReader = true,
+                                                                                         SingleWriter = true,
+                                                                                       });
+      var channelReveiverTask = channel.Reader.ToAsyncEnumerable(cts_.Token)
+                                       .ParallelForEach(new ParallelTaskOptions
+                                                        {
+                                                          ParallelismLimit  = client_.Properties.ParallelismLimit,
+                                                          Unordered         = true,
+                                                          CancellationToken = cts_.Token,
+                                                        },
+                                                        ExecuteCallback);
+
       try
       {
-        while (!cts_.Token.IsCancellationRequested)
+        while (Interlocked.Read(ref continueLoop_) == 1 && !cts_.Token.IsCancellationRequested)
         {
           // Loop on completed blobs
           await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
@@ -438,12 +446,12 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              await channel_.WriteAsync((func, blobState))
-                            .ConfigureAwait(false);
+              await channel.Writer.WriteAsync((func, blobState),
+                                              cts_.Token)
+                           .ConfigureAwait(false);
             }
             else
             {
-              channel_.Abort();
               throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
             }
           }
@@ -457,12 +465,12 @@ public class SessionHandle : IAsyncDisposable, IDisposable
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              await channel_.WriteAsync((func, blobState))
-                            .ConfigureAwait(false);
+              await channel.Writer.WriteAsync((func, blobState),
+                                              cts_.Token)
+                           .ConfigureAwait(false);
             }
             else
             {
-              channel_.Abort();
               throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
             }
           }
@@ -470,8 +478,6 @@ public class SessionHandle : IAsyncDisposable, IDisposable
           taskCompletionSource = GetTaskCompletionSource();
           if (taskCompletionSource != null && callbacks_.IsEmpty)
           {
-            await channel_.WaitAsync()
-                          .ConfigureAwait(false);
             taskCompletionSource.SetResult(true);
             ResetTaskCompletionSource();
           }
@@ -490,128 +496,12 @@ public class SessionHandle : IAsyncDisposable, IDisposable
         taskCompletionSource = GetTaskCompletionSource();
         taskCompletionSource?.SetResult(false);
       }
-    }
-
-    private sealed class CallbackChannel : IAsyncDisposable
-    {
-      private readonly CancellationTokenSource                               cts_;
-      private readonly Func<(ICallback callback, BlobState blobState), Task> executeCallback_;
-      private readonly int                                                   parallelismLimit_;
-      private readonly SemaphoreSlim                                         semaphore_ = new(1);
-      private          Task?                                                 channelConsumerTask_;
-      private          Channel<(ICallback callback, BlobState blobState)>?   channel_;
-      private          bool                                                  disposed_;
-
-      public CallbackChannel(Func<(ICallback callback, BlobState blobState), Task> executeCallback,
-                             int                                                   parallelismLimit,
-                             CancellationToken                                     token)
+      finally
       {
-        executeCallback_  = executeCallback;
-        parallelismLimit_ = parallelismLimit;
-        cts_              = CancellationTokenSource.CreateLinkedTokenSource(token);
-        Initialize();
+        channel.Writer.TryComplete();
       }
 
-      public async ValueTask DisposeAsync()
-      {
-        if (!disposed_)
-        {
-          await WaitAsync(false)
-            .ConfigureAwait(false);
-          semaphore_.Dispose();
-          cts_.Dispose();
-          disposed_ = true;
-        }
-      }
-
-      private void Initialize()
-      {
-        semaphore_.Wait();
-        try
-        {
-          channel_ = Channel.CreateUnbounded<(ICallback callback, BlobState blobState)>(new UnboundedChannelOptions
-                                                                                        {
-                                                                                          SingleReader = true,
-                                                                                          SingleWriter = true,
-                                                                                        });
-          channelConsumerTask_ = Task.Run(async () =>
-                                          {
-                                            if (channel_ != null)
-                                            {
-                                              await channel_.Reader.ToAsyncEnumerable(CancellationToken.None)
-                                                            .ParallelForEach(new ParallelTaskOptions
-                                                                             {
-                                                                               ParallelismLimit  = parallelismLimit_,
-                                                                               Unordered         = true,
-                                                                               CancellationToken = cts_.Token,
-                                                                             },
-                                                                             executeCallback_)
-                                                            .ConfigureAwait(false);
-                                              channel_ = null;
-                                            }
-                                          });
-        }
-        finally
-        {
-          semaphore_.Release();
-        }
-      }
-
-      public async Task<bool> WriteAsync((ICallback callback, BlobState blobState) tuple)
-      {
-        var written = false;
-        await semaphore_.WaitAsync()
-                        .ConfigureAwait(false);
-        try
-        {
-          if (channel_ != null)
-          {
-            try
-            {
-              await channel_.Writer.WriteAsync(tuple)
-                            .ConfigureAwait(false);
-              written = true;
-            }
-            catch (ChannelClosedException)
-            {
-            }
-          }
-        }
-        finally
-        {
-          semaphore_.Release();
-        }
-
-        return written;
-      }
-
-      public async ValueTask WaitAsync(bool reinitializeChannel = true)
-      {
-        await semaphore_.WaitAsync()
-                        .ConfigureAwait(false);
-        try
-        {
-          channel_?.Writer.TryComplete();
-        }
-        finally
-        {
-          semaphore_.Release();
-        }
-
-        if (channelConsumerTask_ != null)
-        {
-          await channelConsumerTask_!.ConfigureAwait(false);
-          channelConsumerTask_ = null;
-        }
-
-        if (reinitializeChannel)
-        {
-          Initialize();
-        }
-      }
-
-      public void Abort()
-        => cts_.Cancel();
+      await channelReveiverTask.ConfigureAwait(false);
     }
   }
 }
