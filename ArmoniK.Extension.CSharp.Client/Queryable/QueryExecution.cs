@@ -71,7 +71,7 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
       yield break;
     }
 
-    PaginationInstance = CreatePaginationInstance((TFilterOr)visitor_.Filters,
+    PaginationInstance = CreatePaginationInstance(visitor_.Filters,
                                                   visitor_.SortCriteria,
                                                   visitor_.IsSortAscending);
 
@@ -79,10 +79,15 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
     TPage page;
     do
     {
-      page = await RequestInstances(PaginationInstance,
-                                    cancellationToken)
+      page = await RequestInstancesAsync(PaginationInstance,
+                                         cancellationToken)
                .ConfigureAwait(false);
       var elements = GetPageElements(page);
+      if (elements.Length == 0)
+      {
+        yield break;
+      }
+
       total += elements.Length;
       foreach (var blobState in elements)
       {
@@ -94,8 +99,8 @@ internal abstract class QueryExecution<TPagination, TPage, TSource, TEnumField, 
   protected abstract void LogError(Exception ex,
                                    string    message);
 
-  protected abstract Task<TPage> RequestInstances(TPagination       pagination,
-                                                  CancellationToken cancellationToken);
+  protected abstract Task<TPage> RequestInstancesAsync(TPagination       pagination,
+                                                       CancellationToken cancellationToken);
 
   protected abstract QueryExpressionTreeVisitor<TSource, TEnumField, TFilterOr, TFilterAnd, TFilterField> CreateQueryExpressionTreeVisitor();
 

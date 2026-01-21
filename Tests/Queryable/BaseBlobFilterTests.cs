@@ -182,7 +182,7 @@ public class BaseBlobFilterTests
        {
          Filter   = filter,
          Page     = 0,
-         PageSize = 50,
+         PageSize = int.MaxValue,
          SortDirection = ascendingSort
                            ? SortDirection.Asc
                            : SortDirection.Desc,

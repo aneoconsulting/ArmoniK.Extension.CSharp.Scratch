@@ -18,6 +18,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -423,6 +424,22 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       }
     }
 
+    private async IAsyncEnumerable<BlobState> GetBlobStates(ICollection<string>                        blobIds,
+                                                            [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+      foreach (var chunk in blobIds.ToChunks(1000))
+      {
+        var query = client_.BlobService.AsQueryable()
+                           .Where(blobState => chunk.Contains(blobState.BlobId) && (blobState.Status == BlobStatus.Completed || blobState.Status == BlobStatus.Aborted));
+        await foreach (var blobState in query.ToAsyncEnumerable()
+                                             .WithCancellation(cancellationToken)
+                                             .ConfigureAwait(false))
+        {
+          yield return blobState;
+        }
+      }
+    }
+
     /// <summary>
     ///   Execution loop
     /// </summary>
@@ -449,29 +466,9 @@ public class SessionHandle : IAsyncDisposable, IDisposable
         while (!loopCts_.Token.IsCancellationRequested)
         {
           // Loop on completed blobs
-          await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
-                                                                                         BlobStatus.Completed,
-                                                                                         loopCts_.Token)
-                                                 .ConfigureAwait(false))
-          {
-            if (callbacks_.TryRemove(blobState.BlobId,
-                                     out var func))
-            {
-              await channel.Writer.WriteAsync((func, blobState),
-                                              loopCts_.Token)
-                           .ConfigureAwait(false);
-            }
-            else
-            {
-              throw new ArmoniKSdkException($"Unexpected error: could not retrieve the callback for blob {blobState.BlobId}");
-            }
-          }
-
-          // Loop on aborted blobs
-          await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
-                                                                                         BlobStatus.Aborted,
-                                                                                         loopCts_.Token)
-                                                 .ConfigureAwait(false))
+          await foreach (var blobState in GetBlobStates(callbacks_.Keys,
+                                                        loopCts_.Token)
+                           .ConfigureAwait(false))
           {
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))

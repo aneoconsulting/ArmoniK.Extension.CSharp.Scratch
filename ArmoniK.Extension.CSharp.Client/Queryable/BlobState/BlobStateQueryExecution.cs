@@ -45,8 +45,8 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
     => logger_.LogError(ex,
                         message);
 
-  protected override async Task<BlobPage> RequestInstances(BlobPagination    pagination,
-                                                           CancellationToken cancellationToken)
+  protected override async Task<BlobPage> RequestInstancesAsync(BlobPagination    pagination,
+                                                                CancellationToken cancellationToken)
   {
     pagination.Page++;
     return await blobService_.ListBlobsAsync(pagination,
@@ -65,7 +65,7 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
        {
          Filter   = filter,
          Page     = -1,
-         PageSize = 50,
+         PageSize = int.MaxValue,
          SortDirection = isAscending
                            ? SortDirection.Asc
                            : SortDirection.Desc,
