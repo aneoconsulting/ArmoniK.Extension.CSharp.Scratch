@@ -435,7 +435,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
                                                                                          SingleReader = true,
                                                                                          SingleWriter = true,
                                                                                        });
-      var channelReveiverTask = channel.Reader.ToAsyncEnumerable(callbacksCts_.Token)
+      var channelReceiverTask = channel.Reader.ToAsyncEnumerable(callbacksCts_.Token)
                                        .ParallelForEach(new ParallelTaskOptions
                                                         {
                                                           ParallelismLimit  = client_.Properties.ParallelismLimit,
@@ -514,7 +514,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
 
       try
       {
-        await channelReveiverTask.ConfigureAwait(false);
+        await channelReceiverTask.ConfigureAwait(false);
       }
       catch (OperationCanceledException) when (loopCts_.Token.IsCancellationRequested)
       {
