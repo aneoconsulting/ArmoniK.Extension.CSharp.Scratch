@@ -233,7 +233,6 @@ public class BlobTests
                          {
                            Page          = 1,
                            PageSize      = 10,
-                           Total         = 100,
                            SortDirection = SortDirection.Asc,
                            Filter        = new Filters(),
                          };
@@ -242,8 +241,6 @@ public class BlobTests
                 Is.EqualTo(1));
     Assert.That(blobPagination.PageSize,
                 Is.EqualTo(10));
-    Assert.That(blobPagination.Total,
-                Is.EqualTo(100));
     Assert.That(blobPagination.SortDirection,
                 Is.EqualTo(SortDirection.Asc));
     Assert.That(blobPagination.Filter,
@@ -256,7 +253,6 @@ public class BlobTests
                           {
                             Page          = 1,
                             PageSize      = 10,
-                            Total         = 100,
                             SortDirection = SortDirection.Asc,
                             Filter        = new Filters(),
                           };
@@ -265,7 +261,6 @@ public class BlobTests
                           {
                             Page          = 1,
                             PageSize      = 10,
-                            Total         = 100,
                             SortDirection = SortDirection.Asc,
                             Filter        = new Filters(),
                           };
@@ -304,7 +299,6 @@ public class BlobTests
                          {
                            Page          = 2,
                            PageSize      = 20,
-                           Total         = 200,
                            SortDirection = SortDirection.Desc,
                            Filter        = filter,
                          };
@@ -313,8 +307,6 @@ public class BlobTests
                 Is.EqualTo(2));
     Assert.That(blobPagination.PageSize,
                 Is.EqualTo(20));
-    Assert.That(blobPagination.Total,
-                Is.EqualTo(200));
     Assert.That(blobPagination.SortDirection,
                 Is.EqualTo(SortDirection.Desc));
     Assert.That(blobPagination.Filter,
@@ -337,8 +329,6 @@ public class BlobTests
                 Is.EqualTo(0));
     Assert.That(blobPagination.PageSize,
                 Is.EqualTo(0));
-    Assert.That(blobPagination.Total,
-                Is.EqualTo(0));
     Assert.That(blobPagination.SortDirection,
                 Is.EqualTo(SortDirection.Unspecified));
     Assert.That(blobPagination.Filter,
@@ -352,7 +342,6 @@ public class BlobTests
                          {
                            Page          = 1,
                            PageSize      = 10,
-                           Total         = 100,
                            SortDirection = SortDirection.Asc,
                            Filter        = new Filters(),
                          };
@@ -370,7 +359,6 @@ public class BlobTests
                          {
                            Page          = -1,
                            PageSize      = -10,
-                           Total         = -100,
                            SortDirection = SortDirection.Asc,
                            Filter        = new Filters(),
                          };
@@ -379,7 +367,5 @@ public class BlobTests
                 Is.EqualTo(-1));
     Assert.That(blobPagination.PageSize,
                 Is.EqualTo(-10));
-    Assert.That(blobPagination.Total,
-                Is.EqualTo(-100));
   }
 }

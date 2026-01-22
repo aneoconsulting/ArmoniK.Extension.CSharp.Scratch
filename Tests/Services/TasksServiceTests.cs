@@ -369,7 +369,6 @@ public class TasksServiceTests
                               Page          = 1,
                               PageSize      = 10,
                               SortDirection = SortDirection.Asc,
-                              Total         = 2,
                               Filter        = new Filters(),
                             };
 

@@ -1053,6 +1053,23 @@ public class FilterBlobTests : BaseBlobFilterTests
     Assert.Throws<InvalidExpressionException>(() => query.ToList());
   }
 
+  [Test]
+  public void BlobFilterWithPageSize()
+  {
+    var client = new MockedArmoniKClient();
+
+    var query = client.BlobService.AsQueryable()
+                      .WithPageSize(50);
+
+    // Execute the query
+    var result = query.AsAsyncEnumerable()
+                      .ToListAsync();
+
+    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
+    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance.PageSize,
+                Is.EqualTo(50));
+  }
+
   private class RecursiveClass
   {
     public RecursiveClass? Inner { get; init; }

@@ -14,8 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable;
 
@@ -32,4 +34,30 @@ public static class QueryableExt
   /// <returns>The IAsyncEnumerable instance</returns>
   public static IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IQueryable<T> queryable)
     => queryable as IAsyncEnumerable<T> ?? queryable.ToAsyncEnumerable();
+
+  /// <summary>
+  ///   Sets the maximum page size for the answer.
+  /// </summary>
+  /// <typeparam name="T">The objets type of the collection</typeparam>
+  /// <param name="source">The queryable instance</param>
+  /// <param name="pageSize">The page size</param>
+  /// <returns>The queryable instance</returns>
+  public static IQueryable<T> WithPageSize<T>(this IQueryable<T> source,
+                                              int                pageSize)
+  {
+    if (source == null)
+    {
+      throw new ArgumentNullException(nameof(source));
+    }
+
+    if (pageSize <= 0)
+    {
+      throw new InvalidOperationException("Page size must be greater than 0.");
+    }
+
+    return source.Provider.CreateQuery<T>(Expression.Call(null,
+                                                          new Func<IQueryable<T>, int, IQueryable<T>>(WithPageSize).Method,
+                                                          source.Expression,
+                                                          Expression.Constant(pageSize)));
+  }
 }

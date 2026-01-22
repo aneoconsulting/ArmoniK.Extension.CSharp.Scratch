@@ -35,7 +35,6 @@ public class TaskPaginationTests
                          {
                            Page          = 1,
                            PageSize      = 10,
-                           Total         = 100,
                            SortDirection = SortDirection.Asc,
                            Filter        = new Filters(),
                          };
@@ -45,8 +44,6 @@ public class TaskPaginationTests
                                   Is.EqualTo(1));
                       Assert.That(taskPagination.PageSize,
                                   Is.EqualTo(10));
-                      Assert.That(taskPagination.Total,
-                                  Is.EqualTo(100));
                       Assert.That(taskPagination.SortDirection,
                                   Is.EqualTo(SortDirection.Asc));
                       Assert.That(taskPagination.Filter,
