@@ -261,8 +261,7 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
     }
     else
     {
-      OnByteArrayMethodOperator(call.Method,
-                                notOp);
+      throw new InvalidOperationException("Invalid filter: illegal use of method Contains");
     }
   }
 
@@ -800,9 +799,6 @@ internal abstract class WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilte
   protected abstract void OnCollectionContains(TEnumField enumField,
                                                object     collection,
                                                bool       notOp = false);
-
-  protected abstract void OnByteArrayMethodOperator(MethodInfo method,
-                                                    bool       notOp = false);
 
   protected abstract bool TryGetEnumFieldFromName(string         name,
                                                   out TEnumField enumField);

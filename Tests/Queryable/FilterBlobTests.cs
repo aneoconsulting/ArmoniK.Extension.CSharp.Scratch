@@ -681,48 +681,6 @@ public class FilterBlobTests : BaseBlobFilterTests
   }
 
   [Test]
-  public void OpaqueIdFilterWithContains()
-  {
-    var client = new MockedArmoniKClient();
-
-    var filter = BuildOr(BuildAnd(BuildFilterArray("OpaqueId",
-                                                   "Contains",
-                                                   1)));
-
-    var query = client.BlobService.AsQueryable()
-                      .Where(blobState => blobState.OpaqueId.Contains<byte>(1));
-
-    // Execute the query
-    var result = query.AsAsyncEnumerable()
-                      .ToListAsync();
-
-    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
-                Is.EqualTo(BuildBlobPagination(filter)));
-  }
-
-  [Test]
-  public void OpaqueIdFilterWithNotContains()
-  {
-    var client = new MockedArmoniKClient();
-
-    var filter = BuildOr(BuildAnd(BuildFilterArray("OpaqueId",
-                                                   "NotContains",
-                                                   1)));
-
-    var query = client.BlobService.AsQueryable()
-                      .Where(blobState => !blobState.OpaqueId.Contains<byte>(1));
-
-    // Execute the query
-    var result = query.AsAsyncEnumerable()
-                      .ToListAsync();
-
-    var blobQueryProvider = (BlobStateQueryProvider)((ArmoniKQueryable<BlobState>)query).Provider;
-    Assert.That(blobQueryProvider.QueryExecution!.PaginationInstance,
-                Is.EqualTo(BuildBlobPagination(filter)));
-  }
-
-  [Test]
   public void ContainsOnBlobIdCollection()
   {
     var client = new MockedArmoniKClient();
@@ -914,7 +872,7 @@ public class FilterBlobTests : BaseBlobFilterTests
   }
 
   [Test]
-  public async Task NotContainsOnBlobIdEmptyCollectionAndStatusFilter()
+  public void NotContainsOnBlobIdEmptyCollectionAndStatusFilter()
   {
     var client = new MockedArmoniKClient();
 

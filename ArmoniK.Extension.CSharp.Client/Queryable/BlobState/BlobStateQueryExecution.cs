@@ -64,7 +64,7 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPage, CSharp.Common.
          Page   = 0,
          PageSize = visitor.PageSize.HasValue
                       ? visitor.PageSize.Value
-                      : int.MaxValue,
+                      : 1000,
          SortDirection = visitor.IsSortAscending
                            ? SortDirection.Asc
                            : SortDirection.Desc,

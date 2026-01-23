@@ -27,6 +27,7 @@ using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
 using ArmoniK.Extension.CSharp.Client.Exceptions;
+using ArmoniK.Extension.CSharp.Client.Queryable;
 using ArmoniK.Extension.CSharp.Client.Services;
 using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Common.Library;
@@ -421,16 +422,30 @@ public class SessionHandle : IAsyncDisposable, IDisposable
                                             callbacksCts_.Token)
                      .ConfigureAwait(false);
           break;
+        case BlobStatus.Deleted:
+          await tuple.callback.OnErrorAsync(blobHandle,
+                                            new ArmoniKSdkException("blob deleted, call of OnSuccessAsync() was canceled."),
+                                            callbacksCts_.Token)
+                     .ConfigureAwait(false);
+          break;
+        default:
+          await tuple.callback.OnErrorAsync(blobHandle,
+                                            new ArmoniKSdkException("blob is in an inconsistent state, call of OnSuccessAsync() was canceled."),
+                                            callbacksCts_.Token)
+                     .ConfigureAwait(false);
+          break;
       }
     }
 
     private async IAsyncEnumerable<BlobState> GetBlobStates(ICollection<string>                        blobIds,
                                                             [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-      foreach (var chunk in blobIds.ToChunks(1000))
+      var pageSize = 1000;
+      foreach (var chunk in blobIds.ToChunks(pageSize))
       {
         var query = client_.BlobService.AsQueryable()
-                           .Where(blobState => chunk.Contains(blobState.BlobId) && (blobState.Status == BlobStatus.Completed || blobState.Status == BlobStatus.Aborted));
+                           .Where(blobState => chunk.Contains(blobState.BlobId) && blobState.Status != BlobStatus.Created)
+                           .WithPageSize(pageSize);
         await foreach (var blobState in query.ToAsyncEnumerable()
                                              .WithCancellation(cancellationToken)
                                              .ConfigureAwait(false))
