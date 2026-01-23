@@ -167,17 +167,16 @@ internal sealed class LibraryLoader : IAsyncDisposable, IDisposable
   {
     try
     {
-      logger_.LogInformation("Starting to LoadLibrary");
-      logger_.LogInformation("Nb of current loaded assemblies: {nbAssemblyLoadContexts}",
-                             workerServices_.Count);
-
-      // if the context is already loaded
       var key = $"{dynamicLibrary.Symbol}|{dynamicLibrary.LibraryBlobId}";
       if (workerServices_.TryGetValue(key,
                                       out var srv))
       {
         return srv.Worker;
       }
+
+      logger_.LogInformation("Starting to LoadLibrary");
+      logger_.LogInformation("Nb of current loaded assemblies: {nbAssemblyLoadContexts}",
+                             workerServices_.Count);
 
       var service = await WorkerService.CreateWorkerService(taskHandler,
                                                             dynamicLibrary,
