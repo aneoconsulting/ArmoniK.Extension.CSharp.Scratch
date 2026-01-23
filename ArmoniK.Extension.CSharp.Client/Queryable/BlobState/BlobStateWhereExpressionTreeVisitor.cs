@@ -502,82 +502,81 @@ internal class BlobStateWhereExpressionTreeVisitor : WhereExpressionTreeVisitor<
     }
   }
 
-  protected override void OnByteArrayMethodOperator(MethodInfo method,
-                                                    bool       notOp = false)
+  protected override void OnCollectionContains(ResultRawEnumField enumField,
+                                               object             collection,
+                                               bool               notOp = false)
   {
-    var filter = new FilterArray();
-    switch (method.Name)
+    var isEmpty = true;
+    var orNode  = new Filters();
+    if (notOp)
     {
-      case "Contains":
-        if (notOp)
+      orNode.Or.Add(new FiltersAnd());
+    }
+
+    switch (enumField)
+    {
+      case ResultRawEnumField.CreatedBy:
+      case ResultRawEnumField.Name:
+      case ResultRawEnumField.OwnerTaskId:
+      case ResultRawEnumField.ResultId:
+      case ResultRawEnumField.SessionId:
+        foreach (var val in (IEnumerable<string>)collection)
         {
-          filter.Operator = FilterArrayOperator.NotContains;
-        }
-        else
-        {
-          filter.Operator = FilterArrayOperator.Contains;
+          isEmpty = false;
+          var resultField = new ResultField
+                            {
+                              ResultRawField = new ResultRawField
+                                               {
+                                                 Field = enumField,
+                                               },
+                            };
+          if (notOp)
+          {
+            orNode.Or[0]
+                  .And.Add(new FilterField
+                           {
+                             Field = resultField,
+                             FilterString = new FilterString
+                                            {
+                                              Operator = FilterStringOperator.NotEqual,
+                                              Value    = val,
+                                            },
+                           });
+          }
+          else
+          {
+            orNode.Or.Add(new FiltersAnd
+                          {
+                            And =
+                            {
+                              new FilterField
+                              {
+                                Field = resultField,
+                                FilterString = new FilterString
+                                               {
+                                                 Operator = FilterStringOperator.Equal,
+                                                 Value    = val,
+                                               },
+                              },
+                            },
+                          });
+          }
         }
 
-        PushByteArrayFilter(filter);
         break;
       default:
-        throw new InvalidOperationException($"Method byte[].{method.Name} is not supported to filter blobs.");
-    }
-  }
-
-  private void PushByteArrayFilter(FilterArray filter)
-  {
-    var filterField = new FilterField();
-    var fieldCount  = 0;
-    var constCount  = 0;
-    var rhsFilter   = FilterStack.Pop();
-    var lhsFilter   = FilterStack.Pop();
-    if (lhsFilter is ResultRawEnumField lhsFilterField)
-    {
-      // Left hand side is the property
-      filterField.Field = new ResultField
-                          {
-                            ResultRawField = new ResultRawField
-                                             {
-                                               Field = lhsFilterField,
-                                             },
-                          };
-      fieldCount++;
-    }
-    else if (lhsFilter is byte value)
-    {
-      // Left hand side is a constant
-      filterField.FilterArray = filter;
-      filter.Value            = value.ToString();
-      constCount++;
+        throw new InvalidOperationException($"Cannot apply Contains method on a collection containing '{enumField}' values.");
     }
 
-    if (rhsFilter is ResultRawEnumField rhsFilterField)
+    if (isEmpty)
     {
-      // Right hand side is the property
-      filterField.Field = new ResultField
-                          {
-                            ResultRawField = new ResultRawField
-                                             {
-                                               Field = rhsFilterField,
-                                             },
-                          };
-      fieldCount++;
+      FilterStack.Push(notOp);
     }
-    else if (rhsFilter is byte value)
+    else
     {
-      // Right hand side is a constant
-      filterField.FilterArray = filter;
-      filter.Value            = value.ToString();
-      constCount++;
+      FilterStack.Push(orNode);
     }
 
-    if (fieldCount != 1 || constCount != 1)
-    {
-      // Invalid expression
-      throw new InvalidOperationException("Invalid filter expression.");
-    }
-
-    FilterStack.Push(filterField);
+    ExpressionTypeStack.Push(typeof(bool));
   }
 }

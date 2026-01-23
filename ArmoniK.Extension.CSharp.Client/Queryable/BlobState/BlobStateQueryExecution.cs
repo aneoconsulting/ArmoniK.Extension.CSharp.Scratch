@@ -21,13 +21,14 @@ using System.Threading.Tasks;
 using ArmoniK.Api.gRPC.V1.Results;
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
 using ArmoniK.Extension.CSharp.Client.Common.Enum;
+using ArmoniK.Extension.CSharp.Client.Common.Generic;
 using ArmoniK.Extension.CSharp.Client.Common.Services;
 
 using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.Extension.CSharp.Client.Queryable.BlobState;
 
-internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage, CSharp.Common.Common.Domain.Blob.BlobState, ResultRawEnumField, Filters, FiltersAnd,
+internal class BlobStateQueryExecution : QueryExecution<BlobPage, CSharp.Common.Common.Domain.Blob.BlobState, ResultField, ResultRawEnumField, Filters, FiltersAnd,
   FilterField>
 {
   private readonly IBlobService          blobService_;
@@ -45,35 +46,33 @@ internal class BlobStateQueryExecution : QueryExecution<BlobPagination, BlobPage
     => logger_.LogError(ex,
                         message);
 
-  protected override async Task<BlobPage> RequestInstances(BlobPagination    pagination,
-                                                           CancellationToken cancellationToken)
-  {
-    pagination.Page++;
-    return await blobService_.ListBlobsAsync(pagination,
-                                             cancellationToken)
-                             .ConfigureAwait(false);
-  }
+  protected override async Task<BlobPage> RequestInstancesAsync(Pagination<Filters, ResultField> pagination,
+                                                                CancellationToken                cancellationToken)
+    => await blobService_.ListBlobsAsync((BlobPagination)pagination,
+                                         cancellationToken)
+                         .ConfigureAwait(false);
 
   protected override QueryExpressionTreeVisitor<CSharp.Common.Common.Domain.Blob.BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField>
     CreateQueryExpressionTreeVisitor()
     => new BlobStateQueryExpressionTreeVisitor();
 
-  protected override BlobPagination CreatePaginationInstance(Filters            filter,
-                                                             ResultRawEnumField sortCriteria,
-                                                             bool               isAscending)
-    => new()
+  protected override Pagination<Filters, ResultField> CreatePaginationInstance(
+    QueryExpressionTreeVisitor<CSharp.Common.Common.Domain.Blob.BlobState, ResultRawEnumField, Filters, FiltersAnd, FilterField> visitor)
+    => new BlobPagination
        {
-         Filter   = filter,
-         Page     = -1,
-         PageSize = 50,
-         SortDirection = isAscending
+         Filter = visitor.Filters!,
+         Page   = 0,
+         PageSize = visitor.PageSize.HasValue
+                      ? visitor.PageSize.Value
+                      : 1000,
+         SortDirection = visitor.IsSortAscending
                            ? SortDirection.Asc
                            : SortDirection.Desc,
          SortField = new ResultField
                      {
                        ResultRawField = new ResultRawField
                                         {
-                                          Field = sortCriteria,
+                                          Field = visitor.SortCriteria,
                                         },
                      },
        };

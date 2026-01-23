@@ -63,7 +63,6 @@ public class PaginationTests
                      {
                        Page          = 1,
                        PageSize      = 10,
-                       Total         = 100,
                        SortDirection = SortDirection.Asc,
                        Filter        = new Filters(),
                      };
@@ -72,8 +71,6 @@ public class PaginationTests
                 Is.EqualTo(1));
     Assert.That(pagination.PageSize,
                 Is.EqualTo(10));
-    Assert.That(pagination.Total,
-                Is.EqualTo(100));
     Assert.That(pagination.SortDirection,
                 Is.EqualTo(SortDirection.Asc));
     Assert.That(pagination.Filter,
@@ -87,7 +84,6 @@ public class PaginationTests
                               {
                                 Page          = 1,
                                 PageSize      = 10,
-                                Total         = 100,
                                 SortDirection = SortDirection.Asc,
                                 Filter        = new Filters(),
                               };
@@ -96,8 +92,6 @@ public class PaginationTests
                 Is.EqualTo(1));
     Assert.That(partitionPagination.PageSize,
                 Is.EqualTo(10));
-    Assert.That(partitionPagination.Total,
-                Is.EqualTo(100));
     Assert.That(partitionPagination.SortDirection,
                 Is.EqualTo(SortDirection.Asc));
     Assert.That(partitionPagination.Filter,

@@ -40,11 +40,13 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
   public Func<IAsyncEnumerable<TSource>, TSource?>? FuncReturnNullableTSource { get; private set; }
   public Func<IAsyncEnumerable<TSource>, TSource>?  FuncReturnTSource         { get; private set; }
 
-  public TFilterOr Filters { get; private set; } = new();
+  public TFilterOr? Filters { get; private set; } = new();
 
   public TEnumField SortCriteria { get; protected set; } = new();
 
   public bool IsSortAscending { get; protected set; }
+
+  public int? PageSize { get; protected set; }
 
   protected abstract bool                                                                        IsWhereExpressionTreeVisitorInstantiated { get; }
   protected abstract WhereExpressionTreeVisitor<TEnumField, TFilterOr, TFilterAnd, TFilterField> WhereExpressionTreeVisitor               { get; }
@@ -68,7 +70,7 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
   {
     if (tree is MethodCallExpression call)
     {
-      if (call.Method.DeclaringType == typeof(System.Linq.Queryable))
+      if (call.Method.DeclaringType == typeof(System.Linq.Queryable) || call.Method.DeclaringType == typeof(QueryableExt))
       {
         var thisType = call.Arguments[0].Type;
         if (thisType == typeof(IQueryable<TSource>) || thisType == typeof(IOrderedQueryable<TSource>))
@@ -240,12 +242,18 @@ internal abstract class QueryExpressionTreeVisitor<TSource, TEnumField, TFilterO
         throw new InvalidOperationException("Expression not supported. Please consult documentation." + Environment.NewLine + "Expression is: " + call);
       }
     }
+    else if (call.Method.Name == nameof(QueryableExt.WithPageSize))
+    {
+      // Custom extension method that sets ArmoniK filter's page size.
+      var expression = (ConstantExpression)call.Arguments[1];
+      PageSize = (int)expression.Value;
+    }
     else
     {
+      // IQueryable<TSource> Skip<TSource>(this IQueryable<TSource> source, int count)
       // IQueryable<TSource> Take<TSource>(this IQueryable<TSource> source, int count)
       // IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
       // IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
-      // IQueryable<TSource> Skip<TSource>(this IQueryable<TSource> source, int count)
       // IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
       // IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
       // IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source)
