@@ -1,19 +1,18 @@
 // This file is part of the ArmoniK project
-//
-// Copyright (C) ANEO, 2021-$CURRENT_YEAR$. All rights reserved.
-//
+// 
+// Copyright (C) ANEO, 2021-2026. All rights reserved.
+// 
 // Licensed under the Apache License, Version 2.0 (the "License")
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-//
+// 
 //     http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 namespace ArmoniK.Extension.CSharp.DynamicWorker;
 
@@ -30,7 +29,7 @@ internal static class FileExt
     try
     {
       Directory.Delete(path,
-                        true);
+                       true);
 
       return true;
     }
@@ -77,14 +76,14 @@ internal static class FileExt
   /// <param name="destinationDirectory">The destination directory.</param>
   /// <exception cref="ArmoniKSdkException">Thrown when there is an error moving the directory content.</exception>
   internal static void MoveDirectoryContent(string sourceDirectory,
-                                           string destinationDirectory)
+                                            string destinationDirectory)
   {
     TryCreateDirectory(destinationDirectory);
 
     // Create all directories in destination if they do not exist
     foreach (var dirPath in Directory.GetDirectories(sourceDirectory,
-                                                      "*",
-                                                      SearchOption.AllDirectories))
+                                                     "*",
+                                                     SearchOption.AllDirectories))
     {
       Directory.CreateDirectory(dirPath.Replace(sourceDirectory,
                                                 destinationDirectory));
@@ -92,13 +91,12 @@ internal static class FileExt
 
     // Move all files from the source to the destination
     foreach (var newPath in Directory.GetFiles(sourceDirectory,
-                                                "*.*",
-                                                SearchOption.AllDirectories))
+                                               "*.*",
+                                               SearchOption.AllDirectories))
     {
       File.Move(newPath,
                 newPath.Replace(sourceDirectory,
                                 destinationDirectory));
     }
   }
-
 }

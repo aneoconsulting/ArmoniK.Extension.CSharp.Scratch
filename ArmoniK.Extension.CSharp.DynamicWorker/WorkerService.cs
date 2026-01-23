@@ -139,24 +139,25 @@ internal sealed class WorkerService : IDisposable
   /// <param name="logger">The logger.</param>
   /// <returns>The path to the DLL file within the destination directory.</returns>
   /// <exception cref="ArmoniKSdkException">Thrown when the extraction fails or the file is not a ZIP file.</exception>
-  private static string ExtractArchive(string zipFilename,
-                                       string zipPath,
-                                       string unzipPath,
+  private static string ExtractArchive(string         zipFilename,
+                                       string         zipPath,
+                                       string         unzipPath,
                                        DynamicLibrary library,
-                                       ILogger logger)
+                                       ILogger        logger)
   {
     if (!IsZipFile(zipFilename))
     {
-      logger.LogError("A zip archive was expected instead of {zipFilename}", zipFilename);
+      logger.LogError("A zip archive was expected instead of {zipFilename}",
+                      zipFilename);
       throw new ArmoniKSdkException($"A zip archive was expected instead of {zipFilename}");
     }
 
-    var libraryPath = library.LibraryPath;
+    var libraryPath   = library.LibraryPath;
     var librarySymbol = library.Symbol;
     var dllFile = Path.Join(unzipPath,
                             libraryPath);
     var signalPath = Path.Combine(unzipPath,
-                              $".{librarySymbol}.{library.LibraryBlobId}.extracted");
+                                  $".{librarySymbol}.{library.LibraryBlobId}.extracted");
 
     if (File.Exists(signalPath))
     {
@@ -164,53 +165,64 @@ internal sealed class WorkerService : IDisposable
     }
 
     var zipFileFullpath = Path.Join(zipPath,
-                                zipFilename);
+                                    zipFilename);
     var temporaryDirectory = Path.Combine(Path.GetTempPath(),
-                                        Guid.NewGuid()
-                                            .ToString());
+                                          Guid.NewGuid()
+                                              .ToString());
     try
     {
       FileExt.TryCreateDirectory(temporaryDirectory);
     }
     catch (Exception ex)
     {
-      logger.LogError("Cannot create temporary extraction directory {temporaryDirectory}", temporaryDirectory);
+      logger.LogError("Cannot create temporary extraction directory {temporaryDirectory}",
+                      temporaryDirectory);
       throw new ArmoniKSdkException($"Cannot create temporary extraction directory {temporaryDirectory}",
                                     ex);
     }
 
     try
     {
-      logger.LogInformation("Extracting zip file to {dir} ...", temporaryDirectory);
+      logger.LogInformation("Extracting zip file to {dir} ...",
+                            temporaryDirectory);
       ZipFile.ExtractToDirectory(zipFileFullpath,
-                                  temporaryDirectory);
+                                 temporaryDirectory);
     }
     catch (Exception ex)
     {
-      logger.LogError("Cannot extract archive {originFile} to directory {temporaryDirectory}", zipFileFullpath, temporaryDirectory);
+      logger.LogError("Cannot extract archive {originFile} to directory {temporaryDirectory}",
+                      zipFileFullpath,
+                      temporaryDirectory);
       throw new ArmoniKSdkException($"Cannot extract archive {zipFileFullpath} to directory {temporaryDirectory}",
                                     ex);
     }
 
     try
     {
-      logger.LogInformation("Moving unzipped file to {dir} ...", unzipPath);
-      FileExt.MoveDirectoryContent(temporaryDirectory,
+      logger.LogInformation("Moving unzipped file to {dir} ...",
                             unzipPath);
+      FileExt.MoveDirectoryContent(temporaryDirectory,
+                                   unzipPath);
       logger.LogInformation("All files and folders have been moved successfully.");
     }
     catch (Exception ex)
     {
-      logger.LogError("Cannot move extracted archive {originFile} from directory {temporaryDirectory} to directory {unzipPath}", zipFileFullpath, temporaryDirectory, unzipPath);
+      logger.LogError("Cannot move extracted archive {originFile} from directory {temporaryDirectory} to directory {unzipPath}",
+                      zipFileFullpath,
+                      temporaryDirectory,
+                      unzipPath);
       throw new ArmoniKSdkException($"Cannot move extracted archive {zipFileFullpath} from directory {temporaryDirectory} to directory {unzipPath}",
-                            ex);
+                                    ex);
     }
 
     if (!File.Exists(dllFile))
     {
-      logger.LogError("Fail to find assembly {dllFile} from extraction of {originFile}", dllFile, zipFileFullpath);
+      logger.LogError("Fail to find assembly {dllFile} from extraction of {originFile}",
+                      dllFile,
+                      zipFileFullpath);
       throw new ArmoniKSdkException($"Fail to find assembly {dllFile} from extraction of {zipFileFullpath}");
     }
+
     FileExt.TryDeleteDirectory(temporaryDirectory);
 
     try
@@ -222,9 +234,10 @@ internal sealed class WorkerService : IDisposable
     {
       if (!File.Exists(signalPath))
       {
-        logger.LogError("Cannot finalize extraction of {dllFile}", dllFile);
+        logger.LogError("Cannot finalize extraction of {dllFile}",
+                        dllFile);
         throw new ArmoniKSdkException($"Cannot finalize extraction of {dllFile}",
-                                     ex);
+                                      ex);
       }
     }
 
