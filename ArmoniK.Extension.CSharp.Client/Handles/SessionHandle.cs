@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
@@ -248,6 +249,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     var callbackRunner = TestAndSetCallbackRunner();
     if (callbackRunner != null)
     {
+      callbackRunner.AbortCallbacks();
       await callbackRunner.DisposeAsync()
                           .ConfigureAwait(false);
     }
@@ -292,19 +294,23 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   private class CallbackRunner : IAsyncDisposable
   {
     /// <summary>
+    ///   Cancels any callback being executed. When cancelled, cancels loopsCts_ as well.
+    /// </summary>
+    private readonly CancellationTokenSource callbacksCts_;
+
+    /// <summary>
     ///   Dictionary taking a blob is as key, a callback as value.
     /// </summary>
     private readonly ConcurrentDictionary<string, ICallback> callbacks_ = new();
 
     private readonly ArmoniKClient client_;
 
-    /// <summary>
-    ///   Allows to cancel the execution of the callbacks. Whenever a callback is executed and when a cancel
-    ///   is requested on that token source, it requests the cancellation to that callback too.
-    /// </summary>
-    private readonly CancellationTokenSource cts_;
-
     private readonly object locker_ = new();
+
+    /// <summary>
+    ///   Exits the execution loop when cancellation is requested.
+    /// </summary>
+    private readonly CancellationTokenSource loopCts_;
 
     private readonly Task                        workerTask_;
     private          TaskCompletionSource<bool>? taskCompletionSource_;
@@ -312,23 +318,31 @@ public class SessionHandle : IAsyncDisposable, IDisposable
     public CallbackRunner(ArmoniKClient     client,
                           CancellationToken cancellationToken)
     {
-      client_     = client;
-      cts_        = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-      workerTask_ = Task.Run(RunAsync);
+      client_       = client;
+      callbacksCts_ = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      loopCts_      = CancellationTokenSource.CreateLinkedTokenSource(callbacksCts_.Token);
+      workerTask_   = Task.Run(RunAsync);
     }
 
     /// <summary>
-    ///   Abort any callback being executed and dispose the members.
+    ///   Exits the execution loop and disposes resources.
     /// </summary>
     public async ValueTask DisposeAsync()
     {
       // Send an abort signal
-      cts_.Cancel();
+      loopCts_.Cancel();
       // Wait for the worker task to complete
       await workerTask_.ConfigureAwait(false);
       // Dispose disposable members
-      cts_.Dispose();
+      loopCts_.Dispose();
+      callbacksCts_.Dispose();
     }
+
+    /// <summary>
+    ///   Cancels the execution of pending callbacks and ongoing callback executions.
+    /// </summary>
+    public void AbortCallbacks()
+      => callbacksCts_.Cancel();
 
     private TaskCompletionSource<bool>? CreateTaskCompletionSource()
     {
@@ -375,43 +389,77 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       => callbacks_.GetOrAdd(blob.BlobHandle!.BlobInfo.BlobId,
                              blob.CallBack!);
 
+    private async Task ExecuteCallback((ICallback callback, BlobState blobState) tuple)
+    {
+      var blobHandle = new BlobHandle(tuple.blobState,
+                                      client_);
+      switch (tuple.blobState.Status)
+      {
+        case BlobStatus.Completed:
+          try
+          {
+            var result = await blobHandle.DownloadBlobDataAsync(callbacksCts_.Token)
+                                         .ConfigureAwait(false);
+            await tuple.callback.OnSuccessAsync(blobHandle,
+                                                result,
+                                                callbacksCts_.Token)
+                       .ConfigureAwait(false);
+          }
+          catch (Exception ex)
+          {
+            await tuple.callback.OnErrorAsync(blobHandle,
+                                              ex,
+                                              callbacksCts_.Token)
+                       .ConfigureAwait(false);
+          }
+
+          break;
+        case BlobStatus.Aborted:
+          await tuple.callback.OnErrorAsync(blobHandle,
+                                            new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
+                                            callbacksCts_.Token)
+                     .ConfigureAwait(false);
+          break;
+      }
+    }
+
     /// <summary>
     ///   Execution loop
     /// </summary>
     private async Task RunAsync()
     {
       TaskCompletionSource<bool>? taskCompletionSource = null;
+
+      var channel = Channel.CreateUnbounded<(ICallback callback, BlobState blobState)>(new UnboundedChannelOptions
+                                                                                       {
+                                                                                         SingleReader = true,
+                                                                                         SingleWriter = true,
+                                                                                       });
+      var channelReceiverTask = channel.Reader.ToAsyncEnumerable(callbacksCts_.Token)
+                                       .ParallelForEach(new ParallelTaskOptions
+                                                        {
+                                                          ParallelismLimit  = client_.Properties.ParallelismLimit,
+                                                          Unordered         = true,
+                                                          CancellationToken = callbacksCts_.Token,
+                                                        },
+                                                        ExecuteCallback);
+
       try
       {
-        while (!cts_.Token.IsCancellationRequested)
+        while (!loopCts_.Token.IsCancellationRequested)
         {
           // Loop on completed blobs
           await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
                                                                                          BlobStatus.Completed,
-                                                                                         cts_.Token)
+                                                                                         loopCts_.Token)
                                                  .ConfigureAwait(false))
           {
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              var blobHandle = new BlobHandle(blobState,
-                                              client_);
-              try
-              {
-                var result = await blobHandle.DownloadBlobDataAsync(cts_.Token)
-                                             .ConfigureAwait(false);
-                await func.OnSuccessAsync(blobHandle,
-                                          result,
-                                          cts_.Token)
-                          .ConfigureAwait(false);
-              }
-              catch (Exception ex)
-              {
-                await func.OnErrorAsync(blobHandle,
-                                        ex,
-                                        cts_.Token)
-                          .ConfigureAwait(false);
-              }
+              await channel.Writer.WriteAsync((func, blobState),
+                                              loopCts_.Token)
+                           .ConfigureAwait(false);
             }
             else
             {
@@ -422,18 +470,15 @@ public class SessionHandle : IAsyncDisposable, IDisposable
           // Loop on aborted blobs
           await foreach (var blobState in client_.BlobService.GetBlobStatesByStatusAsync(callbacks_.Keys.ToList(),
                                                                                          BlobStatus.Aborted,
-                                                                                         cts_.Token)
+                                                                                         loopCts_.Token)
                                                  .ConfigureAwait(false))
           {
             if (callbacks_.TryRemove(blobState.BlobId,
                                      out var func))
             {
-              var blobHandle = new BlobHandle(blobState,
-                                              client_);
-              await func.OnErrorAsync(blobHandle,
-                                      new ArmoniKSdkException("blob aborted, call of OnSuccessAsync() was canceled."),
-                                      cts_.Token)
-                        .ConfigureAwait(false);
+              await channel.Writer.WriteAsync((func, blobState),
+                                              loopCts_.Token)
+                           .ConfigureAwait(false);
             }
             else
             {
@@ -450,7 +495,7 @@ public class SessionHandle : IAsyncDisposable, IDisposable
 
           // Wait for 5 second and then retry
           await Task.Delay(5000,
-                           cts_.Token)
+                           loopCts_.Token)
                     .ConfigureAwait(false);
         }
 
@@ -461,6 +506,19 @@ public class SessionHandle : IAsyncDisposable, IDisposable
       {
         taskCompletionSource = GetTaskCompletionSource();
         taskCompletionSource?.SetResult(false);
+      }
+      finally
+      {
+        channel.Writer.TryComplete();
+      }
+
+      try
+      {
+        await channelReceiverTask.ConfigureAwait(false);
+      }
+      catch (OperationCanceledException) when (loopCts_.Token.IsCancellationRequested)
+      {
+        // Ignore cancellation exceptions during shutdown
       }
     }
   }

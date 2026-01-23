@@ -14,8 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Text;
-
 using ArmoniK.Extension.CSharp.Worker.Interfaces;
 using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
 
@@ -23,25 +21,13 @@ using Microsoft.Extensions.Logging;
 
 namespace ArmoniK.EndToEndTests.Worker.Tests;
 
-public class TaskSdkWorker : IWorker
+public class FailingTaskWorker : IWorker
 {
   public Task<HealthCheckResult> CheckHealth(CancellationToken cancellationToken = default)
     => Task.FromResult(HealthCheckResult.Healthy());
 
-  public async Task<TaskResult> ExecuteAsync(ISdkTaskHandler   taskHandler,
-                                             ILogger           logger,
-                                             CancellationToken cancellationToken)
-  {
-    var resultString = taskHandler.Inputs["inputString"]
-                                  .GetStringData(Encoding.UTF8);
-
-    // Send the input as results as is.
-    await taskHandler.Outputs["outputString"]
-                     .SendStringResultAsync(resultString,
-                                            Encoding.UTF8,
-                                            CancellationToken.None)
-                     .ConfigureAwait(false);
-
-    return TaskResult.Success;
-  }
+  public Task<TaskResult> ExecuteAsync(ISdkTaskHandler   taskHandler,
+                                       ILogger           logger,
+                                       CancellationToken cancellationToken)
+    => Task.FromResult(TaskResult.Failure("Intentional failure for testing purposes"));
 }

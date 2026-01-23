@@ -112,6 +112,13 @@ public record Properties
   {
     Configuration = configuration;
 
+    var sectionApplicationConfig = configuration.GetSection("ApplicationConfig");
+    if (sectionApplicationConfig != null)
+    {
+      ParallelismLimit = sectionApplicationConfig.GetValue("ParallelismLimit",
+                                                           0);
+    }
+
     var sectionGrpc = configuration.GetSection(Grpc);
     if (sectionGrpc == null)
     {
@@ -198,6 +205,11 @@ public record Properties
 
     ControlPlaneUri = new Uri(ConnectionString);
   }
+
+  /// <summary>
+  ///   Maximum parallelism limit for fetching results
+  /// </summary>
+  public int ParallelismLimit { get; set; }
 
   /// <summary>
   ///   The control plane url to connect
