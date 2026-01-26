@@ -15,7 +15,7 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Partitions;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Partition;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Partition;
 
 using Grpc.Core;
 

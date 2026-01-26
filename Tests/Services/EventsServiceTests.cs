@@ -16,8 +16,8 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Events;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Blob;
 
 using Grpc.Core;
 

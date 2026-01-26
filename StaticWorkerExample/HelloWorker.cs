@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Worker.Interfaces;
-using ArmoniK.Extension.CSharp.Worker.Interfaces.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Worker.Interfaces;
+using ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Task;
 
 namespace StaticWorkerExample;
 

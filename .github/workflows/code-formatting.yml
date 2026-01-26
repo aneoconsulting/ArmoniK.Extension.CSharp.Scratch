@@ -25,10 +25,10 @@ jobs:
 
     - name: Restore
       run: |
-        dotnet restore ArmoniK.CSharp.Extension.Scratch.sln
+        dotnet restore ArmoniK.Extensions.CSharp.sln
     - name: Reformat
       run: |
-        jb cleanupcode --profile="Full Cleanup With Headers"  ArmoniK.CSharp.Extension.Scratch.sln
+        jb cleanupcode --profile="Full Cleanup With Headers"  ArmoniK.Extensions.CSharp.sln
 
     - name: Check Diff
       id: check-diff

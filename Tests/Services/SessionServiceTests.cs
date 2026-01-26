@@ -15,8 +15,8 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Sessions;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
 
 using Grpc.Core;
 

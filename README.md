@@ -1,7 +1,7 @@
-# ArmoniK C# Client Extension
+# ArmoniK C# Client Extensions
 
 ## Overview
-This project contains the new ArmoniK C# client extension. It proposes a new approach to ArmoniK usage of ArmoniK API. It enables users to detail their task graphs in a better way managing data dependencies and enabling better data management between tasks. It also allows users to make use of the async programming functions which where not available on the actual SDK. 
+This project contains the new ArmoniK C# client extensions. It proposes a new approach to ArmoniK usage of ArmoniK API. It enables users to detail their task graphs in a better way managing data dependencies and enabling better data management between tasks. It also allows users to make use of the async programming functions which where not available on the actual SDK. 
 
 ## Table of Contents
 - [Overview](#overview)
@@ -79,11 +79,11 @@ Users will exchange with ArmoniK by ArmoniKClient, which manages all services an
 ## Projects
 
 The present repository contains the following projects:
-- **ArmoniK.Extension.CSharp.Client:** A library exposing the APIs that can be used by an ArmoniK client.
-- **ArmoniK.Extension.CSharp.Worker:** A library containing the common logic for dynamic and static workers.
-- **ArmoniK.Extension.CSharp.Common:** A library containing common classes between the `ArmoniK.Extension.CSharp.Client` and `ArmoniK.Extension.CSharp.Worker` libraries.
-- **ArmoniK.Extension.CSharp.Worker.Interfaces:** A library containing the interface `IWorker` which is required to be implemented by any worker. A worker relying on the dynamic loading feature only needs that library as a dependency.
-- **ArmoniK.Extension.CSharp.DynamicWorker:** A web application containing the logic for the dynamic loading feature. This application must be deployed as a container in an ArmoniK partition.
+- **ArmoniK.Extensions.CSharp.Client:** A library exposing the APIs that can be used by an ArmoniK client.
+- **ArmoniK.Extensions.CSharp.Worker:** A library containing the common logic for dynamic and static workers.
+- **ArmoniK.Extensions.CSharp.Common:** A library containing common classes between the `ArmoniK.Extensions.CSharp.Client` and `ArmoniK.Extensions.CSharp.Worker` libraries.
+- **ArmoniK.Extensions.CSharp.Worker.Interfaces:** A library containing the interface `IWorker` which is required to be implemented by any worker. A worker relying on the dynamic loading feature only needs that library as a dependency.
+- **ArmoniK.Extensions.CSharp.DynamicWorker:** A web application containing the logic for the dynamic loading feature. This application must be deployed as a container in an ArmoniK partition.
 - **StaticWorkerExample:** A web application example containing an implementation example of the `IWorker` interface. This application must be deployed as a container in an ArmoniK partition.
 - **DynamicWorkerExample:** A library only containing an implementation example of the `IWorker` interface.
 - **UsageExample:** A console application containing an example of an ArmoniK client. Require an ArmoniK dynamic or static worker to be deployed.

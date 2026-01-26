@@ -15,9 +15,9 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Partitions;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Partition;
-using ArmoniK.Extension.CSharp.Client.Common.Enum;
-using ArmoniK.Extension.CSharp.Client.Common.Generic;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Partition;
+using ArmoniK.Extensions.CSharp.Client.Common.Enum;
+using ArmoniK.Extensions.CSharp.Client.Common.Generic;
 
 using NUnit.Framework;
 

@@ -16,9 +16,9 @@
 
 using ArmoniK.Api.gRPC.V1;
 using ArmoniK.Api.gRPC.V1.Results;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Enum;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extensions.CSharp.Client.Common.Enum;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Blob;
 
 using Google.Protobuf.WellKnownTypes;
 

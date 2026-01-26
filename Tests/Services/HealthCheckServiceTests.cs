@@ -65,7 +65,7 @@ public class HealthChecksServiceTests
                       Assert.That(results.Select(r => r.Status),
                                   Is.EqualTo(new[]
                                              {
-                                               ArmoniK.Extension.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
+                                               ArmoniK.Extensions.CSharp.Client.Common.Domain.Health.HealthStatusEnum.Healthy,
                                              }));
 
                       client.CallInvokerMock.Verify(x => x.AsyncUnaryCall(It.IsAny<Method<CheckHealthRequest, CheckHealthResponse>>(),

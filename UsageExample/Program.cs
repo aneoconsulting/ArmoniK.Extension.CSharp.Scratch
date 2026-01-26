@@ -17,14 +17,14 @@
 using System.CommandLine;
 using System.Text;
 
-using ArmoniK.Extension.CSharp.Client;
-using ArmoniK.Extension.CSharp.Client.Common;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.Services;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Common.Library;
+using ArmoniK.Extensions.CSharp.Client;
+using ArmoniK.Extensions.CSharp.Client.Common;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Client.Services;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Common.Library;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -142,7 +142,7 @@ internal class Program
                                       getDefaultValue: () => @"..\..\..\..\DynamicWorkerExample\packages\DynamicWorkerExample-v1.0.0.0.zip");
 
     // Describe the application and its purpose
-    var rootCommand = new RootCommand("Hello World demo for ArmoniK Extension.\n");
+    var rootCommand = new RootCommand("Hello World demo for ArmoniK Extensions.CSharp.\n");
 
     // Add the options to the parser
     rootCommand.AddOption(filePath);
