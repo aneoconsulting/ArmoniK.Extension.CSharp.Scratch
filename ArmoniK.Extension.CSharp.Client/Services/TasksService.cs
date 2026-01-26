@@ -207,10 +207,10 @@ public class TasksService : ITasksService
                                 outputs.ToDictionary(b => b.Key,
                                                      b => b.Value));
       payloads.Add(payload);
+      task.TaskOptions.Options[nameof(DynamicLibrary.ConventionVersion)] = DynamicLibrary.ConventionVersion;
       if (task.WorkerLibrary != null)
       {
         task.TaskOptions!.AddDynamicLibrary(task.WorkerLibrary);
-        task.TaskOptions.Options[nameof(DynamicLibrary.ConventionVersion)] = DynamicLibrary.ConventionVersion;
         if (task.WorkerLibrary.DllBlob != null)
         {
           inputs.Add(new KeyValuePair<string, string>(task.WorkerLibrary.DllBlob.BlobName,
