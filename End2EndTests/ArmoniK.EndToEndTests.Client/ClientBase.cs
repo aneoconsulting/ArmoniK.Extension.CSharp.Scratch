@@ -14,12 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Client;
-using ArmoniK.Extension.CSharp.Client.Common;
-using ArmoniK.Extension.CSharp.Client.Handles;
-using ArmoniK.Extension.CSharp.Client.Services;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Common.Library;
+using ArmoniK.Extensions.CSharp.Client;
+using ArmoniK.Extensions.CSharp.Client.Common;
+using ArmoniK.Extensions.CSharp.Client.Handles;
+using ArmoniK.Extensions.CSharp.Client.Services;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Common.Library;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;

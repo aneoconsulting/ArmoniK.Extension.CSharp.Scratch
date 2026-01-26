@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ArmoniK.Extension.CSharp.Client\ArmoniK.Extension.CSharp.Client.csproj" />
+    <ProjectReference Include="..\ArmoniK.Extensions.CSharp.Client\ArmoniK.Extensions.CSharp.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

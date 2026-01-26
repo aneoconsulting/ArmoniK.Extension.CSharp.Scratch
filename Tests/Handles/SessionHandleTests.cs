@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Session;
-using ArmoniK.Extension.CSharp.Client.Handles;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Session;
+using ArmoniK.Extensions.CSharp.Client.Handles;
 
 using NUnit.Framework;
 

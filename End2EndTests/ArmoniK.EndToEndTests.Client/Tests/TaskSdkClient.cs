@@ -16,9 +16,9 @@
 
 using System.Text;
 
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Blob;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.Handles;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Blob;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Client.Handles;
 
 namespace ArmoniK.EndToEndTests.Client.Tests;
 

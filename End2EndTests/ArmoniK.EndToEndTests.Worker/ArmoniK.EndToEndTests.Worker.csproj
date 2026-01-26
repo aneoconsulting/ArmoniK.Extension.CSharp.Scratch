@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ArmoniK.Extension.CSharp.Worker.Interfaces\ArmoniK.Extension.CSharp.Worker.Interfaces.csproj" />
+    <ProjectReference Include="..\..\ArmoniK.Extensions.CSharp.Worker.Interfaces\ArmoniK.Extensions.CSharp.Worker.Interfaces.csproj" />
   </ItemGroup>
 
   <ItemGroup>

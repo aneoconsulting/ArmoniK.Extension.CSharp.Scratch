@@ -17,9 +17,9 @@
 using System.Data;
 
 using ArmoniK.Api.gRPC.V1.Results;
-using ArmoniK.Extension.CSharp.Client.Queryable;
-using ArmoniK.Extension.CSharp.Client.Queryable.BlobState;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Blob;
+using ArmoniK.Extensions.CSharp.Client.Queryable;
+using ArmoniK.Extensions.CSharp.Client.Queryable.BlobState;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Blob;
 using ArmoniK.Utils;
 
 using NUnit.Framework;

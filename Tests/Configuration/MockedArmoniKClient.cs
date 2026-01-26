@@ -14,11 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extension.CSharp.Client;
-using ArmoniK.Extension.CSharp.Client.Common;
-using ArmoniK.Extension.CSharp.Client.Common.Services;
-using ArmoniK.Extension.CSharp.Client.Services;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Client;
+using ArmoniK.Extensions.CSharp.Client.Common;
+using ArmoniK.Extensions.CSharp.Client.Common.Services;
+using ArmoniK.Extensions.CSharp.Client.Services;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
 using ArmoniK.Utils;
 
 using Grpc.Core;

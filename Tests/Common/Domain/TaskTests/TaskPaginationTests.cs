@@ -15,13 +15,13 @@
 // limitations under the License.
 
 using ArmoniK.Api.gRPC.V1.Tasks;
-using ArmoniK.Extension.CSharp.Client.Common.Domain.Task;
-using ArmoniK.Extension.CSharp.Client.Common.Enum;
-using ArmoniK.Extension.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Client.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Client.Common.Enum;
+using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
 
 using NUnit.Framework;
 
-using TaskStatus = ArmoniK.Extension.CSharp.Common.Common.Domain.Task.TaskStatus;
+using TaskStatus = ArmoniK.Extensions.CSharp.Common.Common.Domain.Task.TaskStatus;
 
 namespace ArmoniK.Tests.Common.Domain;
 
