@@ -167,6 +167,11 @@ internal sealed class LibraryLoader : IAsyncDisposable, IDisposable
   {
     try
     {
+      if (!taskHandler.DataDependencies.ContainsKey(dynamicLibrary.LibraryBlobId))
+      {
+        throw new ArmoniKSdkException($"No library found on data dependencies. (Library BlobId is {dynamicLibrary.LibraryBlobId})");
+      }
+
       var key = $"{dynamicLibrary.Symbol}|{dynamicLibrary.LibraryBlobId}";
       if (workerServices_.TryGetValue(key,
                                       out var srv))

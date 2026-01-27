@@ -106,7 +106,6 @@ public class TaskSdkClient : ClientBase
     }
   }
 
-
   private class Callback : ICallback
   {
     public byte[] Result { get; private set; } = [];

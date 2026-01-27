@@ -41,10 +41,8 @@ public static class ArmoniKServicesExt
   /// <param name="content">The binary content of the dynamic library to upload.</param>
   /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>
-  ///   The created <see cref="DllBlob" /> instance with relevant identifiers.
-  /// </returns>
-  public static async Task<DllBlob> SendDllBlobAsync(this IBlobService    blobService,
+  /// <returns>A task representing the asynchronous operation.</returns>
+  public static async Task SendDllBlobAsync(this IBlobService    blobService,
                                                      SessionInfo          session,
                                                      DynamicLibrary       dynamicLibrary,
                                                      ReadOnlyMemory<byte> content,
@@ -58,12 +56,6 @@ public static class ArmoniKServicesExt
                                                      cancellationToken)
                                     .ConfigureAwait(false);
     dynamicLibrary.LibraryBlobId = blobInfo.BlobId;
-    dynamicLibrary.DllBlob = new DllBlob(dynamicLibrary)
-                             {
-                               BlobId    = blobInfo.BlobId,
-                               SessionId = session.SessionId,
-                             };
-    return dynamicLibrary.DllBlob;
   }
 
   /// <summary>
@@ -75,10 +67,8 @@ public static class ArmoniKServicesExt
   /// <param name="zipPath">File path to the zipped library.</param>
   /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>
-  ///   The created <see cref="DllBlob" /> instance with relevant identifiers.
-  /// </returns>
-  public static async Task<DllBlob> SendDllBlobAsync(this IBlobService blobService,
+  /// <returns>A task representing the asynchronous operation.</returns>
+  public static async Task SendDllBlobAsync(this IBlobService blobService,
                                                      SessionInfo       session,
                                                      DynamicLibrary    dynamicLibrary,
                                                      string            zipPath,
@@ -86,7 +76,7 @@ public static class ArmoniKServicesExt
                                                      CancellationToken cancellationToken)
   {
     var content = File.ReadAllBytes(zipPath);
-    return await SendDllBlobAsync(blobService,
+    await SendDllBlobAsync(blobService,
                                   session,
                                   dynamicLibrary,
                                   content,

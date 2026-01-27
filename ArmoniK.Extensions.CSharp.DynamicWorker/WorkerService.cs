@@ -72,17 +72,10 @@ internal sealed class WorkerService : IDisposable
                                               true);
     var logger = loggerFactory.CreateLogger<WorkerService>();
 
-    logger.LogInformation($"Starting Dynamic loading - FileName: {zipFilename}, FilePath: {zipPath}, DestinationToUnZip:{unzipPath}, LibraryPath:{libraryPath}, Symbol: {dynamicLibrary.Symbol}");
-
-    var dllExists = taskHandler.DataDependencies.TryGetValue(dynamicLibrary.LibraryBlobId,
-                                                             out var libraryBytes);
-    if (!dllExists || libraryBytes is null)
-    {
-      throw new ArmoniKSdkException($"No library found on data dependencies. (Library BlobId is {dynamicLibrary.LibraryBlobId})");
-    }
-
     try
     {
+      logger.LogInformation($"Starting Dynamic loading - FileName: {zipFilename}, FilePath: {zipPath}, DestinationToUnZip:{unzipPath}, LibraryPath:{libraryPath}, Symbol: {dynamicLibrary.Symbol}");
+      var libraryBytes = taskHandler.DataDependencies[dynamicLibrary.LibraryBlobId];
       Directory.CreateDirectory(zipPath);
 
       // Create the full path to the zip file

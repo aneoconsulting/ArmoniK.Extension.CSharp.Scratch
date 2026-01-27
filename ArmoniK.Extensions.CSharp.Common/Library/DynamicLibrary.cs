@@ -44,11 +44,6 @@ public record DynamicLibrary
   public string Symbol { get; init; } = string.Empty;
 
   /// <summary>
-  ///   The Dll blob
-  /// </summary>
-  public DllBlob? DllBlob { get; set; }
-
-  /// <summary>
   ///   Returns a string representation of the DynamicLibrary instance.
   /// </summary>
   /// <returns>A string that represents the current DynamicLibrary.</returns>

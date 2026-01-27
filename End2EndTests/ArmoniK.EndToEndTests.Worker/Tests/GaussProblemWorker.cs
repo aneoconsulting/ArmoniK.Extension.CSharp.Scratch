@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using ArmoniK.Extensions.CSharp.Common.Library;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Blob;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Task;
@@ -67,6 +68,7 @@ public class GaussProblemWorker : IWorker
     BlobDefinition? lastBlobDefinition = null;
     var inputs = taskHandler.Inputs.Values.Select(BlobDefinition.FromBlobHandle)
                             .ToList();
+    var currentLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
 
     do
     {
@@ -80,6 +82,7 @@ public class GaussProblemWorker : IWorker
                                                   inputs[1])
                                        .WithOutput("finalOutput",
                                                    BlobDefinition.FromBlobHandle(taskHandler.Outputs.Values.Single()))
+                                       .WithLibrary(currentLibrary)
                                        .WithTaskOptions(taskHandler.TaskOptions);
         allTaskDefinitions.Add(task);
         break;
@@ -99,6 +102,7 @@ public class GaussProblemWorker : IWorker
                                                            inputs[i + 1])
                                                 .WithOutput("output",
                                                             BlobDefinition.CreateOutput("output"))
+                                                .WithLibrary(currentLibrary)
                                                 .WithTaskOptions(taskHandler.TaskOptions));
       }
 

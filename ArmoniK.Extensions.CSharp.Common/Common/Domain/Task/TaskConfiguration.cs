@@ -90,7 +90,7 @@ public record TaskConfiguration
   /// </summary>
   /// <param name="dynamicLibrary">The DynamicLibrary to add.</param>
   /// <returns>The updated TaskConfiguration.</returns>
-  public TaskConfiguration AddDynamicLibrary(DynamicLibrary dynamicLibrary)
+  public TaskConfiguration SetDynamicLibrary(DynamicLibrary dynamicLibrary)
   {
     Options[nameof(DynamicLibrary.LibraryPath)]   = dynamicLibrary.LibraryPath;
     Options[nameof(DynamicLibrary.Symbol)]        = dynamicLibrary.Symbol;

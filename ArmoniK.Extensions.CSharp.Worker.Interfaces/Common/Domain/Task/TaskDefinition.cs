@@ -15,6 +15,7 @@
 // limitations under the License.
 
 using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Common.Library;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Blob;
 
 namespace ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Task;
@@ -38,6 +39,22 @@ public class TaskDefinition
   ///   Task options
   /// </summary>
   public TaskConfiguration TaskOptions { get; internal set; } = new();
+
+  /// <summary>
+  ///   The library that implements the task
+  /// </summary>
+  public DynamicLibrary? WorkerLibrary { get; private set; }
+
+  /// <summary>
+  ///   Set the worker library information.
+  /// </summary>
+  /// <param name="workerLibrary">The worker dynamic library</param>
+  /// <returns>The TaskDefinition updated</returns>
+  public TaskDefinition WithLibrary(DynamicLibrary workerLibrary)
+  {
+    WorkerLibrary = workerLibrary;
+    return this;
+  }
 
   /// <summary>
   ///   Add an input blob when the blob was not already created
