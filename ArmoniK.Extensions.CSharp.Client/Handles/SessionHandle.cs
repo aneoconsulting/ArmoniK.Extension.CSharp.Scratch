@@ -208,9 +208,9 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation.</returns>
   public async Task SendDllBlobAsync(DynamicLibrary    dynamicLibrary,
-                                              string            zipPath,
-                                              bool              manualDeletion,
-                                              CancellationToken cancellationToken)
+                                     string            zipPath,
+                                     bool              manualDeletion,
+                                     CancellationToken cancellationToken)
     => await ArmoniKClient.BlobService.SendDllBlobAsync(SessionInfo,
                                                         dynamicLibrary,
                                                         zipPath,

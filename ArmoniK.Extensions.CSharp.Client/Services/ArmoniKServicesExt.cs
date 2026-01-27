@@ -21,7 +21,6 @@ using System.Threading.Tasks;
 
 using ArmoniK.Extensions.CSharp.Client.Common.Domain.Session;
 using ArmoniK.Extensions.CSharp.Client.Common.Services;
-using ArmoniK.Extensions.CSharp.Common.Common.Domain.Blob;
 using ArmoniK.Extensions.CSharp.Common.Library;
 
 namespace ArmoniK.Extensions.CSharp.Client.Services;
@@ -43,11 +42,11 @@ public static class ArmoniKServicesExt
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation.</returns>
   public static async Task SendDllBlobAsync(this IBlobService    blobService,
-                                                     SessionInfo          session,
-                                                     DynamicLibrary       dynamicLibrary,
-                                                     ReadOnlyMemory<byte> content,
-                                                     bool                 manualDeletion,
-                                                     CancellationToken    cancellationToken)
+                                            SessionInfo          session,
+                                            DynamicLibrary       dynamicLibrary,
+                                            ReadOnlyMemory<byte> content,
+                                            bool                 manualDeletion,
+                                            CancellationToken    cancellationToken)
   {
     var blobInfo = await blobService.CreateBlobAsync(session,
                                                      dynamicLibrary.Symbol,
@@ -69,19 +68,19 @@ public static class ArmoniKServicesExt
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
   /// <returns>A task representing the asynchronous operation.</returns>
   public static async Task SendDllBlobAsync(this IBlobService blobService,
-                                                     SessionInfo       session,
-                                                     DynamicLibrary    dynamicLibrary,
-                                                     string            zipPath,
-                                                     bool              manualDeletion,
-                                                     CancellationToken cancellationToken)
+                                            SessionInfo       session,
+                                            DynamicLibrary    dynamicLibrary,
+                                            string            zipPath,
+                                            bool              manualDeletion,
+                                            CancellationToken cancellationToken)
   {
     var content = File.ReadAllBytes(zipPath);
     await SendDllBlobAsync(blobService,
-                                  session,
-                                  dynamicLibrary,
-                                  content,
-                                  manualDeletion,
-                                  cancellationToken)
-             .ConfigureAwait(false);
+                           session,
+                           dynamicLibrary,
+                           content,
+                           manualDeletion,
+                           cancellationToken)
+      .ConfigureAwait(false);
   }
 }

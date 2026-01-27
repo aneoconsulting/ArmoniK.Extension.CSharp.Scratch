@@ -185,7 +185,8 @@ public class TasksService : ITasksService
 
     // Create all blobs from blob definitions
     await blobService_.CreateBlobsAsync(session,
-                                        taskDefinitions.SelectMany(t => t.InputDefinitions.Values.Union(t.Outputs.Values)).Distinct(),
+                                        taskDefinitions.SelectMany(t => t.InputDefinitions.Values.Union(t.Outputs.Values))
+                                                       .Distinct(),
                                         cancellationToken)
                       .ConfigureAwait(false);
 
@@ -234,15 +235,16 @@ public class TasksService : ITasksService
     {
       taskEnumerator.MoveNext();
       var task = taskEnumerator.Current;
-      task!.Payload = payloadBlobHandle!;
+      task!.Payload                                                      = payloadBlobHandle!;
       task.TaskOptions.Options[nameof(DynamicLibrary.ConventionVersion)] = DynamicLibrary.ConventionVersion;
       var dataDependencies = tasksInputs[index]
-                              .Select(i => i.Value);
+        .Select(i => i.Value);
       if (task.WorkerLibrary != null)
       {
         task.TaskOptions!.SetDynamicLibrary(task.WorkerLibrary);
         dataDependencies = dataDependencies.Concat([task.WorkerLibrary.LibraryBlobId]);
       }
+
       taskCreations.Add(new SubmitTasksRequest.Types.TaskCreation
                         {
                           PayloadId = task.Payload!.BlobId,
