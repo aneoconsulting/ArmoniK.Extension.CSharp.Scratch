@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Blob;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Task;
@@ -41,6 +40,7 @@ internal class CheckBlobCreationResponseOrderWorker : IWorker
       {
         continue;
       }
+
       var inputValue = pair.Value.GetStringData();
       if (inputName != inputValue)
       {
@@ -61,20 +61,24 @@ internal class CheckBlobCreationResponseOrderWorker : IWorker
     if (!isSubTask)
     {
       // Create a sub task to do the same test at sub task level
-      string[] cities = ["Paris", "Lyon", "Marseilles", "Nice", "Bordeaux", "Grenoble", "Brest", "Nancy", "Montpelier"];
-      var currentLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
+      string[] cities         = ["Paris", "Lyon", "Marseilles", "Nice", "Bordeaux", "Grenoble", "Brest", "Nancy", "Montpelier"];
+      var      currentLibrary = taskHandler.TaskOptions.GetDynamicLibrary();
 
-      var taskDefinition = new TaskDefinition().WithInput("SubTask", BlobDefinition.FromString("SubTask", "1"))
-                      .WithLibrary(currentLibrary)
-                                 .WithTaskOptions(taskHandler.TaskOptions);
+      var taskDefinition = new TaskDefinition().WithInput("SubTask",
+                                                          BlobDefinition.FromString("SubTask",
+                                                                                    "1"))
+                                               .WithLibrary(currentLibrary)
+                                               .WithTaskOptions(taskHandler.TaskOptions);
 
       foreach (var city in cities)
       {
         taskDefinition.WithInput(city,
                                  BlobDefinition.FromString(city,
                                                            city))
-                      .WithOutput(city, BlobDefinition.FromBlobHandle(taskHandler.Outputs[city]));
+                      .WithOutput(city,
+                                  BlobDefinition.FromBlobHandle(taskHandler.Outputs[city]));
       }
+
       await taskHandler.SubmitTasksAsync([taskDefinition],
                                          taskHandler.TaskOptions,
                                          cancellationToken)

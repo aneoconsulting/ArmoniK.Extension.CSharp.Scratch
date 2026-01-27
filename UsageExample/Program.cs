@@ -90,11 +90,11 @@ internal class Program
     var eventsService = client.EventsService;
 
     await blobService.SendDllBlobAsync(sessionHandle,
-                                                     dynamicLib,
-                                                     filePath,
-                                                     false,
-                                                     CancellationToken.None)
-                                   .ConfigureAwait(false);
+                                       dynamicLib,
+                                       filePath,
+                                       false,
+                                       CancellationToken.None)
+                     .ConfigureAwait(false);
     logger.LogInformation("libraryId: {BlobId}",
                           dynamicLib.LibraryBlobId);
 

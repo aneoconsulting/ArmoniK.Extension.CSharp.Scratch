@@ -14,8 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extensions.CSharp.Common.Common.Domain.Blob;
-
 namespace ArmoniK.Extensions.CSharp.Common.Library;
 
 /// <summary>

@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Runtime.CompilerServices;
+using System.Text;
+
 using ArmoniK.Api.gRPC.V1.Agent;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
@@ -26,9 +29,6 @@ using ArmoniK.Extensions.CSharp.Worker.Interfaces.Handles;
 using ArmoniK.Utils;
 
 using Google.Protobuf;
-
-using System.Runtime.CompilerServices;
-using System.Text;
 
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -220,6 +220,7 @@ internal class SdkTaskHandler : ISdkTaskHandler
         task.TaskOptions.SetDynamicLibrary(task.WorkerLibrary);
         dataDependencies = dataDependencies.Concat([task.WorkerLibrary.LibraryBlobId]);
       }
+
       taskCreations.Add(new SubmitTasksRequest.Types.TaskCreation
                         {
                           PayloadId = payloadBlobHandle.BlobId,
