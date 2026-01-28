@@ -185,8 +185,7 @@ public class TasksService : ITasksService
 
     // Create all blobs from blob definitions
     await blobService_.CreateBlobsAsync(session,
-                                        taskDefinitions.SelectMany(t => t.InputDefinitions.Values.Union(t.Outputs.Values))
-                                                       .Distinct(),
+                                        taskDefinitions.SelectMany(t => t.InputDefinitions.Values.Union(t.Outputs.Values)),
                                         cancellationToken)
                       .ConfigureAwait(false);
 
