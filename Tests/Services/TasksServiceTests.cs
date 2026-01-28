@@ -80,6 +80,7 @@ public class TasksServiceTests
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
                                                             [taskDefinition])
+                             .ToArrayAsync()
                              .ConfigureAwait(false);
 
     var taskInfosEnumerable = result as TaskInfos[] ?? result.ToArray();
@@ -147,6 +148,7 @@ public class TasksServiceTests
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
                                                             [taskDefinition1, taskDefinition2])
+                             .ToArrayAsync()
                              .ConfigureAwait(false);
 
     Assert.Multiple(() =>
@@ -196,6 +198,7 @@ public class TasksServiceTests
 
     Assert.That(async () => await client.TasksService.SubmitTasksAsync(sessionInfo,
                                                                        [taskDefinition])
+                                        .ToArrayAsync()
                                         .ConfigureAwait(false),
                 Throws.Exception.TypeOf<InvalidOperationException>());
   }
@@ -239,6 +242,7 @@ public class TasksServiceTests
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
                                                             [taskDefinition])
+                             .ToArrayAsync()
                              .ConfigureAwait(false);
 
     var dependencyData = mock.GetBlobDataSent(dependency.blobName);
@@ -307,6 +311,7 @@ public class TasksServiceTests
 
     await client.TasksService.SubmitTasksAsync(sessionInfo,
                                                [taskDefinition])
+                .ToArrayAsync()
                 .ConfigureAwait(false);
 
     var payloadData = mock.GetBlobDataSent(payload.blobName);
@@ -630,6 +635,7 @@ public class TasksServiceTests
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
                                                             [taskDefinition])
+                             .ToArrayAsync()
                              .ConfigureAwait(false);
 
     Assert.That(result,
@@ -677,6 +683,7 @@ public class TasksServiceTests
 
     var result = await client.TasksService.SubmitTasksAsync(sessionInfo,
                                                             [taskDefinition])
+                             .ToArrayAsync()
                              .ConfigureAwait(false);
     Assert.Multiple(() =>
                     {

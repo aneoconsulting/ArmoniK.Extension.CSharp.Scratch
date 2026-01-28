@@ -89,39 +89,35 @@ public class BlobService : IBlobService
                                                                    IEnumerable<(string name, bool manualDeletion)> names,
                                                                    [EnumeratorCancellation] CancellationToken      cancellationToken = default)
   {
-    await using var channel = await channelPool_.GetAsync(cancellationToken)
-                                                .ConfigureAwait(false);
-    var blobClient = new Results.ResultsClient(channel);
-
-    var resultsCreate = names.Select(blob => new CreateResultsMetaDataRequest.Types.ResultCreate
-                                             {
-                                               Name           = blob.name,
-                                               ManualDeletion = blob.manualDeletion,
-                                             });
-
-    var blobsCreationResponse = await blobClient.CreateResultsMetaDataAsync(new CreateResultsMetaDataRequest
-                                                                            {
-                                                                              SessionId = session.SessionId,
-                                                                              Results =
-                                                                              {
-                                                                                resultsCreate,
-                                                                              },
-                                                                            },
-                                                                            cancellationToken: cancellationToken)
-                                                .ConfigureAwait(false);
-
-    var asyncBlobInfos = blobsCreationResponse.Results.Select(b => new BlobInfo
-                                                                   {
-                                                                     BlobName  = b.Name,
-                                                                     BlobId    = b.ResultId,
-                                                                     SessionId = session.SessionId,
-                                                                   })
-                                              .ToAsyncEnumerable();
-
-    await foreach (var blobInfo in asyncBlobInfos.WithCancellation(cancellationToken)
-                                                 .ConfigureAwait(false))
+    foreach (var chunk in names.ToChunks(1000))
     {
-      yield return blobInfo;
+      var resultsCreate = chunk.Select(blob => new CreateResultsMetaDataRequest.Types.ResultCreate
+                                               {
+                                                 Name           = blob.name,
+                                                 ManualDeletion = blob.manualDeletion,
+                                               });
+
+      var blobsCreationResponse = await channelPool_.WithInstanceAsync(async channel => await new Results.ResultsClient(channel).CreateResultsMetaDataAsync(new CreateResultsMetaDataRequest
+                                                                                                                                                            {
+                                                                                                                                                              SessionId = session.SessionId,
+                                                                                                                                                              Results =
+                                                                                                                                                                {
+                                                                                                                                                                  resultsCreate,
+                                                                                                                                                                },
+                                                                                                                                                            },
+                                                                                                                                                            cancellationToken: cancellationToken)
+                                                                                                                                .ConfigureAwait(false), cancellationToken)
+                                                    .ConfigureAwait(false);
+
+      foreach (var blob in blobsCreationResponse.Results)
+      {
+        yield return new BlobInfo
+                      {
+                        BlobName = blob.Name,
+                        BlobId = blob.ResultId,
+                        SessionId = session.SessionId,
+                      };
+      }
     }
   }
 
@@ -570,7 +566,7 @@ public class BlobService : IBlobService
       foreach (var blobsWithoutDuplicateName in DeDuplicateWithName(blobsWithoutData))
       {
         var name2Blob = blobsWithoutDuplicateName.ToDictionary(b => b.Name,
-                                                               b => b);
+                                                                b => b);
         var blobsCreate = blobsWithoutDuplicateName.Select(b => (b.Name, b.ManualDeletion));
         var response = CreateBlobsMetadataAsync(session,
                                                 blobsCreate,
@@ -578,7 +574,7 @@ public class BlobService : IBlobService
         await foreach (var blob in response.ConfigureAwait(false))
         {
           name2Blob[blob.BlobName].BlobHandle = new BlobHandle(blob,
-                                                               armoniKClient_);
+                                                                armoniKClient_);
         }
       }
     }

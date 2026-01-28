@@ -262,35 +262,34 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// </summary>
   /// <param name="tasks">The tasks to submit</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>A task representing the asynchronous operation. The task result contains a collection of task handles.</returns>
+  /// <returns>A task representing the asynchronous operation.</returns>
   /// <exception cref="ArgumentException">When the tasks parameter provided is null</exception>
-  public async Task<ICollection<TaskHandle>> SubmitAsync(ICollection<TaskDefinition> tasks,
-                                                         CancellationToken           cancellationToken = default)
+  public async Task SubmitAsync(ICollection<TaskDefinition> tasks,
+                                CancellationToken           cancellationToken = default)
   {
     _ = tasks ?? throw new ArgumentException("Tasks parameter should not be null");
 
-    var taskInfos = await ArmoniKClient.TasksService.SubmitTasksAsync(SessionInfo,
-                                                                      tasks,
-                                                                      cancellationToken)
-                                       .ConfigureAwait(false);
-
-    var blobsWithCallbacks = tasks.SelectMany(t => t.Outputs.Values)
-                                  .Where(b => b.CallBack != null)
-                                  .ToList();
-
-    if (blobsWithCallbacks.Any())
+    var taskInfos = ArmoniKClient.TasksService.SubmitTasksAsync(SessionInfo,
+                                                                tasks,
+                                                                cancellationToken);
+    var enumTaskDefinition = tasks.GetEnumerator();
+    await foreach (var  taskInfo in taskInfos.ConfigureAwait(false))
     {
-      var callbackRunner = CreateCallbackRunnerIfNeeded(cancellationToken);
+      enumTaskDefinition.MoveNext();
+      var taskDefinition = enumTaskDefinition.Current;
 
-      foreach (var blob in blobsWithCallbacks)
+      var blobsWithCallbacks = taskDefinition.Outputs.Values.Where(b => b.CallBack != null);
+      if (blobsWithCallbacks.Any())
       {
-        callbackRunner.Add(blob);
-      }
-    }
+        var callbackRunner = CreateCallbackRunnerIfNeeded(cancellationToken);
 
-    return taskInfos.Select(t => new TaskHandle(ArmoniKClient,
-                                                t))
-                    .ToList();
+        foreach (var blob in blobsWithCallbacks)
+        {
+          callbackRunner.Add(blob);
+        }
+      }
+      taskDefinition.TaskHandle = new TaskHandle(ArmoniKClient, taskInfo);
+    }
   }
 
   private class CallbackRunner : IAsyncDisposable

@@ -173,9 +173,9 @@ public class TasksService : ITasksService
   }
 
   /// <inheritdoc />
-  public async Task<ICollection<TaskInfos>> SubmitTasksAsync(SessionInfo                 session,
-                                                             ICollection<TaskDefinition> taskDefinitions,
-                                                             CancellationToken           cancellationToken = default)
+  public async IAsyncEnumerable<TaskInfos> SubmitTasksAsync(SessionInfo                                session,
+                                                            ICollection<TaskDefinition>                taskDefinitions,
+                                                            [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
     // Validate each task node
     if (taskDefinitions.Any(node => !node.Outputs.Any()))
@@ -264,24 +264,27 @@ public class TasksService : ITasksService
     }
 
     // Task submission
-    await using var channel = await channelPool_.GetAsync(cancellationToken)
-                                                .ConfigureAwait(false);
-    var tasksClient = new Tasks.TasksClient(channel);
-    var submitTasksRequest = new SubmitTasksRequest
-                             {
-                               SessionId = session.SessionId,
-                               TaskCreations =
-                               {
-                                 taskCreations,
-                               },
-                             };
+    foreach (var chunk in taskCreations.ToChunks(1000))
+    {
+      var submitTasksRequest = new SubmitTasksRequest
+      {
+        SessionId = session.SessionId,
+        TaskCreations =
+          {
+            chunk,
+          },
+      };
+      var taskSubmissionResponse = await channelPool_.WithInstanceAsync(async channel => await new Tasks.TasksClient(channel).SubmitTasksAsync(submitTasksRequest,
+                                                                                                                                               cancellationToken: cancellationToken)
+                                                                                                                             .ConfigureAwait(false),
+                                                                        cancellationToken)
+                                                     .ConfigureAwait(false);
 
-    var taskSubmissionResponse = await tasksClient.SubmitTasksAsync(submitTasksRequest,
-                                                                    cancellationToken: cancellationToken)
-                                                  .ConfigureAwait(false);
-
-    return taskSubmissionResponse.TaskInfos.Select(x => x.ToTaskInfos(session.SessionId))
-                                 .AsICollection();
+      foreach (var task in taskSubmissionResponse.TaskInfos)
+      {
+        yield return task.ToTaskInfos(session.SessionId);
+      }
+    }
   }
 
   private class Payload
