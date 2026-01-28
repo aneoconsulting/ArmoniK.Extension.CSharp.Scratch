@@ -207,16 +207,6 @@ public class TasksService : ITasksService
                                 outputs.ToDictionary(b => b.Key,
                                                      b => b.Value));
       payloads.Add(payload);
-      task.TaskOptions.Options[nameof(DynamicLibrary.ConventionVersion)] = DynamicLibrary.ConventionVersion;
-      if (task.WorkerLibrary != null)
-      {
-        task.TaskOptions!.AddDynamicLibrary(task.WorkerLibrary);
-        if (task.WorkerLibrary.DllBlob != null)
-        {
-          inputs.Add(new KeyValuePair<string, string>(task.WorkerLibrary.DllBlob.BlobName,
-                                                      task.WorkerLibrary.DllBlob.BlobId));
-        }
-      }
 
       tasksInputs.Add(inputs);
       tasksOutputs.Add(outputs);
@@ -244,7 +234,16 @@ public class TasksService : ITasksService
     {
       taskEnumerator.MoveNext();
       var task = taskEnumerator.Current;
-      task!.Payload = payloadBlobHandle!;
+      task!.Payload                                                      = payloadBlobHandle!;
+      task.TaskOptions.Options[nameof(DynamicLibrary.ConventionVersion)] = DynamicLibrary.ConventionVersion;
+      var dataDependencies = tasksInputs[index]
+        .Select(i => i.Value);
+      if (task.WorkerLibrary != null)
+      {
+        task.TaskOptions!.SetDynamicLibrary(task.WorkerLibrary);
+        dataDependencies = dataDependencies.Concat([task.WorkerLibrary.LibraryBlobId]);
+      }
+
       taskCreations.Add(new SubmitTasksRequest.Types.TaskCreation
                         {
                           PayloadId = task.Payload!.BlobId,
@@ -255,8 +254,7 @@ public class TasksService : ITasksService
                           },
                           DataDependencies =
                           {
-                            tasksInputs[index]
-                              .Select(i => i.Value),
+                            dataDependencies,
                           },
                           TaskOptions = task.TaskOptions?.ToTaskOptions(),
                         });

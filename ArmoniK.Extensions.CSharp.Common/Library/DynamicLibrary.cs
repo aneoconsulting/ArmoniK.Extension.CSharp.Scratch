@@ -14,8 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using ArmoniK.Extensions.CSharp.Common.Common.Domain.Blob;
-
 namespace ArmoniK.Extensions.CSharp.Common.Library;
 
 /// <summary>
@@ -42,11 +40,6 @@ public record DynamicLibrary
   ///   Symbol used to execute the task (full name of the class implementing the IWorker interface).
   /// </summary>
   public string Symbol { get; init; } = string.Empty;
-
-  /// <summary>
-  ///   The Dll blob
-  /// </summary>
-  public DllBlob? DllBlob { get; set; }
 
   /// <summary>
   ///   Returns a string representation of the DynamicLibrary instance.

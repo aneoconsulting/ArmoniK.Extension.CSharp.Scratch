@@ -89,14 +89,14 @@ internal class Program
 
     var eventsService = client.EventsService;
 
-    var dllBlob = await blobService.SendDllBlobAsync(sessionHandle,
-                                                     dynamicLib,
-                                                     filePath,
-                                                     false,
-                                                     CancellationToken.None)
-                                   .ConfigureAwait(false);
+    await blobService.SendDllBlobAsync(sessionHandle,
+                                       dynamicLib,
+                                       filePath,
+                                       false,
+                                       CancellationToken.None)
+                     .ConfigureAwait(false);
     logger.LogInformation("libraryId: {BlobId}",
-                          dllBlob.BlobId);
+                          dynamicLib.LibraryBlobId);
 
     var task = new TaskDefinition().WithLibrary(dynamicLib)
                                    .WithInput("name",

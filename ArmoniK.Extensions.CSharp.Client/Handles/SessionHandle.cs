@@ -206,13 +206,11 @@ public class SessionHandle : IAsyncDisposable, IDisposable
   /// <param name="zipPath">File path to the zipped library.</param>
   /// <param name="manualDeletion">Whether the blob should be deleted manually.</param>
   /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-  /// <returns>
-  ///   The created <see cref="DllBlob" /> instance with relevant identifiers.
-  /// </returns>
-  public async Task<DllBlob> SendDllBlobAsync(DynamicLibrary    dynamicLibrary,
-                                              string            zipPath,
-                                              bool              manualDeletion,
-                                              CancellationToken cancellationToken)
+  /// <returns>A task representing the asynchronous operation.</returns>
+  public async Task SendDllBlobAsync(DynamicLibrary    dynamicLibrary,
+                                     string            zipPath,
+                                     bool              manualDeletion,
+                                     CancellationToken cancellationToken)
     => await ArmoniKClient.BlobService.SendDllBlobAsync(SessionInfo,
                                                         dynamicLibrary,
                                                         zipPath,

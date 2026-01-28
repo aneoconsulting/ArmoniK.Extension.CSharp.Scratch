@@ -20,6 +20,7 @@ using System.Text;
 using ArmoniK.Api.gRPC.V1.Agent;
 using ArmoniK.Api.Worker.Worker;
 using ArmoniK.Extensions.CSharp.Common.Common.Domain.Task;
+using ArmoniK.Extensions.CSharp.Common.Library;
 using ArmoniK.Extensions.CSharp.Worker.Common.Domain.Task;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces;
 using ArmoniK.Extensions.CSharp.Worker.Interfaces.Common.Domain.Blob;
@@ -212,6 +213,14 @@ internal class SdkTaskHandler : ISdkTaskHandler
     {
       taskEnumerator.MoveNext();
       var task = taskEnumerator.Current;
+      task.TaskOptions.Options[nameof(DynamicLibrary.ConventionVersion)] = DynamicLibrary.ConventionVersion;
+      var dataDependencies = task.InputDefinitions.Values.Select(b => b.BlobHandle!.BlobId);
+      if (task.WorkerLibrary != null)
+      {
+        task.TaskOptions.SetDynamicLibrary(task.WorkerLibrary);
+        dataDependencies = dataDependencies.Concat([task.WorkerLibrary.LibraryBlobId]);
+      }
+
       taskCreations.Add(new SubmitTasksRequest.Types.TaskCreation
                         {
                           PayloadId = payloadBlobHandle.BlobId,
@@ -221,7 +230,7 @@ internal class SdkTaskHandler : ISdkTaskHandler
                           },
                           DataDependencies =
                           {
-                            task.InputDefinitions.Values.Select(b => b.BlobHandle!.BlobId),
+                            dataDependencies,
                           },
                           TaskOptions = task.TaskOptions?.ToTaskOptions(),
                         });
